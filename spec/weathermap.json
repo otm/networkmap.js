@@ -1,0 +1,191 @@
+{
+    "nodes": [
+        {
+            "id": "node1",
+            "name": "node1",
+            "x": "36",
+            "y": "94",
+            "renderer": "rect",
+            "information": {
+                "test": "some value"
+            },
+            "label": {
+                "position": "internal",
+                "visable": "true"
+            },
+            "padding": "10"
+        },
+        {
+            "id": "node2",
+            "name": "node2",
+            "x": "260",
+            "y": "9",
+            "renderer": "rect",
+            "information": {
+                "test": "some value"
+            },
+            "label": {
+                "position": "internal",
+                "visable": "true"
+            },
+            "padding": "10"
+        },
+        {
+            "id": "node3",
+            "name": "node3",
+            "x": "358",
+            "y": "204",
+            "renderer": "rect",
+            "information": {
+                "test": "some value"
+            },
+            "label": {
+                "position": "internal",
+                "visable": "true"
+            },
+            "padding": "10"
+        }
+    ],
+    "links": [
+        {
+            "inset": "10",
+            "connectionDistance": "10",
+            "staticConnectionDistance": "30",
+            "arrowHeadLength": "10",
+            "width": "10",
+            "background": "#777",
+            "nodeA": {
+                "id": "node1",
+                "name": "Gi0\/1",
+                "requestUrl": "http:\/\/127.0.0.1\/getData",
+                "requestData": {
+                    "hostname": "node1",
+                    "ifdescr": "gi0\/1",
+                    "column": "1"
+                },
+                "href": "http:\/\/example.com"
+            },
+            "nodeB": {
+                "id": "node2",
+                "name": "Gi0\/2",
+                "requestUrl": "http:\/\/127.0.0.1\/getData",
+                "requestData": {
+                    "hostname": "node1",
+                    "ifdescr": "gi0\/2",
+                    "column": "2"
+                }
+            }
+        },
+        {
+            "inset": "10",
+            "connectionDistance": "10",
+            "staticConnectionDistance": "30",
+            "arrowHeadLength": "10",
+            "width": "10",
+            "background": "#777",
+            "nodeA": {
+                "id": "node3",
+                "name": "BE0\/2",
+                "requestUrl": "http:\/\/127.0.0.1\/getData",
+                "requestData": {
+                    "hostname": "node2",
+                    "ifdescr": "gi0\/2",
+                    "column": "2"
+                },
+                "sublinks": [
+                    {
+                        "name": "Gi0\/1",
+                        "requestUrl": "http:\/\/127.0.0.1\/getData",
+                        "requestData": {
+                            "hostname": "node2",
+                            "ifdescr": "gi0\/1",
+                            "column": "1"
+                        },
+                        "href": "http:\/\/example.com"
+                    },
+                    {
+                        "name": "Gi0\/1",
+                        "requestUrl": "http:\/\/127.0.0.1\/getData",
+                        "requestData": {
+                            "hostname": "node2",
+                            "ifdescr": "gi0\/2",
+                            "column": "1"
+                        },
+                        "href": "http:\/\/example.com"
+                    }
+                ]
+            },
+            "nodeB": {
+                "id": "node2",
+                "name": "BE0\/1",
+                "requestUrl": "http:\/\/127.0.0.1\/getData",
+                "requestData": {
+                    "hostname": "node2",
+                    "ifdescr": "be0\/1",
+                    "column": "1"
+                },
+                "width": "5",
+                "href": "http:\/\/google.com",
+                "sublinks": [
+                    {
+                        "name": "Gi0\/1",
+                        "requestUrl": "http:\/\/127.0.0.1\/getData",
+                        "requestData": {
+                            "hostname": "node2",
+                            "ifdescr": "gi0\/1",
+                            "column": "1"
+                        },
+                        "href": "http:\/\/example.com"
+                    },
+                    {
+                        "name": "Gi0\/1",
+                        "requestUrl": "http:\/\/127.0.0.1\/getData",
+                        "requestData": {
+                            "hostname": "node2",
+                            "ifdescr": "gi0\/2",
+                            "column": "1"
+                        },
+                        "href": "http:\/\/example.com"
+                    },
+                    {
+                        "name": "Gi0\/1",
+                        "requestUrl": "http:\/\/127.0.0.1\/getData",
+                        "requestData": {
+                            "hostname": "node2",
+                            "ifdescr": "gi0\/2",
+                            "column": "1"
+                        },
+                        "href": "http:\/\/example.com"
+                    },
+                    {
+                        "name": "Gi0\/1",
+                        "requestUrl": "http:\/\/127.0.0.1\/getData",
+                        "requestData": {
+                            "hostname": "node2",
+                            "ifdescr": "gi0\/2",
+                            "column": "1"
+                        },
+                        "href": "http:\/\/example.com"
+                    },
+                    {
+                        "name": "Gi0\/1",
+                        "requestUrl": "http:\/\/127.0.0.1\/getData",
+                        "requestData": {
+                            "hostname": "node2",
+                            "ifdescr": "gi0\/2",
+                            "column": "1"
+                        },
+                        "href": "http:\/\/example.com"
+                    }
+                ]
+            }
+        }
+    ],
+    "onSave": {
+        "method": "post",
+        "url": "update.php",
+        "data": {
+            "id": "weathermap.json"
+        }
+    }
+}

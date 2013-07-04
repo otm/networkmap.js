@@ -1,0 +1,149 @@
+@import "twitter-bootstrap/variables.less"; // Modify this for custom colors, font-sizes, etc
+@import "twitter-bootstrap/mixins.less";
+@import "twitter-bootstrap/buttons.less";
+@import "twitter-bootstrap/utilities.less";
+
+.nm-container {
+	position: relative;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+.nm-container * {
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+.nm-menu{
+	position: absolute;
+	right: 15px;
+	top: 5px;
+	max-width: 400px;
+	min-width: 200px;
+	font-family: 'Lato', Calibri, Arial, sans-serif;
+	z-index: 10;
+}
+
+.nm-trigger {
+	position: relative;
+	width: 100%;
+	cursor: pointer;
+	z-index: 20;
+	border: solid 1px #a6a6a6;
+	padding-left: 1em;
+	padding-right: 1em;
+	background: #FFFFFF;
+}
+
+.nm-trigger:hover {
+	background: #e6e6e6;
+}
+
+.nm-icon-menu {
+	background-image: url(/resources/img/settings.png);
+	background-repeat: no-repeat;
+	background-size: 90%;
+	width: 38px;
+	height: 26px;
+	position: absolute;
+	top: 17px;
+	left: 1em;
+	transition: all 0.2s ease 200ms;
+}
+
+
+.nm-menu-open .nm-icon-menu {
+	position: absolute;
+	left: 95%;
+	-webkit-transform: translateX(-100%);
+	transform: translateX(-100%);
+	transition: all 0.2s ease 0ms;
+}
+
+
+.nm-label {
+	position: relative;
+	font-size: 1.2em;
+	letter-spacing: 1px;
+	line-height: 2.75;
+	text-transform: uppercase;
+	transition: all 0.2s ease 0s;
+	right: 0px;
+	color: #a6a6a6;
+	padding-left: 2.5em;
+	transition: all 0.2s ease 200ms;
+}
+
+.nm-menu-open .nm-label {
+	padding-left: 0em;
+	padding-right: 3em;
+	transition: all 0.2s ease 0s;
+}
+
+.nm-menu ul {
+	list-style: none outside none;
+	pointer-events: none;
+	position: relative;
+	z-index: 0;
+	transition: max-height 0.2s linear 0s;
+	max-height: 0px;
+	overflow: hidden;
+	margin: -2px 0px 0px 0px;
+	border: solid 1px #a6a6a6;
+	padding: 0;
+}
+
+.nm-menu.nm-menu-open ul {
+	pointer-events: auto;
+	z-index: 200;
+	transition: max-height 0.2s linear 0s;
+	background: #FFFFFF;
+	max-height: 100px;
+	display: block;
+
+}
+
+.nm-menu li {
+	color: #a6a6a6;
+	display: block;
+	padding: 0 2px 5px 5px;
+	line-height: 2.5;
+	font-weight: 400;
+}
+
+/*
+.nm-menu li:hover {
+	background: #f1f1f1;
+}
+*/
+
+
+.nm-confirm-button {
+	-moz-box-shadow:inset 0px 1px 0px 0px #89c4fa;
+	-webkit-box-shadow:inset 0px 1px 0px 0px #89c4fa;
+	box-shadow:inset 0px 1px 0px 0px #89c4fa;
+	background-color:#79bcff;
+	-moz-border-radius:6px;
+	-webkit-border-radius:6px;
+	border-radius:6px;
+	border:1px solid #84bbf3;
+	display:inline-block;
+	color:#ffffff;
+	font-family:arial;
+	font-size:15px;
+	font-weight:bold;
+	padding:6px 24px;
+	text-decoration:none;
+	line-height: 1.5;
+}
+
+.nm-confirm-button:hover {
+	background-color:#52a6fa;
+}
+
+.nm-confirm-button:active {
+	position:relative;
+	top:1px;
+}

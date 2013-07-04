@@ -1,0 +1,23 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<link rel="stylesheet" type="text/css" href="/dist/networkmap.css">
+		<script type="text/javascript" src="/lib/svg.js"></script>
+		<script type="text/javascript" src="/lib/svg.draggable.js"></script>
+		<script type="text/javascript" src="/lib/svg.path.js"></script>
+		<script type="text/javascript" src="/lib/svg.math.js"></script>
+		<script type="text/javascript" src="/lib/mootools-core.js"></script>
+		<script type="text/javascript" src="/lib/mootools-more.js"></script>
+		<script type="text/javascript" src="/dist/networkmap.js"></script>
+		<script type="text/javascript" >
+			var map;
+			window.addEvent('load', function(){
+				map = new networkMap.Graph('paper').load('/spec/weathermap.json');
+			});
+		</script>
+	</head>
+	<body>
+		<div id="paper"></div>
+	</body>
+</html>
