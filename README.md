@@ -108,7 +108,7 @@ If an error occurred
 
 
 
-= Build =
+# Build
 
 ## Set up build envionment
 This installation assumes that node.js and npm is installed
@@ -125,7 +125,7 @@ This installation assumes that node.js and npm is installed
 This will automaticly add files to package.json
 * npm install <package> --save-dev
 
-## Adding New Javascript Files ## 
+## Adding New Javascript Files
 To make the concatenation work you need to add the file to ```Gruntfile.js```
 
 # networkMap
