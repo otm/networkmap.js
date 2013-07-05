@@ -1,9 +1,9 @@
 
 networkMap.Graph = new Class({
-	Implements: [Options],
+	Implements: [Options, Events],
 	options:{
-		width: '100%',
-		height: '90%',
+		width: 10,
+		height: 10,
 		datasource: 'simulate',
 		colormap: 'rasta5',
 		enableEditor: true,
@@ -23,26 +23,33 @@ networkMap.Graph = new Class({
 		this.element.grab(this.container);
 
 		this.graph = SVG(this.container);
-		this.size(this.options.width, this.options.height);
-
+		
 		this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this});
 
+		/*
+		var size = this.element.getSize();
+		this.size(size.x, size.y);
+		*/
+		
 		this.settings = new networkMap.SettingsManager(this.container);
 		this.settings.addEvent('active', this.enableDraggableNodes.bind(this));
 		this.settings.addEvent('deactive', this.disableDraggableNodes.bind(this));
 		this.settings.addEvent('save', this.save.bind(this));
+		this.addEvent('resize', this.rescale.bind(this));
+		this.triggerEvent('resize', this);
 	},
-	size: function(width, height){
-		if (!width || !height){
-			return {
-				width: this.options.width,
-				height: this.options.height
-			};
-		}
-
-		this.graph.size(width, height);
-
-		return this;
+	triggerEvent: function(event, object){
+		object.fireEvent(event, object);
+	},
+	rescale: function(){
+		docSize = this.element.getSize();	
+	
+		this.graph.size(
+			docSize.x, 
+			docSize.y
+		);
+	
+		return this;		
 	},
 	getSVG: function(){
 		return this.graph;

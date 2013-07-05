@@ -11,13 +11,38 @@
 		<script type="text/javascript" src="/lib/mootools-more.js"></script>
 		<script type="text/javascript" src="/dist/networkmap.js"></script>
 		<script type="text/javascript" >
-			var map;
+			
 			window.addEvent('load', function(){
+			   
+			   var map;
+			   var paper = document.id('paper');
+			   
+			   // Set size of target div
+				paper.setStyle('height', document.documentElement.clientHeight-16);
+				
+				// Initialize map
 				map = new networkMap.Graph('paper').load('/spec/weathermap.json');
+				
+				     
+				// Resize div and update networkmap
+				var resizeTimer;
+				window.addEvent('resize', function(){
+				  clearTimeout(resizeTimer);
+				  resizeTimer = (function(){
+				  		// resize target div
+						paper.setStyle('height', document.documentElement.clientHeight-16);
+						
+						// trigger update event
+						map.triggerEvent('resize', map);
+				  }).delay(16);
+				});
 			});
+			
+			
+
 		</script>
 	</head>
 	<body>
-		<div id="paper"></div>
+		<div id="paper" style="left: 0px; right: 0px; top: 0px; box-sizing: border-box;"></div>
 	</body>
 </html>

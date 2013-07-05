@@ -16,6 +16,8 @@ networkMap.ColorLegend = new Class({
 			throw 'Colormap "' + colormap + '" is not registerd';
 		}
 
+		this.graph.addEvent('resize', this.move.bind(this));
+
 		this.draw();
 	},
 	draw: function(){
@@ -67,14 +69,23 @@ networkMap.ColorLegend = new Class({
 			'end'
 		);
 
-		var docSize = this.graph.getSVG().node.getSize();
-
+		this.move();
+	},
+	move: function(x, y){
+		var docSize;		
+		if (!x || !y){
+			docSize = this.graph.element.getSize();	
+		}
+		
+		
 		if (docSize.x && docSize.y){
-			svg.move(
+			this.svg.move(
 				docSize.x - this.options.boxSize - this.options.margin , 
-				docSize.y - this.options.boxSize * colormap.length - this.options.margin
+				docSize.y - this.options.boxSize * this.colormap.map.length - this.options.margin
 			);
 		}
+		
+		return this;
 	}
 
 });
