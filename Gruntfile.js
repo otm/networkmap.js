@@ -22,7 +22,8 @@ module.exports = function(grunt) {
 				// the files to concatenate
 				src: [
 					'src/networkMap.js', 
-					'src/datasource.js', 
+					'src/datasource.js',
+					'src/events.js', 
 					'src/colormap.js', 
 					'src/colorlegend.js', 
 					'src/settingsmanager.js', 

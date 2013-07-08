@@ -341,7 +341,12 @@ networkMap.Link = new Class({
 			.L(midPoint)
 			.L(helpLine4.p2).L(intersectPoint2).L(helpLine1.p2)
 			.Z();
-
+		
+		if (this.options.nodeA.events && this.options.nodeA.events.click) {
+			this.svgEl.nodeA.mainPath.link = this.options.nodeA.events.click;
+			this.svgEl.nodeA.mainPath.on('click', networkMap.events.click);
+		}
+		
 		
 		
 		helpLine1 = firstSegment.perpendicularLine(this.pathPoints[4], maxLinkCount * this.options.width);
@@ -390,7 +395,11 @@ networkMap.Link = new Class({
 			.L(helpLine4.p2).L(intersectPoint2).L(helpLine1.p2)
 			.Z();
 		
-		
+		if (this.options.nodeB.events && this.options.nodeB.events.click) {
+			this.svgEl.nodeB.mainPath.link = this.options.nodeA.events.click;
+			this.svgEl.nodeB.mainPath.on('click', networkMap.events.click);
+		}
+
 
 		return this;
 	},
