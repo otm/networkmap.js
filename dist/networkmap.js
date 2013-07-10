@@ -83,7 +83,7 @@ networkMap.registerDatasource('simulate', function(url, requests){
 		el = new Element('div', {
 			'id': 'nm-active-hover',
 			'class': 'nm-hover',
-			'text': options.name,
+			'text': options.hover.name,
 			events: {
 				mouseover: function(){
 					el.store('mouseover', true);
@@ -96,7 +96,14 @@ networkMap.registerDatasource('simulate', function(url, requests){
 						else
 							el.eliminate('keep');
 					}).delay(10);
+				},
+				click: function(ev){
+					// swap targets :)
+					ev.target = e.target;
+					networkMap.events.click(e);
 				}
+					
+				
 			}
 		})
 		.store('id', e.target.instance.attr('id'));
@@ -136,12 +143,12 @@ networkMap.registerEvent = function(name, f){
 	}
 	else if (name === 'hover'){	
 		networkMap.events.mouseover = function(e){
-			var options = e.target.instance.link.hover;
+			var options = e.target.instance.link;
 			f(e, options);
 		};
 		
 		networkMap.events.mouseout = function(e){
-			var options = e.target.instance.link.hover;
+			var options = e.target.instance.link;
 			(function(){
 				var el = document.id('nm-active-hover');
 				if (el && el.retrieve('id') !== e.target.instance.attr('id')){
