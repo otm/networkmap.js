@@ -110,8 +110,8 @@ networkMap.registerDatasource('simulate', function(url, requests){
 		document.id(document.body).grab(el);
 		var size = el.getSize();
 		el.setStyles({
-			top: midY - size.y/4,
-			left: midX - size.x/4
+			top: midY - size.y/2 + e.target.instance.doc().parent.getPosition().y,
+			left: midX - size.x/2 + e.target.instance.doc().parent.getPosition().x
 		});
 		
 
