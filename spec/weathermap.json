@@ -66,6 +66,9 @@
                 "events": {
                 	"click": {
                 		"href": "http:\/\/example.com"
+                	},
+                	"hover": {
+                		"name": "Gi0/1"
                 	}
                 }
             },
@@ -81,7 +84,10 @@
                 "events": {
                 	"click": {
                 		"href": "http:\/\/example.com"
-                	}
+                	},
+                	"hover":{
+                		"name": "Gi0/2"
+                	}		
                 }
             }
         },

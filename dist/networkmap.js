@@ -45,24 +45,110 @@ networkMap.registerDatasource('simulate', function(url, requests){
 		});
 	});
 });;networkMap.events = networkMap.events || {
-	click: function(e, click){
-		if (click.href){
-			window.location.href = click.href;
+	click: function(e, options){
+		if (options.href){
+			window.location.href = options.href;
 		}
+	},
+	hover: function(e, options){
+		var el = document.id('nm-active-hover');
+		if (el){
+			el.store('keep', true);
+			return;	
+		}
+		
+		var position = e.target.getPosition(),
+			svg = e.target.instance;
+			
+			
+		var segment11 = svg.getSegment(2),
+			segment12 = svg.getSegment(3),
+			segment21 = svg.getSegment(5),
+			segment22 = svg.getSegment(6);
+		
+		var midX = ((segment11.coords[0] + segment22.coords[0])/2 +
+			(segment12.coords[0] + segment21.coords[0])/2)/2;
+
+		var midY = ((segment11.coords[1] + segment22.coords[1])/2 +
+			(segment12.coords[1] + segment21.coords[1])/2)/2;
+
+		el = new Element('div', {
+			'id': 'nm-active-hover',
+			'class': 'nm-hover',
+			'text': options.name,
+			events: {
+				mouseover: function(){
+					el.store('mouseover', true);
+				},
+				mouseout: function(){
+					el.eliminate('mouseover');
+					(function(){
+						if (!el.retrieve('keep'))
+							el.destroy();
+						else
+							el.eliminate('keep');
+					}).delay(10);
+				}
+			}
+		});
+		
+		el.setStyles({
+			top: -1000,
+			left: -1000	
+		});
+		
+		document.id(document.body).grab(el);
+		var size = el.getSize();
+		el.setStyles({
+			top: midY - size.y/4,
+			left: midX - size.x/4
+		});
+		
+
+	},
+	mouseover: function(e, options, hover){
+		console.log("mouse over");
+	},
+	mouseout: function(e, options, hover){
+		console.log('mouse out');	
 	}
 };
 
 networkMap.registerEvent = function(name, f){
 	if (!networkMap.events[name])
 		throw "Invalid event: " + name + " is not an registered event";
+	
+	if (name === 'click'){
+		networkMap.events[name] = function(e){
+			var options = e.target.instance.link.click;
+			f(e, options);
+		};
+	}
+	else if (name === 'hover'){	
+		networkMap.events.mouseover = function(e){
+			var options = e.target.instance.link.hover;
+			f(e, options);
+		};
 		
-	networkMap.events[name] = function(e){
-		var click = e.target.instance.link;
-		f(e, click);
-	};
+		networkMap.events.mouseout = function(e){
+			var options = e.target.instance.link.hover;
+			var el = document.id('nm-active-hover');
+			(function(){
+				if (el && !el.retrieve('mouseover')){
+					el.destroy();
+				}
+			}).delay(10);
+		};
+	}
+	else{
+		networkMap.events[name] = f;	
+	}
 };
 
-networkMap.registerEvent('click', networkMap.events.click);;
+networkMap.registerEvent('click', networkMap.events.click);
+networkMap.registerEvent('mouseover', networkMap.events.mouseover);
+networkMap.registerEvent('mouseout', networkMap.events.mouseout);
+networkMap.registerEvent('hover', networkMap.events.hover);;
 networkMap.colormap = networkMap.colormap || {};
 
 
@@ -1018,9 +1104,16 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 			.L(helpLine4.p2).L(intersectPoint2).L(helpLine1.p2)
 			.Z();
 		
-		if (this.options.nodeA.events && this.options.nodeA.events.click) {
-			this.svgEl.nodeA.mainPath.link = this.options.nodeA.events.click;
-			this.svgEl.nodeA.mainPath.on('click', networkMap.events.click);
+		if (this.options.nodeA.events){
+			this.svgEl.nodeA.mainPath.link = this.options.nodeA.events;
+				
+			if (this.options.nodeA.events.click){
+				this.svgEl.nodeA.mainPath.on('click', networkMap.events.click);
+			}
+			if (this.options.nodeA.events.hover){
+				this.svgEl.nodeA.mainPath.on('mouseover', networkMap.events.mouseover);
+				this.svgEl.nodeA.mainPath.on('mouseout', networkMap.events.mouseout);
+			}
 		}
 		
 		
@@ -1071,9 +1164,17 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 			.L(helpLine4.p2).L(intersectPoint2).L(helpLine1.p2)
 			.Z();
 		
-		if (this.options.nodeB.events && this.options.nodeB.events.click) {
-			this.svgEl.nodeB.mainPath.link = this.options.nodeA.events.click;
-			this.svgEl.nodeB.mainPath.on('click', networkMap.events.click);
+		if (this.options.nodeB.events){
+			this.svgEl.nodeB.mainPath.link = this.options.nodeB.events;
+				
+			if (this.options.nodeB.events.click){
+				this.svgEl.nodeB.mainPath.on('click', networkMap.events.click);
+			}
+			if (this.options.nodeB.events.hover){
+				this.svgEl.nodeB.mainPath.on('mouseover', networkMap.events.mouseover);
+				this.svgEl.nodeB.mainPath.on('mouseout', networkMap.events.mouseout);
+
+			}
 		}
 
 

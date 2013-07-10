@@ -342,9 +342,16 @@ networkMap.Link = new Class({
 			.L(helpLine4.p2).L(intersectPoint2).L(helpLine1.p2)
 			.Z();
 		
-		if (this.options.nodeA.events && this.options.nodeA.events.click) {
-			this.svgEl.nodeA.mainPath.link = this.options.nodeA.events.click;
-			this.svgEl.nodeA.mainPath.on('click', networkMap.events.click);
+		if (this.options.nodeA.events){
+			this.svgEl.nodeA.mainPath.link = this.options.nodeA.events;
+				
+			if (this.options.nodeA.events.click){
+				this.svgEl.nodeA.mainPath.on('click', networkMap.events.click);
+			}
+			if (this.options.nodeA.events.hover){
+				this.svgEl.nodeA.mainPath.on('mouseover', networkMap.events.mouseover);
+				this.svgEl.nodeA.mainPath.on('mouseout', networkMap.events.mouseout);
+			}
 		}
 		
 		
@@ -395,9 +402,17 @@ networkMap.Link = new Class({
 			.L(helpLine4.p2).L(intersectPoint2).L(helpLine1.p2)
 			.Z();
 		
-		if (this.options.nodeB.events && this.options.nodeB.events.click) {
-			this.svgEl.nodeB.mainPath.link = this.options.nodeA.events.click;
-			this.svgEl.nodeB.mainPath.on('click', networkMap.events.click);
+		if (this.options.nodeB.events){
+			this.svgEl.nodeB.mainPath.link = this.options.nodeB.events;
+				
+			if (this.options.nodeB.events.click){
+				this.svgEl.nodeB.mainPath.on('click', networkMap.events.click);
+			}
+			if (this.options.nodeB.events.hover){
+				this.svgEl.nodeB.mainPath.on('mouseover', networkMap.events.mouseover);
+				this.svgEl.nodeB.mainPath.on('mouseout', networkMap.events.mouseout);
+
+			}
 		}
 
 
