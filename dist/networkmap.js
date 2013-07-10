@@ -52,10 +52,18 @@ networkMap.registerDatasource('simulate', function(url, requests){
 	},
 	hover: function(e, options){
 		var el = document.id('nm-active-hover');
+		var id = e.target.instance.attr('id');
+		
 		if (el){
-			el.store('keep', true);
-			return;	
+			if (el && el.retrieve('id') !== e.target.instance.attr('id')){
+				el.destroy();	
+			}
+			else{
+				el.store('keep', true);
+				return;
+			}	
 		}
+		
 		
 		var position = e.target.getPosition(),
 			svg = e.target.instance;
@@ -90,12 +98,14 @@ networkMap.registerDatasource('simulate', function(url, requests){
 					}).delay(10);
 				}
 			}
-		});
+		})
+		.store('id', e.target.instance.attr('id'));
 		
 		el.setStyles({
 			top: -1000,
 			left: -1000	
 		});
+				
 		
 		document.id(document.body).grab(el);
 		var size = el.getSize();
@@ -132,8 +142,12 @@ networkMap.registerEvent = function(name, f){
 		
 		networkMap.events.mouseout = function(e){
 			var options = e.target.instance.link.hover;
-			var el = document.id('nm-active-hover');
 			(function(){
+				var el = document.id('nm-active-hover');
+				if (el && el.retrieve('id') !== e.target.instance.attr('id')){
+					return;	
+				}
+
 				if (el && !el.retrieve('mouseover')){
 					el.destroy();
 				}
