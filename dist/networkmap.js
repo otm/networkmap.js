@@ -393,11 +393,6 @@ networkMap.Graph = new Class({
 		
 		this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this});
 
-		/*
-		var size = this.element.getSize();
-		this.size(size.x, size.y);
-		*/
-		
 		this.settings = new networkMap.SettingsManager(this.container);
 		this.settings.addEvent('active', this.enableDraggableNodes.bind(this));
 		this.settings.addEvent('deactive', this.disableDraggableNodes.bind(this));
@@ -405,7 +400,7 @@ networkMap.Graph = new Class({
 		this.addEvent('resize', this.rescale.bind(this));
 		this.triggerEvent('resize', this);
 		
-		this.setRefreshInterval(this.options.interval);
+		this.setRefreshInterval(this.options.refreshInterval);
 		
 	},
 	/*** setRefreshInterval(interval)
