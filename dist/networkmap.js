@@ -373,7 +373,8 @@ networkMap.Graph = new Class({
 		datasource: 'simulate',
 		colormap: 'rasta5',
 		enableEditor: true,
-		allowDraggableNodes: false
+		allowDraggableNodes: false,
+		refreshInterval: null
 	},
 	exportedOptions: [
 		//'width',
@@ -403,6 +404,27 @@ networkMap.Graph = new Class({
 		this.settings.addEvent('save', this.save.bind(this));
 		this.addEvent('resize', this.rescale.bind(this));
 		this.triggerEvent('resize', this);
+		
+		this.setRefreshInterval(this.options.interval);
+		
+	},
+	/*** setRefreshInterval(interval)
+	* @var interval (int) interval in seconds. If null it 
+	* will disable the updates.  
+	*/
+	setRefreshInterval: function(interval){
+		this.options.interval = interval;
+		
+		if (interval){
+			this.intervalId = setInterval(function(){
+				this.refresh();
+			}.bind(this), interval*1000);
+		}
+		else if (this.intervalId){
+			clearInterval(this.intervalId);
+			delete this.intervalId;
+		}
+		return this;
 	},
 	triggerEvent: function(event, object){
 		object.fireEvent(event, object);
@@ -573,6 +595,15 @@ networkMap.Graph = new Class({
 		return this;
 	},
 
+	// signal to links to refresh 
+	refresh: function(){
+		this.links.each(function(link){
+			link.localUpdate();
+		});
+	},
+
+	// Refresh all links at the same time
+	// This function is not in a usable state at the moment.
 	update: function(){
 		var requests = {};
 		this.links.each(function(link){
@@ -585,10 +616,13 @@ networkMap.Graph = new Class({
 		});
 
 		Object.each(requests, function(requestData, requestUrl){
+			requestData.callback = function(result){
+				console.log(result);
+			};
+			
 			networkMap.datasource[this.options.datasource](
 				requestUrl, 
-				requestData, 
-				function(result){console.log(result);}
+				requestData
 			);
 		}.bind(this));
 	}
@@ -1137,7 +1171,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 			}
 		}
 		
-		
+		/***** mainPath2 ****/
 		
 		helpLine1 = firstSegment.perpendicularLine(this.pathPoints[4], maxLinkCount * this.options.width);
 		helpLine2 = firstSegment.perpendicularLine(this.pathPoints[3], maxLinkCount * this.options.width);
@@ -1329,11 +1363,13 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 			arrowHeadStart.round(2).p1
 		];
 	},
+	
 	setInterval: function(){
 		this.intervalId = setInterval(function(){
 			this.localUpdate();
 		}.bind(this), this.options.refreshInterval);
 	},
+	
 	clearInterval: function(){
 		if (this.intervalId){
 			clearInterval(this.intervalId);
@@ -1376,6 +1412,12 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 		}.bind(this));
 	},
 
+	/**
+	* Function that updates the color of the paths
+	* This is a draft function that does not work
+	* with the current version. Use localUpdate
+	* instead.
+	*/
 	update: function(){
 		if (this.svgEl.nodeA.mainPath){
 			this.datasource(

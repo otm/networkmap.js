@@ -354,7 +354,7 @@ networkMap.Link = new Class({
 			}
 		}
 		
-		
+		/***** mainPath2 ****/
 		
 		helpLine1 = firstSegment.perpendicularLine(this.pathPoints[4], maxLinkCount * this.options.width);
 		helpLine2 = firstSegment.perpendicularLine(this.pathPoints[3], maxLinkCount * this.options.width);
@@ -546,11 +546,13 @@ networkMap.Link = new Class({
 			arrowHeadStart.round(2).p1
 		];
 	},
+	
 	setInterval: function(){
 		this.intervalId = setInterval(function(){
 			this.localUpdate();
 		}.bind(this), this.options.refreshInterval);
 	},
+	
 	clearInterval: function(){
 		if (this.intervalId){
 			clearInterval(this.intervalId);
@@ -593,6 +595,12 @@ networkMap.Link = new Class({
 		}.bind(this));
 	},
 
+	/**
+	* Function that updates the color of the paths
+	* This is a draft function that does not work
+	* with the current version. Use localUpdate
+	* instead.
+	*/
 	update: function(){
 		if (this.svgEl.nodeA.mainPath){
 			this.datasource(
