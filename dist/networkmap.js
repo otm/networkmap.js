@@ -1102,7 +1102,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 		}
 		
 		// TODO: this needs to be handled properly!!!
-		if (!this.options.nodeA.requestUrl || this.options.nodeB.requestUrl)
+		if (!this.options.nodeA.requestUrl || !this.options.nodeB.requestUrl)
 			return;
 
 		var firstSegment = new SVG.math.Line(this.pathPoints[0], this.pathPoints[2]);
