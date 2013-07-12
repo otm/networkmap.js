@@ -1165,6 +1165,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 				
 			if (this.options.nodeA.events.click){
 				this.svgEl.nodeA.mainPath.on('click', networkMap.events.click);
+				this.svgEl.nodeA.mainPath.attr('cursor', 'pointer');
 			}
 			if (this.options.nodeA.events.hover){
 				this.svgEl.nodeA.mainPath.on('mouseover', networkMap.events.mouseover);
@@ -1225,6 +1226,8 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 				
 			if (this.options.nodeB.events.click){
 				this.svgEl.nodeB.mainPath.on('click', networkMap.events.click);
+				this.svgEl.nodeB.mainPath.attr('cursor', 'pointer');
+
 			}
 			if (this.options.nodeB.events.hover){
 				this.svgEl.nodeB.mainPath.on('mouseover', networkMap.events.mouseover);
@@ -1303,6 +1306,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 							
 						if (nodeOptions.sublinks[sublink].events.click){
 							node.sublinks[sublink].on('click', networkMap.events.click);
+							node.sublinks[sublink].attr('cursor', 'pointer');
 						}
 						if (nodeOptions.sublinks[sublink].events.hover){
 							node.sublinks[sublink].on('mouseover', networkMap.events.mouseover);
