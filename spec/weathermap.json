@@ -13,7 +13,12 @@
                 "position": "internal",
                 "visable": "true"
             },
-            "padding": "10"
+            "padding": "10",
+            "events": {
+            	"click": {
+            		"href": "http:\/\/example.com"
+            	}
+            }
         },
         {
             "id": "node2",

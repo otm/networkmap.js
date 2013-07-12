@@ -91,7 +91,7 @@ networkMap.registerEvent = function(name, f){
 	
 	if (name === 'click'){
 		networkMap.events[name] = function(e){
-			var options = e.target.instance.link.click;
+			var options = (e.target.instance.link) ? e.target.instance.link.click : e.target.instance.parent.link.click;
 			f(e, options);
 		};
 	}

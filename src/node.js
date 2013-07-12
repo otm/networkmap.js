@@ -23,7 +23,8 @@ networkMap.Node = new Class({
 		href: null,
 		style: null,
 		debug: false,
-		draggable: false
+		draggable: false,
+		events: null
 		//onMove
 	},
 	exportedOptions: [
@@ -39,7 +40,8 @@ networkMap.Node = new Class({
 		'label',
 		'padding',
 		'href',
-		'style'
+		'style',
+		'events'
 	],
 	initialize: function(options){
 		this.graph = options.graph;
@@ -143,6 +145,16 @@ networkMap.Node = new Class({
 				bboxLabel.height + this.options.padding * 2
 		);
 		label.front();
+		
+		if (this.options.events){
+			svg.link = this.options.events;
+			
+			if (this.options.events.click){
+				svg.on('click', networkMap.events.click);
+				svg.attr('cursor', 'pointer');
+			}	
+			
+		}
 
 		// this cover is here there to prevent user from selecting 
 		// text in the label
