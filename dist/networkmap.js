@@ -1298,6 +1298,18 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 							.Z().front();
 					}
 
+					if (nodeOptions.sublinks[sublink].events){
+						node.sublinks[sublink].link = nodeOptions.sublinks[sublink].events;
+							
+						if (nodeOptions.sublinks[sublink].events.click){
+							node.sublinks[sublink].on('click', networkMap.events.click);
+						}
+						if (nodeOptions.sublinks[sublink].events.hover){
+							node.sublinks[sublink].on('mouseover', networkMap.events.mouseover);
+							node.sublinks[sublink].on('mouseout', networkMap.events.mouseout);
+						}
+					}
+		
 					sublink += 1;
 				}
 				lastSegment = currentSegment;
