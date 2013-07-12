@@ -25,7 +25,9 @@ networkMap.Graph = new Class({
 
 		this.graph = SVG(this.container);
 		
-		this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this});
+		if (this.options.enableEditor){
+			this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this});
+		}
 
 		this.settings = new networkMap.SettingsManager(this.container);
 		this.settings.addEvent('active', this.enableDraggableNodes.bind(this));
