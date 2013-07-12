@@ -391,7 +391,9 @@ networkMap.Graph = new Class({
 
 		this.graph = SVG(this.container);
 		
-		this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this});
+		if (this.options.enableEditor){
+			this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this});
+		}
 
 		this.settings = new networkMap.SettingsManager(this.container);
 		this.settings.addEvent('active', this.enableDraggableNodes.bind(this));
@@ -1098,6 +1100,10 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 		if (this.options.sublinks){
 			maxLinkCount = this.options.sublinks.length;
 		}
+		
+		// TODO: this needs to be handled properly!!!
+		if (!this.options.nodeA.requestUrl || this.options.nodeB.requestUrl)
+			return;
 
 		var firstSegment = new SVG.math.Line(this.pathPoints[0], this.pathPoints[2]);
 		var midSegment = new SVG.math.Line(this.pathPoints[2], this.pathPoints[3]);
@@ -1233,7 +1239,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 	drawSublinks: function(){
 		var maxLinkCount, lastSegment, offset, path, width;
 		
-		var draw = function(node, startPoint, path){
+		var draw = function(nodeOptions, node, startPoint, path){
 			var sublink = 0;
 
 			var updateColor = function(self, path){
@@ -1257,9 +1263,11 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 						var callback = 
 
 						this.registerUpdateEvent(
-							this.options.datasource, 
-							this.options.nodeB.requestUrl, 
-							this.options.nodeB.requestData,
+							this.options.datasource,
+							nodeOptions.sublinks[sublink].requestUrl,
+							nodeOptions.sublinks[sublink].requestData, 
+							//this.options.nodeB.requestUrl, 
+							//this.options.nodeB.requestData,
 							updateColor(this, node.sublinks[sublink])
 							/* testing an alternative way
 							(function(path){
@@ -1308,7 +1316,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 				new SVG.math.Line(this.pathPoints[2], this.pathPoints[3]).midPoint()
 			];
 			width = this.options.nodeA.width || this.options.width;
-			draw(this.svgEl.nodeA, this.pathPoints[0], path);
+			draw(this.options.nodeA, this.svgEl.nodeA, this.pathPoints[0], path);
 		}
 		if (this.options.nodeB.sublinks){
 			maxLinkCount = this.options.nodeB.sublinks.length;
@@ -1321,7 +1329,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 				new SVG.math.Line(this.pathPoints[3], this.pathPoints[2]).midPoint()
 			];
 			width = this.options.nodeB.width || this.options.width;
-			draw(this.svgEl.nodeB, this.pathPoints[5], path);
+			draw(this.options.nodeB, this.svgEl.nodeB, this.pathPoints[5], path);
 		}
 
 		return this;

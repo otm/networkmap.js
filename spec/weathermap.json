@@ -194,6 +194,64 @@
                     }
                 ]
             }
+        },
+        {
+            "inset": "10",
+            "connectionDistance": "10",
+            "staticConnectionDistance": "30",
+            "arrowHeadLength": "10",
+            "width": "10",
+            "background": "#777",
+            "nodeA": {
+                "id": "node3",
+                "sublinks": [
+                    {
+                        "name": "Gi0\/1",
+                        "requestUrl": "http:\/\/127.0.0.1\/getData",
+                        "requestData": {
+                            "hostname": "node2",
+                            "ifdescr": "gi0\/1",
+                            "column": "1"
+                        },
+                        "href": "http:\/\/example.com"
+                    },
+                    {
+                        "name": "Gi0\/1",
+                        "requestUrl": "http:\/\/127.0.0.1\/getData",
+                        "requestData": {
+                            "hostname": "node2",
+                            "ifdescr": "gi0\/2",
+                            "column": "1"
+                        },
+                        "href": "http:\/\/example.com"
+                    }
+                ]
+            },
+            "nodeB": {
+                "id": "node1",
+                "sublinks": [
+                    {
+                        "name": "Gi0\/1",
+                        "requestUrl": "http:\/\/127.0.0.1\/getData",
+                        "requestData": {
+                            "hostname": "node2",
+                            "ifdescr": "gi0\/1",
+                            "column": "1"
+                        },
+                        "href": "http:\/\/example.com"
+                    },
+                    {
+                        "name": "Gi0\/1",
+                        "requestUrl": "http:\/\/127.0.0.1\/getData",
+                        "requestData": {
+                            "hostname": "node2",
+                            "ifdescr": "gi0\/2",
+                            "column": "1"
+                        },
+                        "href": "http:\/\/example.com"
+                    }
+                ]
+            }
         }
     ],
     "onSave": {
