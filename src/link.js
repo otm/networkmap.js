@@ -98,7 +98,7 @@ networkMap.Link = new Class({
 			this.debug.clear();
 		}
 		if (this.options.debug && !this.debug){
-			this.debug = this.graph.getSVG().group();
+			this.debug = this.graph.getPaintArea().group();
 		}
 	},
 	draw: function(){
@@ -114,7 +114,7 @@ networkMap.Link = new Class({
 		this._cleanDebugLayer();
 
 		// create a group object 
-		var svg = this.svg = this.graph.getSVG().group();
+		var svg = this.svg = this.graph.getPaintArea().group();
 		svg.back();
 		
 		var bboxA = this.nodeA.bbox();
@@ -415,6 +415,7 @@ networkMap.Link = new Class({
 				this.svgEl.nodeB.mainPath.attr('cursor', 'pointer');
 
 			}
+			
 			if (this.options.nodeB.events.hover){
 				this.svgEl.nodeB.mainPath.on('mouseover', networkMap.events.mouseover);
 				this.svgEl.nodeB.mainPath.on('mouseout', networkMap.events.mouseout);

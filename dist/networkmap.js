@@ -305,17 +305,21 @@ networkMap.colormap.rasta5 = {
 });
 ;networkMap.SettingsManager = new Class ({
 	Implements: [Options, Events],
+	
 	options: {
 		//onActive
 		//onDeactive
 		//onSave
 	},
+	
 	container: null,
+	editing: false,
 	initialize: function(container){
 		this.container = container;
 		this.nav = this.createMenu();
 		container.grab(this.nav);
 	},
+	
 	createMenu: function(){
 		var nav = new Element('nav', {
 			'class': 'nm-menu'
@@ -330,6 +334,11 @@ networkMap.colormap.rasta5 = {
 		});
 		
 		var menu = new Element('ul');
+		
+		menu.grab(new Element('ul', {
+			id: 'nm-edit-content'	
+		}));
+		
 		menu.grab(new Element('li', {
 			html: '<button class="btn btn-primary pull-right">Save</button>',
 			'class': 'clearfix', 
@@ -343,6 +352,28 @@ networkMap.colormap.rasta5 = {
 		
 		return nav;
 	},
+	edit: function(obj){
+		this.editing = obj;
+		var editables = obj.getEditables();
+			
+		var content = this.nav.getElement('#nm-edit-content');
+		content.empty();
+	
+		Object.each(editables, function(options, key){
+			content.grab(new Element('li', {
+				text: options.label	
+			}));
+			content.grab(new Element('li', {
+				html: '<input type="text" value="' + obj.options[key] + '">'	
+			}));
+		});		
+		
+	
+			
+		
+		return this;
+	},
+	
 	toggle: function(){
 		if (this.nav.hasClass('nm-menu-open')){
 			this.disable();
@@ -351,14 +382,17 @@ networkMap.colormap.rasta5 = {
 			this.enable();
 		}
 	},
+	
 	enable: function(){
 		this.nav.addClass('nm-menu-open');	
 		this.fireEvent('active');
 	},
+	
 	disable: function(){
 		this.nav.removeClass('nm-menu-open');
 		this.fireEvent('deactive');
 	},
+	
 	save: function(){
 		this.fireEvent('save');
 	}
@@ -389,16 +423,18 @@ networkMap.Graph = new Class({
 		this.container = new Element('div', {'class': 'nm-container'});
 		this.element.grab(this.container);
 
-		this.graph = SVG(this.container);
+		this.svg = SVG(this.container);
+		this.graph = this.svg.group();
 		
 		if (this.options.enableEditor){
 			this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this});
 		}
 
 		this.settings = new networkMap.SettingsManager(this.container);
-		this.settings.addEvent('active', this.enableDraggableNodes.bind(this));
-		this.settings.addEvent('deactive', this.disableDraggableNodes.bind(this));
+		this.settings.addEvent('active', this.enableEditor.bind(this));
+		this.settings.addEvent('deactive', this.disableEditor.bind(this));
 		this.settings.addEvent('save', this.save.bind(this));
+		
 		this.addEvent('resize', this.rescale.bind(this));
 		this.triggerEvent('resize', this);
 		
@@ -427,16 +463,29 @@ networkMap.Graph = new Class({
 		object.fireEvent(event, object);
 	},
 	rescale: function(){
-		docSize = this.element.getSize();	
-	
-		this.graph.size(
+		var docSize = this.element.getSize();	
+		
+		var bbox = this.svg.bbox();		
+		
+		// scale the svg if the docsize is to small
+		if (docSize.x < (bbox.width + bbox.x) || docSize.y < (bbox.height + bbox.y)){
+			this.svg.viewbox(0,0,bbox.width + bbox.x, bbox.height + bbox.y);
+		}
+		else{
+			this.svg.viewbox(0, 0, docSize.x, docSize.y);
+		}
+		
+		this.svg.size(
 			docSize.x, 
 			docSize.y
 		);
-	
+		
 		return this;		
 	},
 	getSVG: function(){
+		return this.svg;
+	},
+	getPaintArea: function(){
 		return this.graph;
 	},
 	load: function(obj){
@@ -451,13 +500,13 @@ networkMap.Graph = new Class({
 				this.loadObject(responce);
 			}.bind(this),
 			onFailure: function(){
-				console.log("failure");
+				
 			},
 			onComplete: function(){
-				console.log("complete");
+				
 			},
 			onError: function(text, error){
-				console.log("error:", error);
+				
 			}
 		}).get({});
 
@@ -539,6 +588,27 @@ networkMap.Graph = new Class({
 			}
 		}).send();
 		 
+	},
+	enableEditor: function(){
+		this.enableDraggableNodes();
+		this.nodes.each(function(node){
+			node.mode('edit');
+		});
+		/*
+		this.links.each(function(link){
+			link.mode('edit');
+		});
+		*/
+	},
+	disableEditor: function(){
+		this.disableDraggableNodes();
+		
+		this.nodes.each(function(node){
+			node.mode('normal');
+		});
+		this.links.each(function(link){
+			link.mode('normal');
+		});
 	},
 	enableDraggableNodes: function(){
 		this.nodes.each(function(node){
@@ -655,6 +725,7 @@ networkMap.Graph = new Class({
 		events: null
 		//onMove
 	},
+	_mode: 'normal',
 	exportedOptions: [
 		'id',
 		'name',
@@ -671,6 +742,21 @@ networkMap.Graph = new Class({
 		'style',
 		'events'
 	],
+	editTemplate: {
+		id: {
+			label: 'ID',
+			type: 'text',
+			editable: 'false'
+		},
+		name: {
+			label: 'Name',
+			type: 'text'
+		},
+		padding: {
+			label: 'Padding',
+			type: 'int'
+		}
+	},
 	initialize: function(options){
 		this.graph = options.graph;
 		delete options.graph;
@@ -689,6 +775,19 @@ networkMap.Graph = new Class({
 			this.draw();
 		}
 
+	},
+	getEditables: function(){
+		return this.editTemplate;
+	},
+	setEditable: function(id, value){
+		if (!this.editTemplate[id]){
+			throw 'Unknow id: ' + id;
+		}
+		
+		this.options[id] = value;
+		this.draw();
+		
+		return this;
 	},
 	getConfiguration: function(){
 		var configuration = {};
@@ -709,7 +808,26 @@ networkMap.Graph = new Class({
 			this.draw();
 		}
 	},
-	
+	mode: function(mode){
+		if (!mode){
+			return this._mode;
+		}
+		
+		if (mode === 'edit' || mode === 'normal'){
+			this._mode = mode;
+		}
+		else{
+			throw 'Unknown mode: ' + mode;	
+		}
+	},
+	_clickhandler: function(e){
+		if (this._mode === 'normal' && this.options.events.click){
+			networkMap.events.click(e).bind(this);
+		}
+		else if (this._mode === 'edit'){
+			this.graph.settings.edit(this);	
+		}
+	},	
 	x: function(){
 		return this.svg.bbox().x;
 	},
@@ -742,12 +860,17 @@ networkMap.Graph = new Class({
 		if (this.debug){
 			this.debug.remove();
 		}
+		
 		if (this.options.debug){
-			this.debug = this.graph.getSVG().group();
+			this.debug = this.graph.getPaintArea().group();
+		}
+		
+		if (this.svg){
+			this.svg.remove();
 		}
 
 		// create a group object 
-		var svg = this.svg = this.graph.getSVG().group();
+		var svg = this.svg = this.graph.getPaintArea().group();
 
 		// create the label first to get size
 		var label = svg.text(this.options.name)
@@ -774,11 +897,11 @@ networkMap.Graph = new Class({
 		);
 		label.front();
 		
+		svg.on('click', this._clickhandler.bind(this));
 		if (this.options.events){
 			svg.link = this.options.events;
 			
 			if (this.options.events.click){
-				svg.on('click', networkMap.events.click);
 				svg.attr('cursor', 'pointer');
 			}	
 			
@@ -924,7 +1047,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 			this.debug.clear();
 		}
 		if (this.options.debug && !this.debug){
-			this.debug = this.graph.getSVG().group();
+			this.debug = this.graph.getPaintArea().group();
 		}
 	},
 	draw: function(){
@@ -940,7 +1063,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 		this._cleanDebugLayer();
 
 		// create a group object 
-		var svg = this.svg = this.graph.getSVG().group();
+		var svg = this.svg = this.graph.getPaintArea().group();
 		svg.back();
 		
 		var bboxA = this.nodeA.bbox();
@@ -1241,6 +1364,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.Link = new Class
 				this.svgEl.nodeB.mainPath.attr('cursor', 'pointer');
 
 			}
+			
 			if (this.options.nodeB.events.hover){
 				this.svgEl.nodeB.mainPath.on('mouseover', networkMap.events.mouseover);
 				this.svgEl.nodeB.mainPath.on('mouseout', networkMap.events.mouseout);

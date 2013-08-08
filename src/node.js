@@ -27,6 +27,7 @@ networkMap.Node = new Class({
 		events: null
 		//onMove
 	},
+	_mode: 'normal',
 	exportedOptions: [
 		'id',
 		'name',
@@ -43,6 +44,21 @@ networkMap.Node = new Class({
 		'style',
 		'events'
 	],
+	editTemplate: {
+		id: {
+			label: 'ID',
+			type: 'text',
+			editable: 'false'
+		},
+		name: {
+			label: 'Name',
+			type: 'text'
+		},
+		padding: {
+			label: 'Padding',
+			type: 'int'
+		}
+	},
 	initialize: function(options){
 		this.graph = options.graph;
 		delete options.graph;
@@ -61,6 +77,19 @@ networkMap.Node = new Class({
 			this.draw();
 		}
 
+	},
+	getEditables: function(){
+		return this.editTemplate;
+	},
+	setEditable: function(id, value){
+		if (!this.editTemplate[id]){
+			throw 'Unknow id: ' + id;
+		}
+		
+		this.options[id] = value;
+		this.draw();
+		
+		return this;
 	},
 	getConfiguration: function(){
 		var configuration = {};
@@ -81,7 +110,26 @@ networkMap.Node = new Class({
 			this.draw();
 		}
 	},
-	
+	mode: function(mode){
+		if (!mode){
+			return this._mode;
+		}
+		
+		if (mode === 'edit' || mode === 'normal'){
+			this._mode = mode;
+		}
+		else{
+			throw 'Unknown mode: ' + mode;	
+		}
+	},
+	_clickhandler: function(e){
+		if (this._mode === 'normal' && this.options.events.click){
+			networkMap.events.click(e).bind(this);
+		}
+		else if (this._mode === 'edit'){
+			this.graph.settings.edit(this);	
+		}
+	},	
 	x: function(){
 		return this.svg.bbox().x;
 	},
@@ -114,12 +162,17 @@ networkMap.Node = new Class({
 		if (this.debug){
 			this.debug.remove();
 		}
+		
 		if (this.options.debug){
-			this.debug = this.graph.getSVG().group();
+			this.debug = this.graph.getPaintArea().group();
+		}
+		
+		if (this.svg){
+			this.svg.remove();
 		}
 
 		// create a group object 
-		var svg = this.svg = this.graph.getSVG().group();
+		var svg = this.svg = this.graph.getPaintArea().group();
 
 		// create the label first to get size
 		var label = svg.text(this.options.name)
@@ -146,11 +199,11 @@ networkMap.Node = new Class({
 		);
 		label.front();
 		
+		svg.on('click', this._clickhandler.bind(this));
 		if (this.options.events){
 			svg.link = this.options.events;
 			
 			if (this.options.events.click){
-				svg.on('click', networkMap.events.click);
 				svg.attr('cursor', 'pointer');
 			}	
 			

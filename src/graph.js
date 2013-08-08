@@ -23,16 +23,18 @@ networkMap.Graph = new Class({
 		this.container = new Element('div', {'class': 'nm-container'});
 		this.element.grab(this.container);
 
-		this.graph = SVG(this.container);
+		this.svg = SVG(this.container);
+		this.graph = this.svg.group();
 		
 		if (this.options.enableEditor){
 			this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this});
 		}
 
 		this.settings = new networkMap.SettingsManager(this.container);
-		this.settings.addEvent('active', this.enableDraggableNodes.bind(this));
-		this.settings.addEvent('deactive', this.disableDraggableNodes.bind(this));
+		this.settings.addEvent('active', this.enableEditor.bind(this));
+		this.settings.addEvent('deactive', this.disableEditor.bind(this));
 		this.settings.addEvent('save', this.save.bind(this));
+		
 		this.addEvent('resize', this.rescale.bind(this));
 		this.triggerEvent('resize', this);
 		
@@ -61,16 +63,29 @@ networkMap.Graph = new Class({
 		object.fireEvent(event, object);
 	},
 	rescale: function(){
-		docSize = this.element.getSize();	
-	
-		this.graph.size(
+		var docSize = this.element.getSize();	
+		
+		var bbox = this.svg.bbox();		
+		
+		// scale the svg if the docsize is to small
+		if (docSize.x < (bbox.width + bbox.x) || docSize.y < (bbox.height + bbox.y)){
+			this.svg.viewbox(0,0,bbox.width + bbox.x, bbox.height + bbox.y);
+		}
+		else{
+			this.svg.viewbox(0, 0, docSize.x, docSize.y);
+		}
+		
+		this.svg.size(
 			docSize.x, 
 			docSize.y
 		);
-	
+		
 		return this;		
 	},
 	getSVG: function(){
+		return this.svg;
+	},
+	getPaintArea: function(){
 		return this.graph;
 	},
 	load: function(obj){
@@ -173,6 +188,27 @@ networkMap.Graph = new Class({
 			}
 		}).send();
 		 
+	},
+	enableEditor: function(){
+		this.enableDraggableNodes();
+		this.nodes.each(function(node){
+			node.mode('edit');
+		});
+		/*
+		this.links.each(function(link){
+			link.mode('edit');
+		});
+		*/
+	},
+	disableEditor: function(){
+		this.disableDraggableNodes();
+		
+		this.nodes.each(function(node){
+			node.mode('normal');
+		});
+		this.links.each(function(link){
+			link.mode('normal');
+		});
 	},
 	enableDraggableNodes: function(){
 		this.nodes.each(function(node){
