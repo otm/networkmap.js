@@ -155,6 +155,7 @@ networkMap.Link = new Class({
 			
 		}.bind(this));
 		this.nodeB.addEvent('dragend', function(event){
+			this.redrawShadowPath();
 			this.drawMainPath();
 			this.drawSublinks();
 			this.showPaths();
