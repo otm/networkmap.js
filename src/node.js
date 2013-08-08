@@ -48,7 +48,7 @@ networkMap.Node = new Class({
 		id: {
 			label: 'ID',
 			type: 'text',
-			editable: 'false'
+			disabled: true
 		},
 		name: {
 			label: 'Name',
@@ -138,18 +138,25 @@ networkMap.Node = new Class({
 		return this.svg.bbox().y;
 	},
 	draggable: function(){
+		this._draggable = true;
 		this.svg.draggable();
 		this.svg.style('cursor', 'move');
 
 	},	
 	fixed: function(){
+		this._draggable = false;
 		this.svg.fixed();
 		this.svg.style('cursor', 'default');
+	},
+	isDraggable: function(){
+		return this._draggable;
 	},
 	bbox: function(){
 		return this.svg.bbox();
 	},
 	draw: function(){
+		var redraw = false;
+		
 		if (this.svg && !this.graph){
 			this.svg.remove();
 			return false;
@@ -169,6 +176,7 @@ networkMap.Node = new Class({
 		
 		if (this.svg){
 			this.svg.remove();
+			redraw = true;
 		}
 
 		// create a group object 
@@ -233,7 +241,13 @@ networkMap.Node = new Class({
 			this.options.y = this.y();
 			this.fireEvent('dragend');
 		}.bind(this);
+		
+		// need to make sure the draggable state persists
+		if (this.isDraggable()){
+			this.draggable();
+		}
 
+		this.fireEvent('dragend');
 
 		return true;
 	}
