@@ -194,11 +194,10 @@ networkMap.Graph = new Class({
 		this.nodes.each(function(node){
 			node.mode('edit');
 		});
-		/*
+
 		this.links.each(function(link){
 			link.mode('edit');
 		});
-		*/
 	},
 	disableEditor: function(){
 		this.disableDraggableNodes();

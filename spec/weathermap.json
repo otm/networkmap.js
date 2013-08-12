@@ -15,16 +15,16 @@
             },
             "padding": "10",
             "events": {
-            	"click": {
-            		"href": "http:\/\/example.com"
-            	}
+                "click": {
+                    "href": "http:\/\/example.com"
+                }
             }
         },
         {
             "id": "node2",
             "name": "node2",
-            "x": "260",
-            "y": "9",
+            "x": "247",
+            "y": "13",
             "renderer": "rect",
             "information": {
                 "test": "some value"
@@ -33,7 +33,7 @@
                 "position": "internal",
                 "visable": "true"
             },
-            "padding": "10"
+            "padding": "12"
         },
         {
             "id": "node3",
@@ -61,7 +61,7 @@
             "background": "#777",
             "nodeA": {
                 "id": "node1",
-                "name": "Gi0\/1",
+                "name": "Gi0\/11",
                 "requestUrl": "http:\/\/127.0.0.1\/getData",
                 "requestData": {
                     "hostname": "node1",
@@ -69,12 +69,12 @@
                     "column": "1"
                 },
                 "events": {
-                	"click": {
-                		"href": "http:\/\/example.com"
-                	},
-                	"hover": {
-                		"name": "Gi0/1"
-                	}
+                    "click": {
+                        "href": "http:\/\/example.com"
+                    },
+                    "hover": {
+                    		"name": "nodeA.name"
+                    }
                 }
             },
             "nodeB": {
@@ -87,12 +87,14 @@
                     "column": "2"
                 },
                 "events": {
-                	"click": {
-                		"href": "http:\/\/example.com"
-                	},
-                	"hover":{
-                		"name": "Gi0/2"
-                	}		
+                    "click": {
+                        "href": "http:\/\/example.com"
+                    },
+                    "hover": {
+                        "link": {
+                     		"name": "nodeB.name"
+                    		}
+                    }
                 }
             }
         },
@@ -219,13 +221,13 @@
                             "column": "1"
                         },
                         "events": {
-			                	"click": {
-			                		"href": "http:\/\/example.com"
-			                	},
-			                	"hover": {
-			                		"name": "Gi0/1"
-			                	}
-			                }
+                            "click": {
+                                "href": "http:\/\/example.com"
+                            },
+                            "hover": {
+                                "name": "nodeB.sublink.0.name"
+                            }
+                        }
                     },
                     {
                         "name": "Gi0\/1",
@@ -236,13 +238,13 @@
                             "column": "1"
                         },
                         "events": {
-			                	"click": {
-			                		"href": "http:\/\/example.com"
-			                	},
-			                	"hover": {
-			                		"name": "Gi0/1"
-			                	}
-			                }
+                            "click": {
+                                "href": "http:\/\/example.com"
+                            },
+                            "hover": {
+                                "name": "Gi0\/1"
+                            }
+                        }
                     }
                 ]
             },
@@ -258,13 +260,13 @@
                             "column": "1"
                         },
                         "events": {
-			                	"click": {
-			                		"href": "http:\/\/example.com"
-			                	},
-			                	"hover": {
-			                		"name": "Gi0/1"
-			                	}
-			                }
+                            "click": {
+                                "href": "http:\/\/example.com"
+                            },
+                            "hover": {
+                                "name": "Gi0\/1"
+                            }
+                        }
                     },
                     {
                         "name": "Gi0\/1",
@@ -275,13 +277,13 @@
                             "column": "1"
                         },
                         "events": {
-			                	"click": {
-			                		"href": "http:\/\/example.com"
-			                	},
-			                	"hover": {
-			                		"name": "Gi0/1"
-			                	}
-			                }
+                            "click": {
+                                "href": "http:\/\/example.com"
+                            },
+                            "hover": {
+                                "name": "Gi0\/1"
+                            }
+                        }
                     }
                 ]
             }

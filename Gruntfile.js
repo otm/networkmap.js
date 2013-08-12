@@ -29,6 +29,7 @@ module.exports = function(grunt) {
 					'src/settingsmanager.js', 
 					'src/graph.js', 
 					'src/node.js',
+					'src/sublink.js',
 					'src/link.js'
 				],
 				// the location of the resulting JS file

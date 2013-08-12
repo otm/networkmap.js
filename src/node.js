@@ -57,7 +57,7 @@ networkMap.Node = new Class({
 		padding: {
 			label: 'Padding',
 			type: 'int'
-		}
+		}		
 	},
 	initialize: function(options){
 		this.graph = options.graph;
@@ -81,15 +81,22 @@ networkMap.Node = new Class({
 	getEditables: function(){
 		return this.editTemplate;
 	},
-	setEditable: function(id, value){
-		if (!this.editTemplate[id]){
-			throw 'Unknow id: ' + id;
+	setProperty: function(key, value){
+		if (!this.editTemplate[key]){
+			throw 'Unknow id: ' + key;
 		}
 		
-		this.options[id] = value;
+		this.options[key] = value;
 		this.draw();
 		
 		return this;
+	},
+	getProperty: function(key){
+		if (!this.editTemplate[key]){
+			throw 'Unknown id: ' + key;
+		}
+		
+		return this.options[key];
 	},
 	getConfiguration: function(){
 		var configuration = {};

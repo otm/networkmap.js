@@ -1,10 +1,10 @@
 networkMap.events = networkMap.events || {
-	click: function(e, options){
-		if (options.href){
-			window.location.href = options.href;
+	click: function(e, link){
+		if (link.options.events.click.href){
+			window.location.href = link.options.events.click.href;
 		}
 	},
-	hover: function(e, options){
+	hover: function(e, link){
 		var el = document.id('nm-active-hover');
 		var id = e.target.instance.attr('id');
 		
@@ -37,7 +37,7 @@ networkMap.events = networkMap.events || {
 		el = new Element('div', {
 			'id': 'nm-active-hover',
 			'class': 'nm-hover',
-			'text': options.hover.name,
+			'text': link.options.name,
 			events: {
 				mouseover: function(){
 					el.store('mouseover', true);
@@ -53,8 +53,9 @@ networkMap.events = networkMap.events || {
 				},
 				click: function(ev){
 					// swap targets :)
-					ev.target = e.target;
-					networkMap.events.click(e);
+					//ev.target = e.target;
+					//e.target.instance.clickHandler(e);
+					link._clickHandler(e);
 				}
 					
 				
@@ -90,18 +91,17 @@ networkMap.registerEvent = function(name, f){
 		throw "Invalid event: " + name + " is not an registered event";
 	
 	if (name === 'click'){
-		networkMap.events[name] = function(e){
-			var options = (e.target.instance.link) ? e.target.instance.link.click : e.target.instance.parent.link.click;
-			f(e, options);
+		networkMap.events[name] = function(e, link){
+			//var options = (e.target.instance.link) ? e.target.instance.link.click : e.target.instance.parent.link.click;
+			f(e, link);
 		};
 	}
 	else if (name === 'hover'){	
-		networkMap.events.mouseover = function(e){
-			var options = e.target.instance.link;
-			f(e, options);
+		networkMap.events.mouseover = function(e, link){
+			f(e, link);
 		};
 		
-		networkMap.events.mouseout = function(e){
+		networkMap.events.mouseout = function(e, link){
 			var options = e.target.instance.link;
 			(function(){
 				var el = document.id('nm-active-hover');

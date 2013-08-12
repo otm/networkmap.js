@@ -23,29 +23,50 @@ networkMap.Link = new Class({
 		'nodeA',
 		'nodeB'
 	],
+	editTemplate: {
+		width: {
+			label: 'Width',
+			type: 'int'
+		}		
+	},
 	pathPoints: [],
 	svgEl: {},
 	updateQ: {},
-
+	_mode: 'normal',
+	path: {},
+	subpath: {},
 	initialize: function(options){
+		var link, sublink;
+		
 		this.graph = options.graph;
 		options.graph = null;
-
-		this.setOptions(options);
-
-		// setup datasource
 		this.options.datasource = this.options.datasource || this.graph.options.datasource;
-		this.datasource = networkMap.datasource[this.options.datasource];
+		this.svg = this.graph.getPaintArea().group();
 
-		if (!this.options.nodeA || !this.options.nodeB){
+
+		if (!options.nodeA || !options.nodeB){
 			throw "Link(create, missing node in link definition)";
 		}
 
-		this.nodeA = this.graph.getNode(this.options.nodeA.id);
+		this.nodeA = this.graph.getNode(options.nodeA.id);
 		if (!this.nodeA){
 			throw "Link(create, nodeA does not exist (" + this.options.nodeA.id + ")";
 		}
 
+		link = options.nodeA;
+		this.options.nodeA = link.id;
+
+		if (link.sublinks){
+			sublinks = link.sublinks;
+			delete link.sublinks;
+			this.subpath.nodeA = [];
+			sublinks.each(function(sublink){
+				this.subpath.nodeA.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink));
+			}.bind(this));
+		}
+		this.path.nodeA = new networkMap.LinkPath(this, networkMap.path(this.svg), link);
+			
+		
 		// add a holder for SVG objects
 		if (this.options.nodeA.requestData || this.options.nodeA.sublinks){
 			this.svgEl.nodeA = {};
@@ -55,10 +76,24 @@ networkMap.Link = new Class({
 			}
 		}
 
-		this.nodeB = this.graph.getNode(this.options.nodeB.id);
-		if (!this.nodeA){
+		this.nodeB = this.graph.getNode(options.nodeB.id);
+		if (!this.nodeB){
 			throw "Link(create, nodeB does not exist (" + this.options.nodeB.id + ")";
 		}
+
+		link = options.nodeB;
+		this.options.nodeB = link.id;
+
+		if (link.sublinks){
+			sublinks = link.sublinks;
+			delete link.sublinks;
+			this.subpath.nodeB = [];
+			sublinks.each(function(sublink){
+				this.subpath.nodeB.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink));
+			}.bind(this));
+		}
+		this.path.nodeB = new networkMap.LinkPath(this, networkMap.path(this.svg), link);
+		
 
 		// Add a holder for SVG objects
 		if (this.options.nodeB.requestData || this.options.nodeB.sublinks){
@@ -70,8 +105,44 @@ networkMap.Link = new Class({
 
 		}
 
+		this.setOptions(options);
+
+		// setup datasource
+		this.datasource = networkMap.datasource[this.options.datasource];
+
+
 		if (this.graph){
 			this.draw();
+		}
+	},
+	getEditables: function(){
+		return this.editTemplate;
+	},
+	setProperty: function(key, value){
+		if (!this.editTemplate[key]){
+			throw 'Unknow id: ' + key;
+		}
+		
+		this.options[key] = value;
+		this.redraw();
+	},
+	getProperty: function(key){
+		if (!this.editTemplate[key]){
+			throw 'Unknow id: ' + key;
+		}
+		
+		return this.options[key];
+	},
+	mode: function(mode){
+		if (!mode){
+			return this._mode;
+		}
+		
+		if (mode === 'edit' || mode === 'normal'){
+			this._mode = mode;
+		}
+		else{
+			throw 'Unknown mode: ' + mode;	
 		}
 	},
 	getConfiguration: function(){
@@ -101,6 +172,12 @@ networkMap.Link = new Class({
 			this.debug = this.graph.getPaintArea().group();
 		}
 	},
+	redraw: function(){
+		this.redrawShadowPath();
+		this.drawMainPath();
+		this.drawSublinks();
+		return this;
+	},
 	draw: function(){
 		if (this.svg && !this.graph){
 			this.svg.remove();
@@ -114,7 +191,7 @@ networkMap.Link = new Class({
 		this._cleanDebugLayer();
 
 		// create a group object 
-		var svg = this.svg = this.graph.getPaintArea().group();
+		var svg = this.svg;
 		svg.back();
 		
 		var bboxA = this.nodeA.bbox();
@@ -241,47 +318,47 @@ networkMap.Link = new Class({
 			this.mainPathB.remove();
 	},
 	hidePaths: function(){
-		function hide(node){
-			if (node.mainPath){
-				node.mainPath.hide();
-			}
-			if (node.sublinks){
-				node.sublinks.each(function(sublink){
-					sublink.hide();
-				});
-			}
+		if (this.path.nodeA){
+			this.path.nodeA.svg.hide();
 		}
-
-		if (this.svgEl.nodeA){
-			hide(this.svgEl.nodeA);
+		if (this.subpath.nodeA){
+			this.subpath.nodeA.each(function(subpath){
+					subpath.svg.hide();
+			});
 		}
-		if (this.svgEl.nodeB){
-			hide(this.svgEl.nodeB);
+		if (this.path.nodeB){
+			this.path.nodeB.svg.hide();
+		}
+		if (this.subpath.nodeB){
+			this.subpath.nodeB.each(function(subpath){
+					subpath.svg.hide();
+			});
 		}
 
 		return this;
 	},
 	showPaths: function(){
-		function show(node){
-			if (node.mainPath){
-				node.mainPath.show();
-			}
-			if (node.sublinks){
-				node.sublinks.each(function(sublink){
-					sublink.show();
-				});
-			}
+		if (this.path.nodeA){
+			this.path.nodeA.svg.show();
 		}
-		
-		if (this.svgEl.nodeA){
-			show(this.svgEl.nodeA);
+		if (this.subpath.nodeA){
+			this.subpath.nodeA.each(function(subpath){
+					subpath.svg.show();
+			});
 		}
-		if (this.svgEl.nodeB){
-			show(this.svgEl.nodeB);
+		if (this.path.nodeB){
+			this.path.nodeB.svg.show();
+		}
+		if (this.subpath.nodeB){
+			this.subpath.nodeB.each(function(subpath){
+					subpath.svg.show();
+			});
 		}
 
 		return this;
 	},
+	
+
 	drawMainPath: function(){
 		var maxLinkCount = 1;
 		if (this.options.sublinks){
@@ -325,40 +402,20 @@ networkMap.Link = new Class({
 			intersectPoint2 = helpLine1.p2;
 		}
 
-		if (!this.svgEl.nodeA.mainPath){
-			var pathA = this.svgEl.nodeA.mainPath = networkMap.path(this.svg);
+		if (this.path.nodeA){
 
-			this.registerUpdateEvent(
-				this.options.datasource, 
-				this.options.nodeA.requestUrl, 
-				this.options.nodeA.requestData,
-				function(response){
-					this.updateBgColor(pathA, this.options.colormap.translate(response.value));
-				}.bind(this)
-			);
 		}
 		
-		this.svgEl.nodeA.mainPath.clear();
+		this.path.nodeA.svg.clear();
 		
-		this.svgEl.nodeA.mainPath
+		this.path.nodeA.svg
 			.M(this.pathPoints[0])
 			.L(helpLine1.p1).L(intersectPoint1).L(helpLine4.p1)
 			.L(midPoint)
 			.L(helpLine4.p2).L(intersectPoint2).L(helpLine1.p2)
-			.Z();
+			.Z().front();
 		
-		if (this.options.nodeA.events){
-			this.svgEl.nodeA.mainPath.link = this.options.nodeA.events;
-				
-			if (this.options.nodeA.events.click){
-				this.svgEl.nodeA.mainPath.on('click', networkMap.events.click);
-				this.svgEl.nodeA.mainPath.attr('cursor', 'pointer');
-			}
-			if (this.options.nodeA.events.hover){
-				this.svgEl.nodeA.mainPath.on('mouseover', networkMap.events.mouseover);
-				this.svgEl.nodeA.mainPath.on('mouseout', networkMap.events.mouseout);
-			}
-		}
+	
 		
 		/***** mainPath2 ****/
 		
@@ -387,51 +444,33 @@ networkMap.Link = new Class({
 			intersectPoint2 = helpLine2.p2;
 		}
 
-		if (!this.svgEl.nodeB.mainPath){
-			var pathB = this.svgEl.nodeB.mainPath = networkMap.path(this.svg);
+		if (!this.path.nodeB){
 
 			this.registerUpdateEvent(
 				this.options.datasource, 
-				this.options.nodeB.requestUrl, 
-				this.options.nodeB.requestData,
+				this.path.nodeB.getProperty('requestUrl'), 
+				this.path.nodeB.getProperty('requestData'),
 				function(response){
-					this.updateBgColor(pathB, this.options.colormap.translate(response.value));
+					this.updateBgColor(this.path.nodeB.svg, this.options.colormap.translate(response.value));
 				}.bind(this)
 			);
 		}
-		this.svgEl.nodeB.mainPath.clear();
+		this.path.nodeB.svg.clear();
 		
-		this.svgEl.nodeB.mainPath
+		this.path.nodeB.svg
 			.M(this.pathPoints[5])
 			.L(helpLine1.p1).L(intersectPoint1).L(helpLine4.p1)
 			.L(midPoint)
 			.L(helpLine4.p2).L(intersectPoint2).L(helpLine1.p2)
-			.Z();
+			.Z().front();
 		
-		if (this.options.nodeB.events){
-			this.svgEl.nodeB.mainPath.link = this.options.nodeB.events;
-				
-			if (this.options.nodeB.events.click){
-				this.svgEl.nodeB.mainPath.on('click', networkMap.events.click);
-				this.svgEl.nodeB.mainPath.attr('cursor', 'pointer');
-
-			}
-			
-			if (this.options.nodeB.events.hover){
-				this.svgEl.nodeB.mainPath.on('mouseover', networkMap.events.mouseover);
-				this.svgEl.nodeB.mainPath.on('mouseout', networkMap.events.mouseout);
-
-			}
-		}
-
-
 		return this;
 	},
 	drawSublinks: function(){
 		var maxLinkCount, lastSegment, offset, path, width;
 		
-		var draw = function(nodeOptions, node, startPoint, path){
-			var sublink = 0;
+		var draw = function(sublink, node, startPoint, path){
+			var index = 0;
 
 			var updateColor = function(self, path){
 				return function(response){
@@ -448,33 +487,25 @@ networkMap.Link = new Class({
 				var currentSegment = this.calculateSublinkPath(path, offset, options);
 
 				if (lastSegment){
+					/* Temporary removed
 					if (!node.sublinks[sublink]){
-						node.sublinks[sublink] = networkMap.path(this.svg);
 
-						var callback = 
-
-						this.registerUpdateEvent(
+						
+						var callback = this.registerUpdateEvent(
 							this.options.datasource,
 							nodeOptions.sublinks[sublink].requestUrl,
-							nodeOptions.sublinks[sublink].requestData, 
-							//this.options.nodeB.requestUrl, 
-							//this.options.nodeB.requestData,
+							nodeOptions.sublinks[sublink].requestData,
 							updateColor(this, node.sublinks[sublink])
-							/* testing an alternative way
-							(function(path){
-								return function(response){
-									this.updateBgColor(path, this.options.colormap.translate(response.value));
-								}.bind(this);
-							}.bind(this))(node.sublinks[sublink])
-							*/
 						);
 					}
-					node.sublinks[sublink].clear();
+					*/ 
+					
+					sublink[index].svg.clear();
 
 					// Special case when we are ploting a odd number
 					// of sublinks. We must add the middlepoint manually
 					if (offset === -0.5){
-						node.sublinks[sublink]
+						sublink[index].svg
 							.M(startPoint)
 							.L(lastSegment[0]).L(lastSegment[1]).L(lastSegment[2])
 							.L(path[path.length - 1])
@@ -482,35 +513,36 @@ networkMap.Link = new Class({
 							.Z().front();
 					}
 					else{
-						node.sublinks[sublink]
+						sublink[index].svg
 							.M(startPoint)
 							.L(lastSegment[0]).L(lastSegment[1]).L(lastSegment[2])
 							.L(currentSegment[2]).L(currentSegment[1]).L(currentSegment[0])
 							.Z().front();
 					}
 
-					if (nodeOptions.sublinks[sublink].events){
-						node.sublinks[sublink].link = nodeOptions.sublinks[sublink].events;
+					if (sublink[index].getProperty('events')){
+						// removed due to new event system
+						//sublink[index].link = nodeOptions.sublinks[sublink].events;
 							
-						if (nodeOptions.sublinks[sublink].events.click){
-							node.sublinks[sublink].on('click', networkMap.events.click);
-							node.sublinks[sublink].attr('cursor', 'pointer');
+						if (sublink[index].getProperty('events').click){
+							sublink[index].svg.on('click', networkMap.events.click);
+							sublink[index].svg.attr('cursor', 'pointer');
 						}
-						if (nodeOptions.sublinks[sublink].events.hover){
-							node.sublinks[sublink].on('mouseover', networkMap.events.mouseover);
-							node.sublinks[sublink].on('mouseout', networkMap.events.mouseout);
+						if (sublink[index].getProperty('events').hover){
+							sublink[index].svg.on('mouseover', networkMap.events.mouseover);
+							sublink[index].svg.on('mouseout', networkMap.events.mouseout);
 						}
 					}
 		
-					sublink += 1;
+					index += 1;
 				}
 				lastSegment = currentSegment;
 				offset -= 1;
 			}
 		}.bind(this);
 
-		if (this.options.nodeA.sublinks){
-			maxLinkCount = this.options.nodeA.sublinks.length;
+		if (this.subpath.nodeA){
+			maxLinkCount = this.subpath.nodeA.length;
 			lastSegment = null;
 			offset = maxLinkCount / 2;
 			path = [
@@ -519,11 +551,11 @@ networkMap.Link = new Class({
 				this.pathPoints[2],
 				new SVG.math.Line(this.pathPoints[2], this.pathPoints[3]).midPoint()
 			];
-			width = this.options.nodeA.width || this.options.width;
-			draw(this.options.nodeA, this.svgEl.nodeA, this.pathPoints[0], path);
+			width = this.path.nodeA.getProperty('width') || this.options.width;
+			draw(this.subpath.nodeA, this.subpath.nodeA, this.pathPoints[0], path);
 		}
-		if (this.options.nodeB.sublinks){
-			maxLinkCount = this.options.nodeB.sublinks.length;
+		if (this.subpath.nodeB){
+			maxLinkCount = this.subpath.nodeB.length;
 			lastSegment = null;
 			offset = maxLinkCount / 2;
 			path = [
@@ -532,8 +564,8 @@ networkMap.Link = new Class({
 				this.pathPoints[3],
 				new SVG.math.Line(this.pathPoints[3], this.pathPoints[2]).midPoint()
 			];
-			width = this.options.nodeB.width || this.options.width;
-			draw(this.options.nodeB, this.svgEl.nodeB, this.pathPoints[5], path);
+			width = this.path.nodeB.getProperty('width') || this.options.width;
+			draw(this.subpath.nodeB, this.subpath.nodeB, this.pathPoints[5], path);
 		}
 
 		return this;
@@ -674,10 +706,10 @@ networkMap.Link = new Class({
 	},
 	updateBgColor: function(path, color){
 		if (!color){
-			path.fill(this.options.background);
+			path.svg.fill(this.options.background);
 		}
 		else{
-			path.fill(color);
+			path.svg.fill(color);
 		}
 	}
 

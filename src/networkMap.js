@@ -7,6 +7,8 @@ networkMap.path = function(svg){
 	});
 };
 
+/* Extending Mootools functionality */
+
 Array.implement('find', function(fn){
 	for (var i = 0; i < this.length; i++){
 		if (fn.call(this, this[i], i, this)) 
