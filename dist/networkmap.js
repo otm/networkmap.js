@@ -1194,10 +1194,10 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 			delete link.sublinks;
 			this.subpath.nodeA = [];
 			sublinks.each(function(sublink){
-				this.subpath.nodeA.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink));
+				this.subpath.nodeA.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink).addEvent('change', this.redraw.bind(this)));
 			}.bind(this));
 		}
-		this.path.nodeA = new networkMap.LinkPath(this, networkMap.path(this.svg), link);
+		this.path.nodeA = new networkMap.LinkPath(this, networkMap.path(this.svg), link).addEvent('change', this.redraw.bind(this));
 			
 		
 		// add a holder for SVG objects
@@ -1222,10 +1222,10 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 			delete link.sublinks;
 			this.subpath.nodeB = [];
 			sublinks.each(function(sublink){
-				this.subpath.nodeB.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink));
+				this.subpath.nodeB.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink).addEvent('change', this.redraw.bind(this)));
 			}.bind(this));
 		}
-		this.path.nodeB = new networkMap.LinkPath(this, networkMap.path(this.svg), link);
+		this.path.nodeB = new networkMap.LinkPath(this, networkMap.path(this.svg), link).addEvent('change', this.redraw.bind(this));
 		
 
 		// Add a holder for SVG objects
@@ -1551,17 +1551,10 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		
 		var drawBondPath = function(sublink, pathPoints, linkCount){
 			var width = sublink.getProperty('width');
-			var firstSegment = new SVG.math.Line(pathPoints[0], pathPoints[2]);
 			var midSegment = new SVG.math.Line(pathPoints[2], pathPoints[3]);
 	
-			// perpendicular line with last point in firstList
-			var helpLine1 = firstSegment.perpendicularLine(pathPoints[1], linkCount * width);
-			var helpLine2 = firstSegment.perpendicularLine(pathPoints[2], linkCount * width);
-			var helpLine3 = midSegment.perpendicularLine(pathPoints[2], linkCount * width);
-			
 			var midPoint = midSegment.midPoint();
 			var helpPoint1 = midSegment.move(midPoint, midSegment.p1, sublink.link.options.arrowHeadLength);
-			var helpPoint2 = midSegment.move(midPoint, midSegment.p2, sublink.link.options.arrowHeadLength);
 			
 			var helpLine4 = midSegment.perpendicularLine(helpPoint1, linkCount * width / 2);
 			
@@ -1571,23 +1564,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 				linkCount * width / 2
 			);
 	
-			// find intersection point 1
-			var helpLine5 = new SVG.math.Line(helpLine1.p1, helpLine2.p1);
-			var helpLine6 = new SVG.math.Line(helpLine3.p1, helpLine4.p1);
-			var intersectPoint1 = helpLine6.intersection(helpLine5);
-	
-			if (intersectPoint1.parallel === true){
-				intersectPoint1 = helpLine1.p1;
-			}
-	
-			// find intersection point 2
-			helpLine5 = new SVG.math.Line(helpLine1.p2, helpLine2.p2);
-			helpLine6 = new SVG.math.Line(helpLine3.p2, helpLine4.p2);
-			var intersectPoint2 = helpLine6.intersection(helpLine5);
-	
-			if (intersectPoint2.parallel === true){
-				intersectPoint2 = helpLine1.p2;
-			}
+		
 			
 			sublink.svg.clear();
 			
@@ -1688,7 +1665,8 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 			
 			while (offset >= -maxLinkCount / 2){
 				var options = {
-					width: width
+					width: width,
+					linkCount: maxLinkCount
 				};
 				
 
@@ -1769,7 +1747,9 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 	calculateSublinkPath: function(path, offset, options){
 		var localWidth = options.width || this.options.width;
 		var width = localWidth * offset;
-		var arrowHeadLength = Math.abs(this.options.arrowHeadLength * offset * (localWidth/this.options.width));
+		var angle = Math.atan2(this.options.arrowHeadLength, Math.abs(localWidth * options.linkCount / 2));
+		var arrowHeadLength = Math.abs(width * Math.tan(angle)); 
+		//var arrowHeadLength = Math.abs(this.options.arrowHeadLength * offset * (localWidth/this.options.width));
 
 		var firstSegment = new SVG.math.Line(path[0], path[2]);
 		var midSegment = new SVG.math.Line(path[2], path[3]);
