@@ -36,6 +36,9 @@ networkMap.LinkPath = new Class ({
 			if (link != this){
 				return link.getProperty(key);
 			}
+			else if (!this.options[key]){
+				return this.link.options[key];
+			}
 		}
 		
 		if (!this.options[key]){

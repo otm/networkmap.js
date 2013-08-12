@@ -1053,6 +1053,9 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 			if (link != this){
 				return link.getProperty(key);
 			}
+			else if (!this.options[key]){
+				return this.link.options[key];
+			}
 		}
 		
 		if (!this.options[key]){
@@ -1333,7 +1336,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 			'stroke-width': 2 
 		});
 
-		this.redrawShadowPath();
+		this.redrawShadowPath().hideShadowPath();
 		this.drawMainPath();
 		this.drawSublinks();
 		this.localUpdate();
@@ -1349,20 +1352,23 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		}.bind(this));
 
 		this.nodeA.addEvent('dragstart', function(event){
+			this.shadowPath.show();
 			this.hidePaths();
 		}.bind(this));
 		this.nodeB.addEvent('dragstart', function(event){
+			this.shadowPath.show();
 			this.hidePaths();
 		}.bind(this));
 
 		this.nodeA.addEvent('dragend', function(event){
+			this.redrawShadowPath().hideShadowPath();
 			this.drawMainPath();
 			this.drawSublinks();
 			this.showPaths();
 			
 		}.bind(this));
 		this.nodeB.addEvent('dragend', function(event){
-			this.redrawShadowPath();
+			this.redrawShadowPath().hideShadowPath();
 			this.drawMainPath();
 			this.drawSublinks();
 			this.showPaths();
@@ -1487,112 +1493,184 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 
 		return this;
 	},
-	
-
+	showShadowPath: function(){
+		this.shadowPath.show();
+		return this;
+	},
+	hideShadowPath: function(){
+		this.shadowPath.hide();
+		return this;
+	},
 	drawMainPath: function(){
 		var maxLinkCount = 1;
-		if (this.options.sublinks){
-			maxLinkCount = this.options.sublinks.length;
-		}
 		
-		// TODO: this needs to be handled properly!!!
-		if (!this.options.nodeA.requestUrl || !this.options.nodeB.requestUrl)
-			return;
-
-		var firstSegment = new SVG.math.Line(this.pathPoints[0], this.pathPoints[2]);
-		var midSegment = new SVG.math.Line(this.pathPoints[2], this.pathPoints[3]);
-		var lastSegment = new SVG.math.Line(this.pathPoints[3], this.pathPoints[5]);
-
-		// perpendicular line with last point in firstList
-		var helpLine1 = firstSegment.perpendicularLine(this.pathPoints[1], maxLinkCount * this.options.width);
-		var helpLine2 = firstSegment.perpendicularLine(this.pathPoints[2], maxLinkCount * this.options.width);
-		var helpLine3 = midSegment.perpendicularLine(this.pathPoints[2], maxLinkCount * this.options.width);
-		
-		var midPoint = midSegment.midPoint();
-		var helpPoint1 = midSegment.move(midPoint, midSegment.p1, this.options.arrowHeadLength);
-		var helpPoint2 = midSegment.move(midPoint, midSegment.p2, this.options.arrowHeadLength);
-		
-		var helpLine4 = midSegment.perpendicularLine(helpPoint1, maxLinkCount * this.options.width);
-
-		// find intersection point 1
-		var helpLine5 = new SVG.math.Line(helpLine1.p1, helpLine2.p1);
-		var helpLine6 = new SVG.math.Line(helpLine3.p1, helpLine4.p1);
-		var intersectPoint1 = helpLine6.intersection(helpLine5);
-
-		if (intersectPoint1.parallel === true){
-			intersectPoint1 = helpLine1.p1;
-		}
-
-		// find intersection point 2
-		helpLine5 = new SVG.math.Line(helpLine1.p2, helpLine2.p2);
-		helpLine6 = new SVG.math.Line(helpLine3.p2, helpLine4.p2);
-		var intersectPoint2 = helpLine6.intersection(helpLine5);
-
-		if (intersectPoint2.parallel === true){
-			intersectPoint2 = helpLine1.p2;
-		}
-
-		if (this.path.nodeA){
-
-		}
-		
-		this.path.nodeA.svg.clear();
-		
-		this.path.nodeA.svg
-			.M(this.pathPoints[0])
-			.L(helpLine1.p1).L(intersectPoint1).L(helpLine4.p1)
-			.L(midPoint)
-			.L(helpLine4.p2).L(intersectPoint2).L(helpLine1.p2)
-			.Z().front();
-		
+		var drawNormalPath = function(sublink, pathPoints, options){
+			var width = sublink.getProperty('width');
+			var firstSegment = new SVG.math.Line(pathPoints[0], pathPoints[2]);
+			var midSegment = new SVG.math.Line(pathPoints[2], pathPoints[3]);
 	
+			// perpendicular line with last point in firstList
+			var helpLine1 = firstSegment.perpendicularLine(pathPoints[1], maxLinkCount * width);
+			var helpLine2 = firstSegment.perpendicularLine(pathPoints[2], maxLinkCount * width);
+			var helpLine3 = midSegment.perpendicularLine(pathPoints[2], maxLinkCount * width);
+			
+			var midPoint = midSegment.midPoint();
+			var helpPoint1 = midSegment.move(midPoint, midSegment.p1, sublink.link.options.arrowHeadLength);
+			var helpPoint2 = midSegment.move(midPoint, midSegment.p2, sublink.link.options.arrowHeadLength);
+			
+			var helpLine4 = midSegment.perpendicularLine(helpPoint1, maxLinkCount * width);
+	
+			// find intersection point 1
+			var helpLine5 = new SVG.math.Line(helpLine1.p1, helpLine2.p1);
+			var helpLine6 = new SVG.math.Line(helpLine3.p1, helpLine4.p1);
+			var intersectPoint1 = helpLine6.intersection(helpLine5);
+	
+			if (intersectPoint1.parallel === true){
+				intersectPoint1 = helpLine1.p1;
+			}
+	
+			// find intersection point 2
+			helpLine5 = new SVG.math.Line(helpLine1.p2, helpLine2.p2);
+			helpLine6 = new SVG.math.Line(helpLine3.p2, helpLine4.p2);
+			var intersectPoint2 = helpLine6.intersection(helpLine5);
+	
+			if (intersectPoint2.parallel === true){
+				intersectPoint2 = helpLine1.p2;
+			}
+			
+			sublink.svg.clear();
+			
+			sublink.svg
+				.M(pathPoints[0])
+				.L(helpLine1.p1).L(intersectPoint1).L(helpLine4.p1)
+				.L(midPoint)
+				.L(helpLine4.p2).L(intersectPoint2).L(helpLine1.p2)
+				.Z().front();
 		
-		/***** mainPath2 ****/
+		};
 		
-		helpLine1 = firstSegment.perpendicularLine(this.pathPoints[4], maxLinkCount * this.options.width);
-		helpLine2 = firstSegment.perpendicularLine(this.pathPoints[3], maxLinkCount * this.options.width);
-		helpLine3 = midSegment.perpendicularLine(this.pathPoints[3], maxLinkCount * this.options.width);		
-
-		helpLine4 = midSegment.perpendicularLine(helpPoint2, maxLinkCount * this.options.width);
-
-		// find intersection point 1
-		helpLine5 = new SVG.math.Line(helpLine1.p1, helpLine2.p1);
-		helpLine6 = new SVG.math.Line(helpLine3.p1, helpLine4.p1);
-		intersectPoint1 = helpLine6.intersection(helpLine5);
-
-		if (intersectPoint1.parallel === true){
-			intersectPoint1 = helpLine3.p1;
-		}
-
-
-		// find intersection point 2
-		helpLine5 = new SVG.math.Line(helpLine1.p2, helpLine2.p2);
-		helpLine6 = new SVG.math.Line(helpLine3.p2, helpLine4.p2);
-		intersectPoint2 = helpLine6.intersection(helpLine5);
-
-		if (intersectPoint2.parallel === true){
-			intersectPoint2 = helpLine2.p2;
-		}
-
-		if (!this.path.nodeB){
-
-			this.registerUpdateEvent(
-				this.options.datasource, 
-				this.path.nodeB.getProperty('requestUrl'), 
-				this.path.nodeB.getProperty('requestData'),
-				function(response){
-					this.updateBgColor(this.path.nodeB.svg, this.options.colormap.translate(response.value));
-				}.bind(this)
+		var drawBondPath = function(sublink, pathPoints, linkCount){
+			var width = sublink.getProperty('width');
+			var firstSegment = new SVG.math.Line(pathPoints[0], pathPoints[2]);
+			var midSegment = new SVG.math.Line(pathPoints[2], pathPoints[3]);
+	
+			// perpendicular line with last point in firstList
+			var helpLine1 = firstSegment.perpendicularLine(pathPoints[1], linkCount * width);
+			var helpLine2 = firstSegment.perpendicularLine(pathPoints[2], linkCount * width);
+			var helpLine3 = midSegment.perpendicularLine(pathPoints[2], linkCount * width);
+			
+			var midPoint = midSegment.midPoint();
+			var helpPoint1 = midSegment.move(midPoint, midSegment.p1, sublink.link.options.arrowHeadLength);
+			var helpPoint2 = midSegment.move(midPoint, midSegment.p2, sublink.link.options.arrowHeadLength);
+			
+			var helpLine4 = midSegment.perpendicularLine(helpPoint1, linkCount * width / 2);
+			
+			var startPoint = new SVG.math.Line(pathPoints[2], midPoint).midPoint();
+			var helpLine7 = midSegment.perpendicularLine(
+				startPoint, 
+				linkCount * width / 2
 			);
-		}
-		this.path.nodeB.svg.clear();
+	
+			// find intersection point 1
+			var helpLine5 = new SVG.math.Line(helpLine1.p1, helpLine2.p1);
+			var helpLine6 = new SVG.math.Line(helpLine3.p1, helpLine4.p1);
+			var intersectPoint1 = helpLine6.intersection(helpLine5);
+	
+			if (intersectPoint1.parallel === true){
+				intersectPoint1 = helpLine1.p1;
+			}
+	
+			// find intersection point 2
+			helpLine5 = new SVG.math.Line(helpLine1.p2, helpLine2.p2);
+			helpLine6 = new SVG.math.Line(helpLine3.p2, helpLine4.p2);
+			var intersectPoint2 = helpLine6.intersection(helpLine5);
+	
+			if (intersectPoint2.parallel === true){
+				intersectPoint2 = helpLine1.p2;
+			}
+			
+			sublink.svg.clear();
+			
+			sublink.svg
+				.M(startPoint)
+				.L(helpLine7.p1).L(helpLine4.p1)
+				.L(midPoint)
+				.L(helpLine4.p2).L(helpLine7.p2)
+				.Z().front();
+		};
 		
-		this.path.nodeB.svg
-			.M(this.pathPoints[5])
-			.L(helpLine1.p1).L(intersectPoint1).L(helpLine4.p1)
-			.L(midPoint)
-			.L(helpLine4.p2).L(intersectPoint2).L(helpLine1.p2)
-			.Z().front();
+		var drawSinglePath = function(){
+			
+		};
+		
+		var drawSingleBondPath = function(){
+			
+		};
+
+		
+		
+		var path;
+		if (this.options.nodeA.requestUrl && this.options.nodeB.requestUrl){
+			if (this.subpath.nodeA){
+				path = [
+					this.pathPoints[0],
+					this.pathPoints[1],
+					this.pathPoints[2],
+					this.pathPoints[3]
+				];
+				drawBondPath(this.path.nodeA, path, this.subpath.nodeA.length);	
+			}
+			else{
+				path = [
+					this.pathPoints[0],
+					this.pathPoints[1],
+					this.pathPoints[2],
+					this.pathPoints[3]
+				];
+				drawNormalPath(
+					this.path.nodeA,
+					path 
+				);	
+			}
+			
+			if (this.subpath.nodeB){
+				path = [
+					this.pathPoints[5],
+					this.pathPoints[4],
+					this.pathPoints[3],
+					this.pathPoints[2]
+				];
+				drawBondPath(this.path.nodeB, path, this.subpath.nodeB.length);	
+			}
+			else {
+				path = [
+					this.pathPoints[5],
+					this.pathPoints[4],
+					this.pathPoints[3],
+					this.pathPoints[2]
+				];
+				drawNormalPath(
+					this.path.nodeB,
+					path 
+				);	
+			}
+		}
+		else if (this.options.nodeA.requestUrl && !this.options.nodeB.requestUrl){
+			if (this.subpath.nodeA){
+				drawSinglePath();	
+			}
+			else{
+				drawSingleBondPath();	
+			}
+		}
+		else if (this.options.nodeB.requestUrl && !this.options.nodeA.requestUrl){
+			if (this.subpath.nodeA){
+				drawSinglePath();	
+			}
+			else{
+				drawSingleBondPath();	
+			}
+		}
 		
 		return this;
 	},
@@ -1617,18 +1695,6 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 				var currentSegment = this.calculateSublinkPath(path, offset, options);
 
 				if (lastSegment){
-					/* Temporary removed
-					if (!node.sublinks[sublink]){
-
-						
-						var callback = this.registerUpdateEvent(
-							this.options.datasource,
-							nodeOptions.sublinks[sublink].requestUrl,
-							nodeOptions.sublinks[sublink].requestData,
-							updateColor(this, node.sublinks[sublink])
-						);
-					}
-					*/ 
 					
 					sublink[index].svg.clear();
 
@@ -1640,14 +1706,14 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 							.L(lastSegment[0]).L(lastSegment[1]).L(lastSegment[2])
 							.L(path[path.length - 1])
 							.L(currentSegment[2]).L(currentSegment[1]).L(currentSegment[0])
-							.Z().front();
+							.Z().back();
 					}
 					else{
 						sublink[index].svg
 							.M(startPoint)
 							.L(lastSegment[0]).L(lastSegment[1]).L(lastSegment[2])
 							.L(currentSegment[2]).L(currentSegment[1]).L(currentSegment[0])
-							.Z().front();
+							.Z().back();
 					}
 
 					if (sublink[index].getProperty('events')){
