@@ -485,6 +485,9 @@ networkMap.colormap.rasta5 = {
 		
 		return nav;
 	},
+	getContentContainer: function(){
+		return this.nav.getElement('#nm-edit-content');
+	},
 	edit: function(obj){
 		this.editing = obj;
 		var editables;
