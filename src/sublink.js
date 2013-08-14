@@ -10,7 +10,7 @@ networkMap.LinkPath = new Class ({
 		this.link.registerUpdateEvent(
 			link.options.datasource,
 			this.options.requestUrl,
-			this.options.requestData,
+			this,
 			function(response){
 				this.link.updateBgColor(this, this.link.options.colormap.translate(response.value));
 			}.bind(this)

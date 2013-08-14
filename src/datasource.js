@@ -4,8 +4,8 @@ networkMap.datasource = networkMap.datasource || {};
 * url: the URL to make the request to
 * requests: array of objects containing request information
 * {
-*    data: {...},
-*    callback: function
+*    link: {Sublink},
+*    callback: {function}
 * }
 */
 networkMap.registerDatasource = function(name, f){
@@ -24,7 +24,7 @@ networkMap.registerDatasource('simulate', function(url, requests){
 
 		request.callback({
 			url: url,
-			request: request.data,
+			request: request.link,
 			value: dataPoint,
 			realValue: Math.round(dataPoint * 100) + 'Mbps'
 		});

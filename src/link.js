@@ -758,7 +758,7 @@ networkMap.Link = new Class({
 		return this;
 	},
 
-	registerUpdateEvent: function(datasource, url, data, callback){
+	registerUpdateEvent: function(datasource, url, link, callback){
 		if (!this.updateQ[datasource]){
 			this.updateQ[datasource] = {};
 		}
@@ -768,7 +768,7 @@ networkMap.Link = new Class({
 		}
 
 		this.updateQ[datasource][url].push({
-			data: data,
+			link: link,
 			callback: callback
 		});
 	},

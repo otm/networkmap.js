@@ -131,8 +131,8 @@ networkMap.widget.Accordion = new Class ({
 * url: the URL to make the request to
 * requests: array of objects containing request information
 * {
-*    data: {...},
-*    callback: function
+*    link: {Sublink},
+*    callback: {function}
 * }
 */
 networkMap.registerDatasource = function(name, f){
@@ -151,7 +151,7 @@ networkMap.registerDatasource('simulate', function(url, requests){
 
 		request.callback({
 			url: url,
-			request: request.data,
+			request: request.link,
 			value: dataPoint,
 			realValue: Math.round(dataPoint * 100) + 'Mbps'
 		});
@@ -1119,7 +1119,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		this.link.registerUpdateEvent(
 			link.options.datasource,
 			this.options.requestUrl,
-			this.options.requestData,
+			this,
 			function(response){
 				this.link.updateBgColor(this, this.link.options.colormap.translate(response.value));
 			}.bind(this)
@@ -1987,7 +1987,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		return this;
 	},
 
-	registerUpdateEvent: function(datasource, url, data, callback){
+	registerUpdateEvent: function(datasource, url, link, callback){
 		if (!this.updateQ[datasource]){
 			this.updateQ[datasource] = {};
 		}
@@ -1997,7 +1997,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		}
 
 		this.updateQ[datasource][url].push({
-			data: data,
+			link: link,
 			callback: callback
 		});
 	},
