@@ -1,13 +1,11 @@
 networkMap.datasource = networkMap.datasource || {};
 
 /**
-* url: the URL to make the request to
-* requests: array of objects containing request information
-* {
-*    link: {Sublink},
-*    callback: {function}
-* }
-*/
+ * Register a datasource
+ *
+ * @param {string} name The name of the datasource.
+ * @param {function} f The datasource
+ */
 networkMap.registerDatasource = function(name, f){
 	networkMap.datasource[name] = function(url, requests){
 		if (typeOf(requests) !== 'array'){
@@ -17,7 +15,20 @@ networkMap.registerDatasource = function(name, f){
 	};
 };
 
-
+/**
+ * Dummy datasource used for simulation and testing.
+ * The requests array contains object of the form:
+ * {
+ *		link: {Sublink} 
+ *		callback: {function}
+ * }
+ * Use the link to gather data to send with the request,
+ * when the request is made send the data to the callback.  
+ *
+ * @param {string} url The URL to send the request to.
+ * @param {Array} requests An array of requests. 
+ * @return null.
+ */
 networkMap.registerDatasource('simulate', function(url, requests){
 	requests.each(function(request){
 		var dataPoint = Math.random();
