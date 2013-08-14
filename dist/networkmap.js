@@ -466,13 +466,19 @@ networkMap.colormap.rasta5 = {
 			id: 'nm-edit-content'	
 		}));
 		
-		menu.grab(new Element('li', {
-			html: '<button class="btn btn-primary pull-right">Save</button>',
-			'class': 'clearfix nm-menu-buttons', 
+		var menuButtons = this.menuButtons = new Element('li', {
+			class: 'clearfix nm-menu-buttons', 
+		});
+
+		var saveButton = new Element('button', {
+			text: 'Save',
+			class: 'btn btn-primary pull-right',
 			events: {
 				click: this.save.bind(this)
 			}
-		}));
+		});
+		
+		menu.grab(menuButtons.grab(saveButton));
 
 		nav.grab(trigger);
 		nav.grab(menu);

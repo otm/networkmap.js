@@ -38,8 +38,8 @@
         {
             "id": "node3",
             "name": "node3",
-            "x": "251",
-            "y": "244",
+            "x": "393",
+            "y": "255",
             "renderer": "rect",
             "information": {
                 "test": "some value"
