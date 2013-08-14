@@ -207,6 +207,41 @@ networkMap.Link = new Class({
 		
 		return this.options[key];
 	},
+	/**
+	 * Get the node which is assosiated a linkPath
+	 *
+	 * @param {networkMap.LinkPath} linkPath 
+	 * @retrun {networkMap.Node} The node which the linkPath is associated with.
+	 */
+	getNode: function(linkPath){
+		var any = function(path){
+			if (path === linkPath){
+				return true;	
+			}
+		};
+		
+		if (this.path.nodeA === linkPath){
+			return this.nodeA;
+		}
+		
+		if (this.subpath.nodeA){
+			if (this.subpath.nodeA.some(any, this)){
+				return this.nodeA;	
+			}
+		}
+		
+		if (this.path.nodeB === linkPath){
+			return this.nodeB;
+		}
+		
+		if (this.subpath.nodeB){
+			if (this.subpath.nodeB.some(any, this)){
+				return this.nodeB;	
+			}
+		}
+		
+		throw "Link is not found";		
+	},
 	mode: function(mode){
 		if (!mode){
 			return this._mode;

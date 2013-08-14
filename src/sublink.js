@@ -30,6 +30,14 @@ networkMap.LinkPath = new Class ({
 	getLink: function(){
 		return this.link;
 	},
+	/**
+	 * Get the node which is assosiated to the linkPath
+	 *
+	 * @retrun {networkMap.Node} The node which this is assosiated with.
+	 */
+	getNode: function(){
+		return this.getLink().getNode(this);
+	},
 	getProperty: function(key){
 		if (key == 'width'){
 			var link = this.getMainPath();

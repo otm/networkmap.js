@@ -160,6 +160,9 @@ networkMap.registerDatasource('simulate', function(url, requests){
 	requests.each(function(request){
 		var dataPoint = Math.random();
 
+		// Example on how to get the node to get node specific data
+		//request.link.getNode().options.id;
+
 		request.callback({
 			url: url,
 			request: request.link,
@@ -1150,6 +1153,14 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 	getLink: function(){
 		return this.link;
 	},
+	/**
+	 * Get the node which is assosiated to the linkPath
+	 *
+	 * @retrun {networkMap.Node} The node which this is assosiated with.
+	 */
+	getNode: function(){
+		return this.getLink().getNode(this);
+	},
 	getProperty: function(key){
 		if (key == 'width'){
 			var link = this.getMainPath();
@@ -1446,6 +1457,41 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		}
 		
 		return this.options[key];
+	},
+	/**
+	 * Get the node which is assosiated a linkPath
+	 *
+	 * @param {networkMap.LinkPath} linkPath 
+	 * @retrun {networkMap.Node} The node which the linkPath is associated with.
+	 */
+	getNode: function(linkPath){
+		var any = function(path){
+			if (path === linkPath){
+				return true;	
+			}
+		};
+		
+		if (this.path.nodeA === linkPath){
+			return this.nodeA;
+		}
+		
+		if (this.subpath.nodeA){
+			if (this.subpath.nodeA.some(any, this)){
+				return this.nodeA;	
+			}
+		}
+		
+		if (this.path.nodeB === linkPath){
+			return this.nodeB;
+		}
+		
+		if (this.subpath.nodeB){
+			if (this.subpath.nodeB.some(any, this)){
+				return this.nodeB;	
+			}
+		}
+		
+		throw "Link is not found";		
 	},
 	mode: function(mode){
 		if (!mode){

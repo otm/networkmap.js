@@ -33,6 +33,9 @@ networkMap.registerDatasource('simulate', function(url, requests){
 	requests.each(function(request){
 		var dataPoint = Math.random();
 
+		// Example on how to get the node to get node specific data
+		//request.link.getNode().options.id;
+
 		request.callback({
 			url: url,
 			request: request.link,
