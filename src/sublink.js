@@ -7,14 +7,18 @@ networkMap.LinkPath = new Class ({
 		this.link = link;
 		this.svg = svg;
 		
-		this.link.registerUpdateEvent(
-			link.options.datasource,
-			this.options.requestUrl,
-			this,
-			function(response){
-				this.link.updateBgColor(this, this.link.options.colormap.translate(response.value));
-			}.bind(this)
-		);
+		// Check if we should setup an update event
+		if (this.options.requestUrl) {
+			this.link.registerUpdateEvent(
+				link.options.datasource,
+				this.options.requestUrl,
+				this,
+				function(response){
+					this.link.updateBgColor(this, this.link.options.colormap.translate(response.value));
+				}.bind(this)
+			);
+		}
+		
 		this.setupEvents();
 	},
 	getEditables: function(){

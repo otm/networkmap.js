@@ -1130,14 +1130,18 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		this.link = link;
 		this.svg = svg;
 		
-		this.link.registerUpdateEvent(
-			link.options.datasource,
-			this.options.requestUrl,
-			this,
-			function(response){
-				this.link.updateBgColor(this, this.link.options.colormap.translate(response.value));
-			}.bind(this)
-		);
+		// Check if we should setup an update event
+		if (this.options.requestUrl) {
+			this.link.registerUpdateEvent(
+				link.options.datasource,
+				this.options.requestUrl,
+				this,
+				function(response){
+					this.link.updateBgColor(this, this.link.options.colormap.translate(response.value));
+				}.bind(this)
+			);
+		}
+		
 		this.setupEvents();
 	},
 	getEditables: function(){
@@ -1317,8 +1321,9 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 				this.subpath.nodeA.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink).addEvent('change', this.redraw.bind(this)));
 			}.bind(this));
 		}
+		
+		// Check if it's a real link
 		this.path.nodeA = new networkMap.LinkPath(this, networkMap.path(this.svg), link).addEvent('change', this.redraw.bind(this));
-			
 		
 		// add a holder for SVG objects
 		if (this.options.nodeA.requestData || this.options.nodeA.sublinks){
@@ -1345,9 +1350,10 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 				this.subpath.nodeB.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink).addEvent('change', this.redraw.bind(this)));
 			}.bind(this));
 		}
+		
+		// Check if it's a real link
 		this.path.nodeB = new networkMap.LinkPath(this, networkMap.path(this.svg), link).addEvent('change', this.redraw.bind(this));
 		
-
 		// Add a holder for SVG objects
 		if (this.options.nodeB.requestData || this.options.nodeB.sublinks){
 			this.svgEl.nodeB = {};
