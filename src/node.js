@@ -154,8 +154,8 @@ networkMap.Node = new Class({
 		}
 	},
 	_clickhandler: function(e){
-		if (this._mode === 'normal' && this.options.events.click){
-			networkMap.events.click(e).bind(this);
+		if (this._mode === 'normal' && this.options.events && this.options.events.click){
+			networkMap.events.click(e, this);
 		}
 		else if (this._mode === 'edit'){
 			this.graph.settings.edit(this);	

@@ -981,8 +981,8 @@ networkMap.Graph = new Class({
 		}
 	},
 	_clickhandler: function(e){
-		if (this._mode === 'normal' && this.options.events.click){
-			networkMap.events.click(e).bind(this);
+		if (this._mode === 'normal' && this.options.events && this.options.events.click){
+			networkMap.events.click(e, this);
 		}
 		else if (this._mode === 'edit'){
 			this.graph.settings.edit(this);	
@@ -1321,9 +1321,8 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 				this.subpath.nodeA.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink).addEvent('change', this.redraw.bind(this)));
 			}.bind(this));
 		}
-		
-		// Check if it's a real link
 		this.path.nodeA = new networkMap.LinkPath(this, networkMap.path(this.svg), link).addEvent('change', this.redraw.bind(this));
+			
 		
 		// add a holder for SVG objects
 		if (this.options.nodeA.requestData || this.options.nodeA.sublinks){
@@ -1350,10 +1349,9 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 				this.subpath.nodeB.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink).addEvent('change', this.redraw.bind(this)));
 			}.bind(this));
 		}
-		
-		// Check if it's a real link
 		this.path.nodeB = new networkMap.LinkPath(this, networkMap.path(this.svg), link).addEvent('change', this.redraw.bind(this));
 		
+
 		// Add a holder for SVG objects
 		if (this.options.nodeB.requestData || this.options.nodeB.sublinks){
 			this.svgEl.nodeB = {};
