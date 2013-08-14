@@ -19,15 +19,17 @@ networkMap.Link = new Class({
 		'staticConnectionDistance',
 		'arrowHeadLength',
 		'width',
-		'background',
-		'nodeA',
-		'nodeB'
+		'background'
 	],
 	editTemplate: {
 		width: {
 			label: 'Width',
 			type: 'int'
-		}		
+		},
+		inset: {
+			label: 'Inset',
+			type: 'int'
+		}	
 	},
 	pathPoints: [],
 	svgEl: {},
@@ -115,6 +117,78 @@ networkMap.Link = new Class({
 			this.draw();
 		}
 	},
+	getSettingsWidget: function(){
+		var container = new networkMap.widget.Accordion();
+		var accordionGroup;
+
+		var changeHandler = function(key, obj){
+			return function(e){
+				console.log('test');
+				obj.setProperty(key, e.target.value);	
+			};
+		};
+	
+		accordionGroup = container.add('Globals');		
+		Object.each(this.editTemplate, function(option, key){
+			accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
+		}.bind(this));		
+		
+		
+		
+		var linkTemplate = {
+			id: {
+				label: 'Node',
+				type: 'text',
+				disabled: true
+			},
+			name: {
+				label: 'Interface',
+				type: 'text',
+				disabled: true
+			}, 
+			width: {
+				label: 'Width',
+				type: 'int'	
+			}
+		};		
+		
+		accordionGroup = container.add('Node A');
+		Object.each(linkTemplate, function(option, key){
+			if (['id'].some(function(item){ return item == key;})){
+				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.nodeA)));
+			}
+			else{
+				if (option.type === 'int'){
+					accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
+				}
+				else if(option.type === 'text'){
+					accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
+				}
+			}
+		}.bind(this));
+			
+		accordionGroup = container.add('Node B');
+		Object.each(linkTemplate, function(option, key){
+			if (['id'].some(function(item){ return item == key;})){
+				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.nodeB)));
+			}
+			else{
+				if (option.type === 'int'){
+					accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
+				}
+				else if(option.type === 'text'){
+					accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
+				}
+			}
+		}.bind(this));
+				
+		
+		return container;
+		
+		
+		
+	
+	},
 	getEditables: function(){
 		return this.editTemplate;
 	},
@@ -151,6 +225,30 @@ networkMap.Link = new Class({
 		this.exportedOptions.each(function(option){
 			configuration[option] = this.options[option];
 		}.bind(this));
+
+		if (this.path.nodeA){
+			configuration.nodeA = this.path.nodeA.getConfiguration();			
+		}		
+		if (this.subpath.nodeA){
+			configuration.nodeA = configuration.nodeA || {};
+			configuration.nodeA.sublinks = [];
+			this.subpath.nodeA.each(function(subpath){
+				configuration.nodeA.sublinks.push(subpath.getConfiguration());
+			});
+		}
+		
+		if (this.path.nodeB){
+			configuration.nodeB = this.path.nodeB.getConfiguration();			
+		}		
+		if (this.subpath.nodeB){
+			configuration.nodeB = configuration.nodeB || {};
+			configuration.nodeB.sublinks = [];
+			this.subpath.nodeB.each(function(subpath){
+				configuration.nodeB.sublinks.push(subpath.getConfiguration());
+			});
+		}
+
+		
 		return configuration;
 	},
 	setGraph: function(graph){	
@@ -616,7 +714,6 @@ networkMap.Link = new Class({
 		var width = localWidth * offset;
 		var angle = Math.atan2(this.options.arrowHeadLength, Math.abs(localWidth * options.linkCount / 2));
 		var arrowHeadLength = Math.abs(width * Math.tan(angle)); 
-		//var arrowHeadLength = Math.abs(this.options.arrowHeadLength * offset * (localWidth/this.options.width));
 
 		var firstSegment = new SVG.math.Line(path[0], path[2]);
 		var midSegment = new SVG.math.Line(path[2], path[3]);

@@ -29,7 +29,7 @@ networkMap.LinkPath = new Class ({
 	},
 	getLink: function(){
 		return this.link;
-	}, 
+	},
 	getProperty: function(key){
 		if (key == 'width'){
 			var link = this.getMainPath();
@@ -58,6 +58,9 @@ networkMap.LinkPath = new Class ({
 		this.options[key] = value;
 		this.fireEvent('change', [key]);
 		return this;
+	},
+	getConfiguration: function(){
+		return this.options;
 	},
 	getMainPath: function(){
 		var link;

@@ -74,16 +74,21 @@
 	max-height: 0px;
 	overflow: hidden;
 	margin: -2px 0px 0px 0px;
-	border: solid 1px #a6a6a6;
+	border-style: none;
 	padding: 0;
 }
+
+.nm-menu > ul {
+	border: solid 1px #a6a6a6;
+}
+
 
 .nm-menu.nm-menu-open ul {
 	pointer-events: auto;
 	z-index: 200;
 	transition: max-height 0.2s linear 0s;
 	background: #FFFFFF;
-	max-height: 400px;
+	max-height: 600px;
 	display: block;
 
 }
@@ -97,30 +102,13 @@
 }
 
 
-
-.nm-menu ul.nm-object-properties {
+.nm-object-properties {
 	border-style: none;
-
-	li {
-		color: #363636;
-		display: block;
-		padding: 0 2px 0 5px;
-		line-height: 1.5;
-		font-weight: 400;
-		
-		input {
-			margin-bottom: 5px;
-		}
-		
-	}
 }
 
-/*
-.nm-menu li:hover {
-	background: #f1f1f1;
+.nm-menu-buttons {
+		margin: 5px 5px 0 0;
 }
-*/
-
 
 .nm-confirm-button {
 	-moz-box-shadow:inset 0px 1px 0px 0px #89c4fa;
@@ -148,4 +136,77 @@
 .nm-confirm-button:active {
 	position:relative;
 	top:1px;
+}
+
+.nm-input-text {
+	span {
+		display: block;
+	}
+}
+
+.nm-object-properties {
+	border-style: none;
+}
+
+.nm-accordion {
+	.nm-accordion-group {
+		max-height: 36px;
+		overflow: hidden;
+		
+		.nm-accordion-trigger {
+			line-height: 25px;
+			text-align: center;
+			padding: 5px;
+			background-color: #eeeeee;
+			cursor: pointer;
+			border-bottom: 1px solid #a6a6a6;
+			
+			&:hover {
+				background-color: #dddddd;
+			}
+		}
+		
+		.nm-accordion-inner {
+			border-style: none;
+			margin-top: 1px;
+			border-bottom: 1px solid #a6a6a6;
+			padding: 0 0 5px 5px;
+		}
+			
+		&.nm-accordion-open{
+			max-height: 800px;	
+		}
+				
+	}
+}
+
+.nm-input-text {
+	padding-right: 5px;
+	
+	input {
+		width: 100%;
+		padding-left: 3px;
+	}
+}
+
+.nm-input-integer {
+	height: 25px;
+	padding-right: 5px;
+	margin-top: 5px;
+	
+	span {
+		background-color: lighten(#1e90ff, 10%);
+		width: 35%;
+		height: 100%;
+		float: left;
+		text-align: center;
+		line-height: 23px;
+		//padding-left: 10px;
+	}
+	
+	input {
+		width: 65%;
+		height: 100%;
+		padding-left: 3px;
+	}
 }

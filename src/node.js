@@ -106,6 +106,30 @@ networkMap.Node = new Class({
 		}.bind(this));
 		return configuration;
 	},
+	/**
+	 * Generates HTML that is used for configuration
+	 *
+	 * @this {networkMap.Node}
+	 * @return {Element} A HTML Element that contains the UI
+	 */
+	getSettingsWidget: function(){
+		var container = new networkMap.widget.Accordion();
+		var accordionGroup;
+
+		var changeHandler = function(key, obj){
+			return function(e){
+				console.log('test');
+				obj.setProperty(key, e.target.value);	
+			};
+		};
+	
+		accordionGroup = container.add('Globals');		
+		Object.each(this.editTemplate, function(option, key){
+			accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
+		}.bind(this));
+		
+		return container;
+	},
 	setGraph: function(graph){	
 		// remove the object from the graph
 		this.graph = null;

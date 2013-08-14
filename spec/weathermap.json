@@ -38,8 +38,8 @@
         {
             "id": "node3",
             "name": "node3",
-            "x": "358",
-            "y": "204",
+            "x": "251",
+            "y": "244",
             "renderer": "rect",
             "information": {
                 "test": "some value"
@@ -73,7 +73,7 @@
                         "href": "http:\/\/example.com"
                     },
                     "hover": {
-                    		"name": "nodeA.name"
+                        "name": "nodeA.name"
                     }
                 }
             },
@@ -92,8 +92,8 @@
                     },
                     "hover": {
                         "link": {
-                     		"name": "nodeB.name"
-                    		}
+                            "name": "nodeB.name"
+                        }
                     }
                 }
             }
@@ -103,7 +103,7 @@
             "connectionDistance": "10",
             "staticConnectionDistance": "30",
             "arrowHeadLength": "10",
-            "width": "10",
+            "width": "5",
             "background": "#777",
             "nodeA": {
                 "id": "node3",
@@ -114,6 +114,7 @@
                     "ifdescr": "gi0\/2",
                     "column": "2"
                 },
+                "width": "10",
                 "sublinks": [
                     {
                         "name": "Gi0\/1",

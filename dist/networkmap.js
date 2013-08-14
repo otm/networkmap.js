@@ -15,7 +15,117 @@ Array.implement('find', function(fn){
 			return this[i];
 	}
 });
-;networkMap.datasource = networkMap.datasource || {};
+;networkMap.widget = networkMap.widget || {};
+
+networkMap.widget.IntegerInput = new Class ({
+	Implements: [Options, Events],
+	options: {
+		class: 'nm-input-integer'
+	},
+	wrapper: null,
+	label: null,
+	input: null,
+	initialize: function(label, value, options){
+		this.setOptions(options);
+		this.wrapper = new Element('div', {
+			class: this.options.class
+		});
+		this.label = new Element('span', {
+			text: label
+		});
+		this.input = new Element('input', {
+			type: 'text',
+			value: value
+		}).addEvent('change', function(e){
+			this.fireEvent('change', [e]);
+		}.bind(this)); 
+		
+		if (this.options.disabled === true){
+			this.input.disabled = true;
+		}
+		
+		this.wrapper.grab(this.label).grab(this.input);
+	},
+	toElement: function(){
+		return this.wrapper;
+	}
+});;networkMap.widget = networkMap.widget || {};
+
+networkMap.widget.TextInput = new Class ({
+	Implements: [Options, Events],
+	options: {
+		class: 'nm-input-text'
+	},
+	wrapper: null,
+	label: null,
+	input: null,
+	initialize: function(label, value, options){
+		this.setOptions(options);
+		this.wrapper = new Element('div', {
+			class: this.options.class
+		});
+		this.label = new Element('span', {
+			text: label
+		});
+		this.input = new Element('input', {
+			type: 'text',
+			value: value
+		}); 
+	
+		if (this.options.disabled === true){
+			this.input.disabled = true;
+		}
+		
+		this.wrapper.grab(this.label).grab(this.input);
+	},
+	toElement: function(){
+		return this.wrapper;
+	}
+});;networkMap.widget = networkMap.widget || {};
+
+networkMap.widget.Accordion = new Class ({
+	Implements: [Options, Events],
+	options: {
+		class: 'nm-accordion'
+	},
+	wrapper: null,
+	items: [],
+	initialize: function(options){
+		this.setOptions(options);
+		this.wrapper = new Element('div', {
+			class: this.options.class
+		});
+	},
+	toElement: function(){
+		return this.wrapper;
+	},
+	add: function(label){
+		var item = new Element ('div', {
+			class: 'nm-accordion-group nm-accordion-open'	
+		});
+		
+		var trigger = new Element('div', {
+			class: 'nm-accordion-trigger',
+			text: label
+		});
+		
+		var list = new Element('ul', {
+			class: 'nm-accordion-inner'	
+		});
+		
+		item.grab(trigger);
+		item.grab(list);
+		this.items.push(item);
+		this.wrapper.grab(item);	
+		
+		trigger.addEvent('click', this.clickHandler.bind(this));	
+
+		return list;
+	},
+	clickHandler: function(e){
+		e.target.getParent().toggleClass('nm-accordion-open');
+	}
+});;networkMap.datasource = networkMap.datasource || {};
 
 /**
 * url: the URL to make the request to
@@ -344,7 +454,7 @@ networkMap.colormap.rasta5 = {
 		
 		menu.grab(new Element('li', {
 			html: '<button class="btn btn-primary pull-right">Save</button>',
-			'class': 'clearfix', 
+			'class': 'clearfix nm-menu-buttons', 
 			events: {
 				click: this.save.bind(this)
 			}
@@ -364,57 +474,15 @@ networkMap.colormap.rasta5 = {
 		var content = this.nav.getElement('#nm-edit-content');
 		content.empty();
 	
-		var changeHandler = function(key, obj){
-			return function(e){
-				obj.setProperty(key, this.value);	
-			};
-		};
-	
+		// Check if the object is a link
 		if (obj.getLink){
 			link = obj.getLink();
-			editables = link.getEditables();
-			Object.each(editables, function(property, key){
-				content.grab(new Element('li', {
-					text: property.label	
-				}));
-	
-				var input = new Element('input', {
-					type: 'text',
-					value: link.getProperty(key),
-					events: {
-						change: changeHandler(key, link)
-					}
-				});
-				
-				if (property.disabled === true){
-					input.disabled = true;
-				}
-				
-				content.grab(new Element('li').grab(input));
-			});
+			content.grab(link.getSettingsWidget());
+			return this;			
 		}
 	
-		editables = obj.getEditables();
-		Object.each(editables, function(property, key){
-			
-			content.grab(new Element('li', {
-				text: property.label	
-			}));
-
-			var input = new Element('input', {
-				type: 'text',
-				value: obj.getProperty(key),
-				events: {
-					change: changeHandler(key, obj)
-				}
-			});
-			
-			if (property.disabled === true){
-				input.disabled = true;
-			}
-			
-			content.grab(new Element('li').grab(input));
-		});		
+		// This is for other types of nodes.
+		content.grab(obj.getSettingsWidget());		
 		
 	
 		
@@ -851,6 +919,30 @@ networkMap.Graph = new Class({
 		}.bind(this));
 		return configuration;
 	},
+	/**
+	 * Generates HTML that is used for configuration
+	 *
+	 * @this {networkMap.Node}
+	 * @return {Element} A HTML Element that contains the UI
+	 */
+	getSettingsWidget: function(){
+		var container = new networkMap.widget.Accordion();
+		var accordionGroup;
+
+		var changeHandler = function(key, obj){
+			return function(e){
+				console.log('test');
+				obj.setProperty(key, e.target.value);	
+			};
+		};
+	
+		accordionGroup = container.add('Globals');		
+		Object.each(this.editTemplate, function(option, key){
+			accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
+		}.bind(this));
+		
+		return container;
+	},
 	setGraph: function(graph){	
 		// remove the object from the graph
 		this.graph = null;
@@ -1046,7 +1138,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 	},
 	getLink: function(){
 		return this.link;
-	}, 
+	},
 	getProperty: function(key){
 		if (key == 'width'){
 			var link = this.getMainPath();
@@ -1075,6 +1167,9 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		this.options[key] = value;
 		this.fireEvent('change', [key]);
 		return this;
+	},
+	getConfiguration: function(){
+		return this.options;
 	},
 	getMainPath: function(){
 		var link;
@@ -1131,7 +1226,8 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 	_hoverHandler: function(e){
 		networkMap.events.mouseover(e, this);
 	}
-});;networkMap.Link = new Class({
+});
+;networkMap.Link = new Class({
 	Implements: [Options],
 	options:{
 		inset: 10,
@@ -1152,15 +1248,17 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		'staticConnectionDistance',
 		'arrowHeadLength',
 		'width',
-		'background',
-		'nodeA',
-		'nodeB'
+		'background'
 	],
 	editTemplate: {
 		width: {
 			label: 'Width',
 			type: 'int'
-		}		
+		},
+		inset: {
+			label: 'Inset',
+			type: 'int'
+		}	
 	},
 	pathPoints: [],
 	svgEl: {},
@@ -1248,6 +1346,78 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 			this.draw();
 		}
 	},
+	getSettingsWidget: function(){
+		var container = new networkMap.widget.Accordion();
+		var accordionGroup;
+
+		var changeHandler = function(key, obj){
+			return function(e){
+				console.log('test');
+				obj.setProperty(key, e.target.value);	
+			};
+		};
+	
+		accordionGroup = container.add('Globals');		
+		Object.each(this.editTemplate, function(option, key){
+			accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
+		}.bind(this));		
+		
+		
+		
+		var linkTemplate = {
+			id: {
+				label: 'Node',
+				type: 'text',
+				disabled: true
+			},
+			name: {
+				label: 'Interface',
+				type: 'text',
+				disabled: true
+			}, 
+			width: {
+				label: 'Width',
+				type: 'int'	
+			}
+		};		
+		
+		accordionGroup = container.add('Node A');
+		Object.each(linkTemplate, function(option, key){
+			if (['id'].some(function(item){ return item == key;})){
+				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.nodeA)));
+			}
+			else{
+				if (option.type === 'int'){
+					accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
+				}
+				else if(option.type === 'text'){
+					accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
+				}
+			}
+		}.bind(this));
+			
+		accordionGroup = container.add('Node B');
+		Object.each(linkTemplate, function(option, key){
+			if (['id'].some(function(item){ return item == key;})){
+				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.nodeB)));
+			}
+			else{
+				if (option.type === 'int'){
+					accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
+				}
+				else if(option.type === 'text'){
+					accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
+				}
+			}
+		}.bind(this));
+				
+		
+		return container;
+		
+		
+		
+	
+	},
 	getEditables: function(){
 		return this.editTemplate;
 	},
@@ -1284,6 +1454,30 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		this.exportedOptions.each(function(option){
 			configuration[option] = this.options[option];
 		}.bind(this));
+
+		if (this.path.nodeA){
+			configuration.nodeA = this.path.nodeA.getConfiguration();			
+		}		
+		if (this.subpath.nodeA){
+			configuration.nodeA = configuration.nodeA || {};
+			configuration.nodeA.sublinks = [];
+			this.subpath.nodeA.each(function(subpath){
+				configuration.nodeA.sublinks.push(subpath.getConfiguration());
+			});
+		}
+		
+		if (this.path.nodeB){
+			configuration.nodeB = this.path.nodeB.getConfiguration();			
+		}		
+		if (this.subpath.nodeB){
+			configuration.nodeB = configuration.nodeB || {};
+			configuration.nodeB.sublinks = [];
+			this.subpath.nodeB.each(function(subpath){
+				configuration.nodeB.sublinks.push(subpath.getConfiguration());
+			});
+		}
+
+		
 		return configuration;
 	},
 	setGraph: function(graph){	
@@ -1749,7 +1943,6 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		var width = localWidth * offset;
 		var angle = Math.atan2(this.options.arrowHeadLength, Math.abs(localWidth * options.linkCount / 2));
 		var arrowHeadLength = Math.abs(width * Math.tan(angle)); 
-		//var arrowHeadLength = Math.abs(this.options.arrowHeadLength * offset * (localWidth/this.options.width));
 
 		var firstSegment = new SVG.math.Line(path[0], path[2]);
 		var midSegment = new SVG.math.Line(path[2], path[3]);

@@ -37,7 +37,7 @@ networkMap.SettingsManager = new Class ({
 		
 		menu.grab(new Element('li', {
 			html: '<button class="btn btn-primary pull-right">Save</button>',
-			'class': 'clearfix', 
+			'class': 'clearfix nm-menu-buttons', 
 			events: {
 				click: this.save.bind(this)
 			}
@@ -57,57 +57,15 @@ networkMap.SettingsManager = new Class ({
 		var content = this.nav.getElement('#nm-edit-content');
 		content.empty();
 	
-		var changeHandler = function(key, obj){
-			return function(e){
-				obj.setProperty(key, this.value);	
-			};
-		};
-	
+		// Check if the object is a link
 		if (obj.getLink){
 			link = obj.getLink();
-			editables = link.getEditables();
-			Object.each(editables, function(property, key){
-				content.grab(new Element('li', {
-					text: property.label	
-				}));
-	
-				var input = new Element('input', {
-					type: 'text',
-					value: link.getProperty(key),
-					events: {
-						change: changeHandler(key, link)
-					}
-				});
-				
-				if (property.disabled === true){
-					input.disabled = true;
-				}
-				
-				content.grab(new Element('li').grab(input));
-			});
+			content.grab(link.getSettingsWidget());
+			return this;			
 		}
 	
-		editables = obj.getEditables();
-		Object.each(editables, function(property, key){
-			
-			content.grab(new Element('li', {
-				text: property.label	
-			}));
-
-			var input = new Element('input', {
-				type: 'text',
-				value: obj.getProperty(key),
-				events: {
-					change: changeHandler(key, obj)
-				}
-			});
-			
-			if (property.disabled === true){
-				input.disabled = true;
-			}
-			
-			content.grab(new Element('li').grab(input));
-		});		
+		// This is for other types of nodes.
+		content.grab(obj.getSettingsWidget());		
 		
 	
 		
