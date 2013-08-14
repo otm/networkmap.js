@@ -21,8 +21,9 @@ networkMap.widget.Accordion = new Class ({
 			class: 'nm-accordion-group nm-accordion-open'	
 		});
 		
+		
 		var trigger = new Element('div', {
-			class: 'nm-accordion-trigger',
+			class: 'nm-accordion-trigger unselectable',
 			text: label
 		});
 		
