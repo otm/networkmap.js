@@ -108,6 +108,10 @@
 
 .nm-menu-buttons {
 		margin: 5px 5px 0 0;
+
+		button {
+			margin-left: 5px;
+		}
 }
 
 .nm-confirm-button {
@@ -138,11 +142,6 @@
 	top:1px;
 }
 
-.nm-input-text {
-	span {
-		display: block;
-	}
-}
 
 .nm-object-properties {
 	border-style: none;
@@ -180,9 +179,21 @@
 	}
 }
 
-.nm-input-text {
+.nm-input-text, .nm-input-select {
 	padding-right: 5px;
 	
+	span {
+		display: block;
+	}
+}
+
+.nm-input-select {
+	select {
+		width: 100%
+	}
+}
+
+.nm-input-text {	
 	input {
 		width: 100%;
 		padding-left: 3px;
