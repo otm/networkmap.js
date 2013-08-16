@@ -28,7 +28,7 @@ networkMap.SettingsManager = new Class ({
 			}
 		});
 		
-		var menu = new Element('ul');
+		var menu = this.menu = new Element('ul');
 		
 		menu.grab(new Element('ul', {
 			'class': 'nm-object-properties',
