@@ -5,7 +5,7 @@ networkMap.Graph = new Class({
 		width: 10,
 		height: 10,
 		datasource: 'simulate',
-		colormap: 'rasta5',
+		colormap: 'flat5',
 		enableEditor: true,
 		allowDraggableNodes: false,
 		refreshInterval: null

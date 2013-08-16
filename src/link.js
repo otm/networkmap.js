@@ -11,7 +11,7 @@ networkMap.Link = new Class({
 		localUpdate: true,
 		refreshInterval: 300000,
 		datasource: null,
-		colormap: networkMap.colormap.rasta5
+		colormap: null,
 	},
 	exportedOptions: [
 		'inset',
@@ -108,6 +108,10 @@ networkMap.Link = new Class({
 		}
 
 		this.setOptions(options);
+
+		if (!this.options.colormap){
+			this.options.colormap = networkMap.colormap[this.graph.options.colormap];
+		}
 
 		// setup datasource
 		this.datasource = networkMap.datasource[this.options.datasource];
