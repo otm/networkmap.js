@@ -16,19 +16,21 @@ networkMap.widget.Select = new Class ({
 		this.label = new Element('span', {
 			text: label
 		});
-		this.input = new Element('select', {
-			type: 'text',
-			value: value
-		}); 
+		
+		this.input = new Element('select')
+		.addEvent('change', function(e){
+			this.fireEvent('select', [e, this]);
+		}.bind(this)); 
 	
 		if (this.options.disabled === true){
 			this.input.disabled = true;
 		}
 		
+		this.addOptions(values);
 		this.wrapper.grab(this.label).grab(this.input);
 	},
-	setOptions: function(values){
-		this.values.each(function(value){
+	addOptions: function(values){
+		values.each(function(value){
 			this.addOption(value);
 		}.bind(this));
 	},
