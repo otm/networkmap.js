@@ -97,7 +97,7 @@
 	color: #a6a6a6;
 	display: block;
 	padding: 0 2px 5px 5px;
-	line-height: 2.5;
+	line-height: 1.5; //was 1.5
 	font-weight: 400;
 }
 
@@ -107,10 +107,11 @@
 }
 
 .nm-menu-buttons {
-		margin: 5px 5px 0 0;
-
+		margin-top: 5px;
+		padding-right: 0 !important;
+		
 		button {
-			margin-left: 5px;
+			margin-right: 5px;			
 		}
 }
 
@@ -169,7 +170,7 @@
 			border-style: none;
 			margin-top: 1px;
 			border-bottom: 1px solid #a6a6a6;
-			padding: 0 0 5px 5px;
+			padding: 0 5px 5px 5px;
 		}
 			
 		&.nm-accordion-open{
@@ -179,9 +180,7 @@
 	}
 }
 
-.nm-input-text, .nm-input-select {
-	padding-right: 5px;
-	
+.nm-input-text, .nm-input-select .nm-list{
 	span {
 		display: block;
 	}
@@ -202,7 +201,6 @@
 
 .nm-input-integer {
 	height: 25px;
-	padding-right: 5px;
 	margin-top: 5px;
 	
 	span {
@@ -219,5 +217,29 @@
 		width: 65%;
 		height: 100%;
 		padding-left: 3px;
+	}
+}
+
+.nm-list {
+
+	.nm-list-item {
+		margin-top: 1px;
+		line-height: 1.2;
+	}
+	.nm-list-item-delete {
+		border: 1px solid #cccccc;
+		padding: 0 3px 0 3px;
+		line-height: 8px;
+		padding: 1px 3px 3px 3px;
+		border-radius: 3px;
+		margin-top: 2px;
+		color: #e74c3c;
+		font-weight: bold;
+		cursor: pointer;
+		
+		&:hover {
+			background-color: #e6e6e6; 
+		}
+		
 	}
 }

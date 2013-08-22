@@ -99,7 +99,7 @@ networkMap.widget.Accordion = new Class ({
 	toElement: function(){
 		return this.wrapper;
 	},
-	add: function(label){
+	add: function(label, options){
 		var item = new Element ('div', {
 			class: 'nm-accordion-group nm-accordion-open'	
 		});
@@ -113,7 +113,9 @@ networkMap.widget.Accordion = new Class ({
 		var list = new Element('ul', {
 			class: 'nm-accordion-inner'	
 		});
-		
+		if (options && options.id){
+			list.set('id', options.id);		
+		}
 		item.grab(trigger);
 		item.grab(list);
 		this.items.push(item);
@@ -127,6 +129,79 @@ networkMap.widget.Accordion = new Class ({
 		e.target.getParent().toggleClass('nm-accordion-open');
 	}
 });;networkMap.widget = networkMap.widget || {};
+
+networkMap.widget.List = new Class ({
+	Implements: [Options, Events],
+	options: {
+		class: 'nm-list'
+	},
+	list: null,
+	listItems: [],
+	initialize: function(options){
+		this.setOptions(options);
+		this.list = new Element('ul', {
+			class: this.options.class
+		});
+	},
+	toElement: function(){
+		return this.list;
+	},
+	add: function(element, options){
+		var listItem = new networkMap.widget.ListItem(element, options);
+		listItem.addEvent('remove', this.remove.bind(this));
+		this.listItems.push(listItem);
+		this.list.grab(listItem);
+		
+		return listItem;
+	},
+	remove: function(listItem){
+		this.listItems = this.listItems.erase(listItem);
+		
+		return this;
+	}
+});
+
+networkMap.widget.ListItem = new Class ({
+	Implements: [Options, Events],
+	options: {
+		class: 'nm-list-item',
+		enableDelete: false
+	},
+	initialize: function(element, options){
+		this.setOptions(options);
+		this.listItem = new Element('li', {
+			class: this.options.class
+		});
+		
+		if (typeof element == 'string'){
+			this.listItem.set('text', element);	
+		}
+		else {
+			this.listItem.grab(element);	
+		}
+		if (this.options.enableDelete){
+			this.listItem.grab(new Element('span', {
+				text: 'x',
+				class: 'nm-list-item-delete pull-right',
+				events: {
+					click: this.remove.bind(this)
+				}
+			}));	
+		}
+	},
+	remove: function(){
+		this.listItem.destroy();
+		delete this.listItem;
+		this.fireEvent('remove', [this]);
+		
+		return this;
+	},
+	toElement: function(){
+		return this.listItem;
+	}
+});
+
+;networkMap.widget = networkMap.widget || {};
 
 networkMap.widget.Select = new Class ({
 	Implements: [Options, Events],
@@ -162,15 +237,16 @@ networkMap.widget.Select = new Class ({
 			this.addOption(value);
 		}.bind(this));
 	},
-	addOption: function(value){
+	addOption: function(value, selected){
 		this.input.grab(new Element('option', {
 			value: value,
-			text: value	
+			text: value,
+			selected: selected
 		}));
 		return this;
 	},
 	getSelected: function(){
-		return this.input.getSelected().value[0];
+		return this.input.getSelected()[0].value;
 	},
 	clearOptions: function(){
 		this.input.empty();
@@ -178,6 +254,9 @@ networkMap.widget.Select = new Class ({
 	},
 	toElement: function(){
 		return this.wrapper;
+	},
+	toString: function(){
+		return this.getSelected();	
 	}
 });;networkMap.datasource = networkMap.datasource || {};
 
@@ -585,12 +664,13 @@ networkMap.colormap.flat5 = {
 		var link = {};		
 		
 			
-		var content = this.nav.getElement('#nm-edit-content');
-		content.empty();
-	
+		var content = this.getContentContainer();
+		this.clear();
+			
 		// Check if the object is a link
 		if (obj.getLink){
 			link = obj.getLink();
+			this.fireEvent('edit', [link]);
 			content.grab(link.getSettingsWidget());
 			return this;			
 		}
@@ -598,11 +678,13 @@ networkMap.colormap.flat5 = {
 		// This is for other types of nodes.
 		content.grab(obj.getSettingsWidget());		
 		
-	
+		this.fireEvent('edit', [obj]);
 		
 		return this;
 	},
-	
+	clear: function(){
+		this.getContentContainer().empty();
+	},
 	toggle: function(){
 		if (this.nav.hasClass('nm-menu-open')){
 			this.disable();
@@ -722,6 +804,7 @@ networkMap.Graph = new Class({
 		if (typeOf(obj) === 'string'){
 			return this.loadUrl(obj);
 		}
+		return this;
 	},
 	loadUrl: function(url){
 		new Request.JSON({
@@ -754,12 +837,21 @@ networkMap.Graph = new Class({
 			this.addLink(new networkMap.Link(link));
 		}.bind(this));
 
-		if (mapStruct.onSave){
-			if (this.validateSave(mapStruct.onSave))
-				this.saveData = mapStruct.onSave;
-		}
+		this.setOnSave(mapStruct.onSave);
+		
+		this.fireEvent('load', [this]);
 
 		return this;
+	},
+	setOnSave: function(saveData){
+		if (saveData){
+			if (this.validateSave(saveData))
+				this.saveData = saveData;
+		}
+		return this;
+	},
+	getOnSave: function(){
+		return (this.saveData) ? this.saveData : {};
 	},
 	/** structure
 	* "onSave": {
@@ -883,11 +975,50 @@ networkMap.Graph = new Class({
 			}
 		});
 	},
+	
+	removeNode: function(node){
+		this.nodes.erase(node);
+		node.setGraph(null);
 
+		this.getLinks(node).each(function(link){
+			this.removeLink(link);
+		}.bind(this));		
+		
+		return this;
+	},
 
 	addLink: function(link){
 		this.links.push(link);
 
+		return this;
+	},	
+	
+	getLink: function(nodeIdA, nodeIdB){
+		return this.links.find(function(link){
+			if (link.nodeA.options.id === nodeIdA && link.nodeB.options.id === nodeIdB){
+				return true;
+			}
+			if (link.nodeA.options.id === nodeIdB && link.nodeB.options.id === nodeIdA){
+				return true;
+			}
+
+		});
+	},
+
+	getLinks: function(node){
+		var links = [];
+		this.links.each(function(link){
+			if (link.connectedTo(node)){
+				links.push(link);
+			}
+		});
+		
+		return links;
+	},
+
+	removeLink: function(link){
+		this.links.erase(link);
+		link.setGraph(null);
 		return this;
 	},
 
@@ -1079,6 +1210,8 @@ networkMap.Graph = new Class({
 		else{
 			throw 'Unknown mode: ' + mode;	
 		}
+		
+		return this;
 	},
 	_clickhandler: function(e){
 		if (this._mode === 'normal' && this.options.events && this.options.events.click){
@@ -1099,12 +1232,15 @@ networkMap.Graph = new Class({
 		this._draggable = true;
 		this.svg.draggable();
 		this.svg.style('cursor', 'move');
-
+		
+		return this;
 	},	
 	fixed: function(){
 		this._draggable = false;
 		this.svg.fixed();
 		this.svg.style('cursor', 'default');
+		
+		return this;
 	},
 	isDraggable: function(){
 		return this._draggable;
@@ -1601,6 +1737,13 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		
 		throw "Link is not found";		
 	},
+	connectedTo: function(node){
+		if (this.nodeA == node || this.nodeB == node){
+			return true;
+		}
+		
+		return false;
+	},
 	mode: function(mode){
 		if (!mode){
 			return this._mode;
@@ -1612,6 +1755,8 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		else{
 			throw 'Unknown mode: ' + mode;	
 		}
+		
+		return this;
 	},
 	getConfiguration: function(){
 		var configuration = {};

@@ -63,12 +63,13 @@ networkMap.SettingsManager = new Class ({
 		var link = {};		
 		
 			
-		var content = this.nav.getElement('#nm-edit-content');
-		content.empty();
-	
+		var content = this.getContentContainer();
+		this.clear();
+			
 		// Check if the object is a link
 		if (obj.getLink){
 			link = obj.getLink();
+			this.fireEvent('edit', [link]);
 			content.grab(link.getSettingsWidget());
 			return this;			
 		}
@@ -76,11 +77,13 @@ networkMap.SettingsManager = new Class ({
 		// This is for other types of nodes.
 		content.grab(obj.getSettingsWidget());		
 		
-	
+		this.fireEvent('edit', [obj]);
 		
 		return this;
 	},
-	
+	clear: function(){
+		this.getContentContainer().empty();
+	},
 	toggle: function(){
 		if (this.nav.hasClass('nm-menu-open')){
 			this.disable();

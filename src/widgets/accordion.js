@@ -16,7 +16,7 @@ networkMap.widget.Accordion = new Class ({
 	toElement: function(){
 		return this.wrapper;
 	},
-	add: function(label){
+	add: function(label, options){
 		var item = new Element ('div', {
 			class: 'nm-accordion-group nm-accordion-open'	
 		});
@@ -30,7 +30,9 @@ networkMap.widget.Accordion = new Class ({
 		var list = new Element('ul', {
 			class: 'nm-accordion-inner'	
 		});
-		
+		if (options && options.id){
+			list.set('id', options.id);		
+		}
 		item.grab(trigger);
 		item.grab(list);
 		this.items.push(item);

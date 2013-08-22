@@ -92,6 +92,7 @@ networkMap.Graph = new Class({
 		if (typeOf(obj) === 'string'){
 			return this.loadUrl(obj);
 		}
+		return this;
 	},
 	loadUrl: function(url){
 		new Request.JSON({
@@ -124,12 +125,21 @@ networkMap.Graph = new Class({
 			this.addLink(new networkMap.Link(link));
 		}.bind(this));
 
-		if (mapStruct.onSave){
-			if (this.validateSave(mapStruct.onSave))
-				this.saveData = mapStruct.onSave;
-		}
+		this.setOnSave(mapStruct.onSave);
+		
+		this.fireEvent('load', [this]);
 
 		return this;
+	},
+	setOnSave: function(saveData){
+		if (saveData){
+			if (this.validateSave(saveData))
+				this.saveData = saveData;
+		}
+		return this;
+	},
+	getOnSave: function(){
+		return (this.saveData) ? this.saveData : {};
 	},
 	/** structure
 	* "onSave": {
@@ -253,11 +263,50 @@ networkMap.Graph = new Class({
 			}
 		});
 	},
+	
+	removeNode: function(node){
+		this.nodes.erase(node);
+		node.setGraph(null);
 
+		this.getLinks(node).each(function(link){
+			this.removeLink(link);
+		}.bind(this));		
+		
+		return this;
+	},
 
 	addLink: function(link){
 		this.links.push(link);
 
+		return this;
+	},	
+	
+	getLink: function(nodeIdA, nodeIdB){
+		return this.links.find(function(link){
+			if (link.nodeA.options.id === nodeIdA && link.nodeB.options.id === nodeIdB){
+				return true;
+			}
+			if (link.nodeA.options.id === nodeIdB && link.nodeB.options.id === nodeIdA){
+				return true;
+			}
+
+		});
+	},
+
+	getLinks: function(node){
+		var links = [];
+		this.links.each(function(link){
+			if (link.connectedTo(node)){
+				links.push(link);
+			}
+		});
+		
+		return links;
+	},
+
+	removeLink: function(link){
+		this.links.erase(link);
+		link.setGraph(null);
 		return this;
 	},
 

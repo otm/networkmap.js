@@ -246,6 +246,13 @@ networkMap.Link = new Class({
 		
 		throw "Link is not found";		
 	},
+	connectedTo: function(node){
+		if (this.nodeA == node || this.nodeB == node){
+			return true;
+		}
+		
+		return false;
+	},
 	mode: function(mode){
 		if (!mode){
 			return this._mode;
@@ -257,6 +264,8 @@ networkMap.Link = new Class({
 		else{
 			throw 'Unknown mode: ' + mode;	
 		}
+		
+		return this;
 	},
 	getConfiguration: function(){
 		var configuration = {};

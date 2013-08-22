@@ -25,6 +25,7 @@ module.exports = function(grunt) {
 					'src/widgets/integerinput.js',
 					'src/widgets/textinput.js',
 					'src/widgets/accordion.js',
+					'src/widgets/list.js',
 					'src/widgets/select.js',
 					'src/datasource.js',
 					'src/events.js', 

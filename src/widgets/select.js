@@ -34,15 +34,16 @@ networkMap.widget.Select = new Class ({
 			this.addOption(value);
 		}.bind(this));
 	},
-	addOption: function(value){
+	addOption: function(value, selected){
 		this.input.grab(new Element('option', {
 			value: value,
-			text: value	
+			text: value,
+			selected: selected
 		}));
 		return this;
 	},
 	getSelected: function(){
-		return this.input.getSelected().value[0];
+		return this.input.getSelected()[0].value;
 	},
 	clearOptions: function(){
 		this.input.empty();
@@ -50,5 +51,8 @@ networkMap.widget.Select = new Class ({
 	},
 	toElement: function(){
 		return this.wrapper;
+	},
+	toString: function(){
+		return this.getSelected();	
 	}
 });

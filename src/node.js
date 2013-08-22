@@ -152,6 +152,8 @@ networkMap.Node = new Class({
 		else{
 			throw 'Unknown mode: ' + mode;	
 		}
+		
+		return this;
 	},
 	_clickhandler: function(e){
 		if (this._mode === 'normal' && this.options.events && this.options.events.click){
@@ -172,12 +174,15 @@ networkMap.Node = new Class({
 		this._draggable = true;
 		this.svg.draggable();
 		this.svg.style('cursor', 'move');
-
+		
+		return this;
 	},	
 	fixed: function(){
 		this._draggable = false;
 		this.svg.fixed();
 		this.svg.style('cursor', 'default');
+		
+		return this;
 	},
 	isDraggable: function(){
 		return this._draggable;
