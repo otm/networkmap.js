@@ -76,6 +76,31 @@ module.exports = function(grunt) {
 				options: {
 					interrupt: true
 				}	
+			},
+			markdown: {
+				files: ['README.md'],
+				tasks: ['markdown'],
+				options: {
+					interrupt: true
+				}
+			}
+		},
+		markdown: {
+			all:{
+				options:{
+					//markdownOptions: {
+						gfm: true,
+						highlight: 'manual'
+					//}
+				},
+				files: [
+					{
+						expand: true,
+						src: 'README.md',
+						dest: 'docs/html/',
+						ext: '.html'
+					}
+				]
 			}
 		}
 	
@@ -87,6 +112,7 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
 	grunt.loadNpmTasks('grunt-contrib-less');
+	grunt.loadNpmTasks('grunt-markdown');
 	
 	// Default task(s).
 	grunt.registerTask('default', ['jshint', 'concat', 'uglify', 'less']);

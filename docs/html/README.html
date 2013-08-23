@@ -1,0 +1,258 @@
+<!DOCTYPE  html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    
+    <title>doc</title>
+    <style>
+      /*github.com style (c) Vasily Polovnyov <vast@whiteants.net>*/
+      pre code {
+        display: block; padding: 0.5em;
+        color: #333;
+        background: #f8f8ff
+      }
+      pre .comment,
+      pre .template_comment,
+      pre .diff .header,
+      pre .javadoc {
+        color: #998;
+        font-style: italic
+      }
+      pre .keyword,
+      pre .css .rule .keyword,
+      pre .winutils,
+      pre .javascript .title,
+      pre .nginx .title,
+      pre .subst,
+      pre .request,
+      pre .status {
+        color: #333;
+        font-weight: bold
+      }
+      pre .number,
+      pre .hexcolor,
+      pre .ruby .constant {
+        color: #099;
+      }
+      pre .string,
+      pre .tag .value,
+      pre .phpdoc,
+      pre .tex .formula {
+        color: #d14
+      }
+      pre .title,
+      pre .id {
+        color: #900;
+        font-weight: bold
+      }
+      pre .javascript .title,
+      pre .lisp .title,
+      pre .clojure .title,
+      pre .subst {
+        font-weight: normal
+      }
+      pre .class .title,
+      pre .haskell .type,
+      pre .vhdl .literal,
+      pre .tex .command {
+        color: #458;
+        font-weight: bold
+      }
+      pre .tag,
+      pre .tag .title,
+      pre .rules .property,
+      pre .django .tag .keyword {
+        color: #000080;
+        font-weight: normal
+      }
+      pre .attribute,
+      pre .variable,
+      pre .lisp .body {
+        color: #008080
+      }
+      pre .regexp {
+        color: #009926
+      }
+      pre .class {
+        color: #458;
+        font-weight: bold
+      }
+      pre .symbol,
+      pre .ruby .symbol .string,
+      pre .lisp .keyword,
+      pre .tex .special,
+      pre .prompt {
+        color: #990073
+      }
+      pre .built_in,
+      pre .lisp .title,
+      pre .clojure .built_in {
+        color: #0086b3
+      }
+      pre .preprocessor,
+      pre .pi,
+      pre .doctype,
+      pre .shebang,
+      pre .cdata {
+        color: #999;
+        font-weight: bold
+      }
+      pre .deletion {
+        background: #fdd
+      }
+      pre .addition {
+        background: #dfd
+      }
+      pre .diff .change {
+        background: #0086b3
+      }
+      pre .chunk {
+        color: #aaa
+      }
+    </style>
+  </head>
+  <body>  
+    <p>A network weathermap UI Library built with SVG.</p>
+<p><img src="resources/fig/networkmap.png" alt="screenshot"></p>
+<p>The configuration can be done by:
+<em> a JSON file which is load from the server
+</em> a Javascript object
+* using the API</p>
+<p>It is possible to inject a custom UI to aid the user when creating the 
+networkmap directly in the browser. Most of the configuration of the 
+networkmap can be done directly in the browser and in addion the JSON
+format makes it easy to parse and update the configuration.</p>
+<p>A minimal setup is done by:</p>
+<pre><code class="lang-javascript">    var map;
+    window.addEvent(&#39;load&#39;, function(){
+        map = new networkMap.Graph(&#39;paper&#39;).load(&#39;/spec/weathermap.json&#39;);
+    });</code></pre>
+<pre><code class="lang-html">    &lt;div id=&quot;paper&quot;&gt;&lt;/div&gt;</code></pre>
+<p>An example configuration file is found in spec/weathermap.json</p>
+<h2>Integration</h2>
+<p>As weathermaps are usually integrated in other tools there is no backend in NetworkMap.js. 
+There is however an example implementation in <code>spec/update.php</code> that is used in 
+development to test the save functionality. Use it in production at your own risk!!!</p>
+<h3>Populating data in the weathermap</h3>
+<p>To fetch data you need to register a datasource with <code>networkMap.registerDatasource(name, function)</code></p>
+<p>The function can takes two parameters</p>
+<h4>url</h4>
+<p>This is the requestUrl that is defined in the configuration.</p>
+<h4>requests</h4>
+<p>This is an array of objects that containing two properties (data and callback). The property data 
+contains the information from requestData in the configuration and the property callback contains a 
+function that should be called when the data is retreived. </p>
+<p>The request array structure</p>
+<pre><code class="lang-javascript">[
+    {
+        data: {...},
+        callback: function(url, request, value, realvalue)
+    }
+]</code></pre>
+<p>A simple dummy example of the simulations datasource that is included</p>
+<pre><code class="lang-javascript">networkMap.registerDatasource(&#39;simulate&#39;, function(url, requests){
+    requests.each(function(request){
+        var dataPoint = Math.random();
+
+        request.callback({
+            url: url,
+            request: request.data,
+            value: dataPoint,
+            realValue: Math.round(dataPoint * 100) + &#39;Mbps&#39;
+        });
+    });
+});</code></pre>
+<h3>Saving changes</h3>
+<p>To enable users change and create network maps there is an interface to handle this. This is done 
+by <code>networkMap.SettingsManager</code>, however the only configuration that is needed is to setup the <code>onSave</code> 
+block in the configuration. </p>
+<h4>method</h4>
+<p>This is the method the data is sent to the server.
+Valid values are:
+<em> post (default)
+</em> get</p>
+<h4>url</h4>
+<p>The url to send the reqest to.</p>
+<h4>data</h4>
+<p>Here you are free to populate whatever information you are required to handle this on the backend.</p>
+<p>Example configurtion:</p>
+<pre><code class="lang-javascript">&quot;onSave&quot;: {
+    &quot;method&quot;: &quot;post&quot;,
+    &quot;url&quot;: &quot;update.php&quot;,
+    &quot;data&quot;: {
+        &quot;id&quot;: &quot;weathermap.json&quot;
+    }
+}</code></pre>
+<p>The server should return an JSON envoded object</p>
+<p>Status for a save that worked</p>
+<pre><code class="lang-javascript">{
+    &quot;status&quot;: &quot;ok&quot;,
+    &quot;error&quot;: null
+}</code></pre>
+<p>If an error occurred</p>
+<pre><code class="lang-javascript">{
+    &quot;status&quot;: &quot;nok&quot;,
+    &quot;error&quot;: &quot;error string&quot;
+}</code></pre>
+<h1>Build</h1>
+<h2>Set up build envionment</h2>
+<p>This installation assumes that node.js and npm is installed</p>
+<ul>
+<li>npm install</li>
+</ul>
+<h2>Build from source</h2>
+<ul>
+<li>grunt</li>
+</ul>
+<h2>Development</h2>
+<ul>
+<li>grunt watch</li>
+</ul>
+<h2>Installing packages for development</h2>
+<p>This will automaticly add files to package.json
+* npm install <package> --save-dev</p>
+<h2>Adding New Javascript Files</h2>
+<p>To make the concatenation work you need to add the file to <code>Gruntfile.js</code></p>
+<h1>networkMap</h1>
+<p>The only object that will polute the global object</p>
+<h2>networkMap.datasorce</h2>
+<p>Internal object that keeps track of datasources. The project ships with one datasource <code>simulate</code> which is used for testing. To add new datasources use <code>networkMap.registerDatasource(name, datasouce)</code></p>
+<h3>networkMap.registerDatasource(name, datasouce)</h3>
+<h4>name</h4>
+<p>The name of the datasource to register. </p>
+<h4>datasource</h4>
+<p>The datasource is a function that takes to values, <code>url</code> and <code>requests</code>. Where <code>requests</code> is an object containing the <code>data</code>property<code>and a</code>callback` property. As the interface between the link renderer and datasource is not specified please see documentation for the datasource you whish to integrate against. </p>
+<h2>networkMap.colormap</h2>
+<h3>networkMap.registerColormap(name, colormap)</h3>
+<h3>Predefined colormaps</h3>
+<h4>rasta5</h4>
+<h4>flat5</h4>
+<h2>networkMap.ColorLegend</h2>
+<p>Internal object that creates and inserts the legend for colors in the graph</p>
+<h2>networkMap.Graph</h2>
+<p>Example:</p>
+<pre><code class="lang-html">    &lt;div id=&quot;paper&quot;&gt;&lt;/div&gt;</code></pre>
+<pre><code class="lang-javascript">new networkMap.Graph(&#39;paper&#39;).load(&#39;/weathermap.json&#39;)</code></pre>
+<h2>networkMap.Node</h2>
+<h2>networkMap.Link</h2>
+<h3>redrawShadowPath()</h3>
+<h3>hideShadowPath()</h3>
+<h3>showShadowPath()</h3>
+<h3>removeShadowPath()</h3>
+<h3>redrawMainLinks()</h3>
+<h3>hideMainLinks()</h3>
+<h3>showMainLinks()</h3>
+<h3>removeMainLinks()</h3>
+<h3>mainLinksVisable()</h3>
+<h3>toggleMainLinks()</h3>
+<h3>redrawSubLinks()</h3>
+<h3>hideSubLinks()</h3>
+<h3>showSubLinks()</h3>
+<h3>removeSubLinks()</h3>
+<h3>subLinksVisable()</h3>
+<h3>toggleSubLinks()</h3>
+<h2>networkMap.path</h2>
+<p>Helperfunction, could be removed. Do not rely on this!</p>
+
+  </body>
+</html>
