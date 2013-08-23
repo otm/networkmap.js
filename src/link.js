@@ -21,6 +21,7 @@ networkMap.Link = new Class({
 		'width',
 		'background'
 	],
+	
 	editTemplate: {
 		width: {
 			label: 'Width',
@@ -29,7 +30,19 @@ networkMap.Link = new Class({
 		inset: {
 			label: 'Inset',
 			type: 'int'
-		}	
+		},
+		connectionDistance: {
+			label: 'Chamfer',
+			type: 'int'
+		},
+		staticConnectionDistance: {
+			label: 'Offset',
+			type: 'int'
+		},
+		arrowHeadLength: {
+			label: 'Arrow Head',
+			type: 'int'
+		}
 	},
 	pathPoints: [],
 	svgEl: {},
@@ -127,7 +140,6 @@ networkMap.Link = new Class({
 
 		var changeHandler = function(key, obj){
 			return function(e){
-				console.log('test');
 				obj.setProperty(key, e.target.value);	
 			};
 		};

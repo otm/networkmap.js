@@ -1512,6 +1512,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		'width',
 		'background'
 	],
+	
 	editTemplate: {
 		width: {
 			label: 'Width',
@@ -1520,7 +1521,19 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		inset: {
 			label: 'Inset',
 			type: 'int'
-		}	
+		},
+		connectionDistance: {
+			label: 'Chamfer',
+			type: 'int'
+		},
+		staticConnectionDistance: {
+			label: 'Offset',
+			type: 'int'
+		},
+		arrowHeadLength: {
+			label: 'Arrow Head',
+			type: 'int'
+		}
 	},
 	pathPoints: [],
 	svgEl: {},
@@ -1618,7 +1631,6 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 
 		var changeHandler = function(key, obj){
 			return function(e){
-				console.log('test');
 				obj.setProperty(key, e.target.value);	
 			};
 		};
