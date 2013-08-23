@@ -612,65 +612,57 @@ networkMap.Link = new Class({
 		
 		
 		var path;
-		if (this.options.nodeA.requestUrl && this.options.nodeB.requestUrl){
+		
+				
+		if (this.options.nodeA.requestUrl){
+			path = [
+				this.pathPoints[0],
+				this.pathPoints[1],
+				this.pathPoints[2],
+				this.pathPoints[3]
+			];
+
 			if (this.subpath.nodeA){
-				path = [
-					this.pathPoints[0],
-					this.pathPoints[1],
-					this.pathPoints[2],
-					this.pathPoints[3]
-				];
-				drawBondPath(this.path.nodeA, path, this.subpath.nodeA.length);	
+				if (this.options.nodeB.requestUrl || this.subpath.nodeB){
+					drawBondPath(this.path.nodeA, path, this.subpath.nodeA.length);
+				}
+				else {
+					drawSingleBondPath();
+				}
 			}
 			else{
-				path = [
-					this.pathPoints[0],
-					this.pathPoints[1],
-					this.pathPoints[2],
-					this.pathPoints[3]
-				];
-				drawNormalPath(
-					this.path.nodeA,
-					path 
-				);	
+				if (this.options.nodeB.requestUrl || this.subpath.nodeB){
+					drawNormalPath(this.path.nodeA, path);
+				}
+				else {
+					drawSinglePath();	
+				}
 			}
+		}
+		
+		if (this.options.nodeB.requestUrl){
+			path = [
+				this.pathPoints[5],
+				this.pathPoints[4],
+				this.pathPoints[3],
+				this.pathPoints[2]
+			];
 			
 			if (this.subpath.nodeB){
-				path = [
-					this.pathPoints[5],
-					this.pathPoints[4],
-					this.pathPoints[3],
-					this.pathPoints[2]
-				];
-				drawBondPath(this.path.nodeB, path, this.subpath.nodeB.length);	
+				if (this.options.nodeA.requestUrl || this.subpath.nodeA){
+					drawBondPath(this.path.nodeB, path, this.subpath.nodeB.length);
+				}
+				else {
+					drawSingleBondPath();
+				}
 			}
 			else {
-				path = [
-					this.pathPoints[5],
-					this.pathPoints[4],
-					this.pathPoints[3],
-					this.pathPoints[2]
-				];
-				drawNormalPath(
-					this.path.nodeB,
-					path 
-				);	
-			}
-		}
-		else if (this.options.nodeA.requestUrl && !this.options.nodeB.requestUrl){
-			if (this.subpath.nodeA){
-				drawSinglePath();	
-			}
-			else{
-				drawSingleBondPath();	
-			}
-		}
-		else if (this.options.nodeB.requestUrl && !this.options.nodeA.requestUrl){
-			if (this.subpath.nodeA){
-				drawSinglePath();	
-			}
-			else{
-				drawSingleBondPath();	
+				if (this.options.nodeA.requestUrl || this.subpath.nodeA){
+					drawNormalPath(this.path.nodeB, path);
+				}
+				else {
+					drawSinglePath();	
+				}
 			}
 		}
 		
