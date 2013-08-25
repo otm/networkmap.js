@@ -511,10 +511,23 @@ networkMap.colormap.flat5 = {
 ;networkMap.ColorLegend = new Class({
 	Implements: [Options],
 	options: {
+		/** The size of the the color square */
 		boxSize: 25,
+		/** margin */
 		margin: 10
-
 	},
+
+	/** The graph object to attach to */
+	graph: null,
+	
+	/**
+	 * Creates an instance of networkMap.ColorLegend.
+	 *
+	 * @constructor
+	 * @this {networkMap.ColorLegend}
+	 * @param {string} The name of the colormap
+	 * @param {Object} A options object.
+	 */
 	initialize: function(colormap, options){
 		this.graph = options.graph;
 		delete options.graph;
@@ -530,6 +543,13 @@ networkMap.colormap.flat5 = {
 
 		this.draw();
 	},
+
+	/**
+	 * Draw/redraw the legend in the graph
+	 *
+	 * @this {networkMap.ColorLegend}
+	 * @return {networkMap.ColorLegend} self
+	 */
 	draw: function(){
 		var colormap = this.colormap.map;
 		var svg = this.svg = this.graph.getSVG().group();
@@ -580,7 +600,17 @@ networkMap.colormap.flat5 = {
 		);
 
 		this.move();
+
+		return this;
 	},
+
+	/**
+	 * Move the legend to the x and y coordinate.
+	 *
+	 * @this {networkMap.ColorLegend}
+	 * @return {networkMap.ColorLegend} self
+	 * @todo clean up 
+	 */
 	move: function(x, y){
 		var docSize;		
 		if (!x || !y){
