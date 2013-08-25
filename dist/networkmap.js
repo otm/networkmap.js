@@ -432,10 +432,24 @@ networkMap.registerEvent('hover', networkMap.events.hover);;
 networkMap.colormap = networkMap.colormap || {};
 
 
+/**
+ * Register a color map. After a color map is registed
+ * it can be used in the graph. 
+ *
+ * @param {String} The name of the colormap
+ * @param {Object} colormap
+ * @param {array} colormap.map The color values
+ * @param {array} colormap.limits The limits associated with colormap.map
+ * @param {string} colormap.nodata The color if no data is available
+ * @param {function} colormap.translate(value) A function that takes a value [0:1|undefined] and returns a color
+ */
 networkMap.registerColormap = function(name, colormap){
 	networkMap.colormap[name] = colormap;
 };
 
+/**
+ * Rasta5 colormap
+ */
 networkMap.colormap.rasta5 = {
 	translate: function(value){
 		if (!value)
@@ -472,6 +486,9 @@ networkMap.colormap.rasta5 = {
 	nodata: '#C0C0C0'
 };
 
+/**
+ * Flat5 colormap
+ */
 networkMap.colormap.flat5 = {
 	translate: function(value){
 		var map = networkMap.colormap.flat5;
