@@ -64,7 +64,7 @@ module.exports = function(grunt) {
 		},
 		watch: {
 			scripts: {
-				files: ['<%= concat.dist.src %>'],
+				files: ['<%= concat.dist.src %>', 'spec/spec/*.js'],
 				tasks: ['jshint', 'concat'],
 				options: {
 						interrupt: true
