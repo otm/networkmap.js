@@ -98,7 +98,8 @@ networkMap.SettingsManager = new Class ({
 			
 		var content = this.getContentContainer();
 		this.clear();
-			
+		this.displayButtons();
+		
 		// Check if the object is a link
 		if (obj.getLink){
 			link = obj.getLink();
@@ -124,6 +125,43 @@ networkMap.SettingsManager = new Class ({
 	clear: function(){
 		this.getContentContainer().empty();
 
+		return this;
+	},
+	
+	/**
+	 * Hides the normal menu buttons. The callback
+	 * will be called before they are set into visable
+	 * state. 
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
+	hideButtons: function(callback){
+		
+		this.menuButtons.setStyle('display', 'none');
+		this.showButtonsCallback = (callback) ? callback : function(){};
+		
+		return this;	
+	},
+
+	/**
+	 * Hides the normal menu buttons. The callback
+	 * will be called before they are set into visable
+	 * state. 
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
+	displayButtons: function(){
+		if (!this.showButtonsCallback){
+			return this;
+		}
+			
+		this.showButtonsCallback();
+		delete this.showButtonsCallback;
+		
+		this.menuButtons.setStyle('display', 'block');
+		
 		return this;
 	},
 
