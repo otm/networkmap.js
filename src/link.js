@@ -258,12 +258,12 @@ networkMap.Link = new Class({
 		
 		throw "Link is not found";		
 	},
-	connectedTo: function(node){
-		if (this.nodeA == node || this.nodeB == node){
-			return true;
+	connectedTo: function(node, secondaryNode){
+		if (secondaryNode){
+			return (this.nodeA == node || this.nodeB == node) && (this.nodeA == secondaryNode || this.nodeB == secondaryNode);
 		}
 		
-		return false;
+		return (this.nodeA == node || this.nodeB == node); 
 	},
 	mode: function(mode){
 		if (!mode){
@@ -667,6 +667,9 @@ networkMap.Link = new Class({
 		}
 		
 		return this;
+	},
+	drawArc: function(){
+		
 	},
 	drawSublinks: function(){
 		var maxLinkCount, lastSegment, offset, path, width;

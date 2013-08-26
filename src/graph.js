@@ -495,10 +495,11 @@ networkMap.Graph = new Class({
 		});
 	},
 
-	getLinks: function(node){
-		var links = [];
+	getLinks: function(node, secondaryNode){
+		var links = [];		
+		
 		this.links.each(function(link){
-			if (link.connectedTo(node)){
+			if (link.connectedTo(node, secondaryNode)){
 				links.push(link);
 			}
 		});

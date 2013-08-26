@@ -1330,10 +1330,11 @@ networkMap.Graph = new Class({
 		});
 	},
 
-	getLinks: function(node){
-		var links = [];
+	getLinks: function(node, secondaryNode){
+		var links = [];		
+		
 		this.links.each(function(link){
-			if (link.connectedTo(node)){
+			if (link.connectedTo(node, secondaryNode)){
 				links.push(link);
 			}
 		});
@@ -2201,12 +2202,12 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		
 		throw "Link is not found";		
 	},
-	connectedTo: function(node){
-		if (this.nodeA == node || this.nodeB == node){
-			return true;
+	connectedTo: function(node, secondaryNode){
+		if (secondaryNode){
+			return (this.nodeA == node || this.nodeB == node) && (this.nodeA == secondaryNode || this.nodeB == secondaryNode);
 		}
 		
-		return false;
+		return (this.nodeA == node || this.nodeB == node); 
 	},
 	mode: function(mode){
 		if (!mode){
@@ -2610,6 +2611,9 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		}
 		
 		return this;
+	},
+	drawArc: function(){
+		
 	},
 	drawSublinks: function(){
 		var maxLinkCount, lastSegment, offset, path, width;

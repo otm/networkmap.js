@@ -6,7 +6,21 @@
 
   <link rel="shortcut icon" type="image/png" href="lib/jasmine-1.3.1/jasmine_favicon.png">
   <link rel="stylesheet" type="text/css" href="lib/jasmine-1.3.1/jasmine.css">
-  <script type="text/javascript" src="lib/jasmine-1.3.1/jasmine.js"></script>
+ <style type="text/css" media="screen">
+    #paper {
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+  </style> 
+
+</head>
+
+<body>
+<div><a href="demo.html" >Netorkmap.js demo</a></div>
+</body>
+
+<script type="text/javascript" src="lib/jasmine-1.3.1/jasmine.js"></script>
   <script type="text/javascript" src="lib/jasmine-1.3.1/jasmine-html.js"></script>
 
   <!-- include source files here... -->
@@ -24,9 +38,11 @@
   <script type="text/javascript" src="../src/graph.js"></script>
   <script type="text/javascript" src="../src/node.js"></script>
   <script type="text/javascript" src="../src/link.js"></script>
+  <script type="text/javascript" src="../src/sublink.js"></script>
 
   <!-- include spec files here... -->
   <script type="text/javascript" src="spec/DatasourceSpec.js"></script>
+  <script type="text/javascript" src="spec/LinkSpec.js"></script>
  
 
 
@@ -58,10 +74,4 @@
 
     })();
   </script>
-
-</head>
-
-<body>
-<div><a href="demo.html" >Netorkmap.js demo</a></div>
-</body>
 </html>
