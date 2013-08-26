@@ -1,5 +1,5 @@
 describe("Link", function() {
-	wrapper = document.createElement('div')
+	wrapper = document.createElement('div');
 	wrapper.id = 'paper';
    document.getElementsByTagName('body')[0].appendChild(wrapper);
    
