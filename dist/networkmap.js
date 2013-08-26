@@ -432,10 +432,24 @@ networkMap.registerEvent('hover', networkMap.events.hover);;
 networkMap.colormap = networkMap.colormap || {};
 
 
+/**
+ * Register a color map. After a color map is registed
+ * it can be used in the graph. 
+ *
+ * @param {String} The name of the colormap
+ * @param {Object} colormap
+ * @param {array} colormap.map The color values
+ * @param {array} colormap.limits The limits associated with colormap.map
+ * @param {string} colormap.nodata The color if no data is available
+ * @param {function} colormap.translate(value) A function that takes a value [0:1|undefined] and returns a color
+ */
 networkMap.registerColormap = function(name, colormap){
 	networkMap.colormap[name] = colormap;
 };
 
+/**
+ * Rasta5 colormap
+ */
 networkMap.colormap.rasta5 = {
 	translate: function(value){
 		if (!value)
@@ -472,6 +486,9 @@ networkMap.colormap.rasta5 = {
 	nodata: '#C0C0C0'
 };
 
+/**
+ * Flat5 colormap
+ */
 networkMap.colormap.flat5 = {
 	translate: function(value){
 		var map = networkMap.colormap.flat5;
@@ -511,10 +528,23 @@ networkMap.colormap.flat5 = {
 ;networkMap.ColorLegend = new Class({
 	Implements: [Options],
 	options: {
+		/** The size of the the color square */
 		boxSize: 25,
+		/** margin */
 		margin: 10
-
 	},
+
+	/** The graph object to attach to */
+	graph: null,
+	
+	/**
+	 * Creates an instance of networkMap.ColorLegend.
+	 *
+	 * @constructor
+	 * @this {networkMap.ColorLegend}
+	 * @param {string} The name of the colormap
+	 * @param {Object} A options object.
+	 */
 	initialize: function(colormap, options){
 		this.graph = options.graph;
 		delete options.graph;
@@ -530,6 +560,13 @@ networkMap.colormap.flat5 = {
 
 		this.draw();
 	},
+
+	/**
+	 * Draw/redraw the legend in the graph
+	 *
+	 * @this {networkMap.ColorLegend}
+	 * @return {networkMap.ColorLegend} self
+	 */
 	draw: function(){
 		var colormap = this.colormap.map;
 		var svg = this.svg = this.graph.getSVG().group();
@@ -580,7 +617,17 @@ networkMap.colormap.flat5 = {
 		);
 
 		this.move();
+
+		return this;
 	},
+
+	/**
+	 * Move the legend to the x and y coordinate.
+	 *
+	 * @this {networkMap.ColorLegend}
+	 * @return {networkMap.ColorLegend} self
+	 * @todo clean up 
+	 */
 	move: function(x, y){
 		var docSize;		
 		if (!x || !y){
@@ -610,12 +657,28 @@ networkMap.colormap.flat5 = {
 	
 	container: null,
 	editing: false,
-	initialize: function(container){
+
+	/**
+	 * Creates an instance of networkMap.SettingsManager.
+	 *
+	 * @constructor
+	 * @this {networkMap.SettingsManager}
+	 * @param {Element} The html element to inject into
+	 * @param {Object} A options object.
+	 */
+	initialize: function(container, options){
+		this.setOptions(options);
 		this.container = container;
 		this.nav = this.createMenu();
 		container.grab(this.nav);
 	},
 	
+	/**
+	 * Create the HTML for the settings manager
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {Element} The HTML for the settingsmanager.
+	 */
 	createMenu: function(){
 		var nav = new Element('nav', {
 			'class': 'nm-menu'
@@ -655,9 +718,26 @@ networkMap.colormap.flat5 = {
 		
 		return nav;
 	},
+
+	/**
+	 * Returns the content container. This container is
+	 * used when custom html should be injected.
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {Element} The content conainer
+	 */
 	getContentContainer: function(){
 		return this.nav.getElement('#nm-edit-content');
 	},
+
+	/**
+	 * By calling this function and sending in the 
+	 * object that shold be edited the settingsManager
+	 * will setup the UI. 
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	edit: function(obj){
 		this.editing = obj;
 		var editables;
@@ -682,53 +762,122 @@ networkMap.colormap.flat5 = {
 		
 		return this;
 	},
+
+	/**
+	 * Clears the content container.
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	clear: function(){
 		this.getContentContainer().empty();
+
+		return this;
 	},
+
+	/**
+	 * Toggle the settings manager. 
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	toggle: function(){
 		if (this.nav.hasClass('nm-menu-open')){
-			this.disable();
+			return this.disable();
 		}
 		else {
-			this.enable();
+			return this.enable();
 		}
 	},
 	
+
+	/**
+	 * Enable the settings manager. 
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	enable: function(){
 		this.nav.addClass('nm-menu-open');	
 		this.fireEvent('active');
+
+		return this;
 	},
 	
+
+	/**
+	 * Disable the settings manager. 
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	disable: function(){
 		this.nav.removeClass('nm-menu-open');
 		this.nav.getElement('#nm-edit-content').empty();
 		this.fireEvent('deactive');
+
+		return this;
 	},
 	
+
+	/**
+	 * This triggers a save event.
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	save: function(){
 		this.fireEvent('save');
+
+		return this;
 	}
 
 });
 ;
 networkMap.Graph = new Class({
 	Implements: [Options, Events],
+
+	/** The default options*/
 	options:{
+		/** The with of the graph */
 		width: 10,
+		/** The height of the graph */
 		height: 10,
+		/** The name of the datasoruce to use */
 		datasource: 'simulate',
+		/** The name of the colormap to use */
 		colormap: 'flat5',
+		/** Controls of the settings manager is created */
 		enableEditor: true,
+		/** Controls if the nodes are draggable */
 		allowDraggableNodes: false,
+		/** Controlls how often the links refresh the data */
 		refreshInterval: null
 	},
+
+	/** This array controls what is exported in getConfiguration*/
 	exportedOptions: [
 		//'width',
 		//'height'
 	],
+
+	/** An internal array of nodes, do not use directly */
 	nodes: [],
+
+	/** An internal array of links, do not use directly */
 	links: [],
+
+	/** An internal reference to onSave configuration */
 	saveData: {},
+
+	/**
+	 * Creates an instance of networkMap.Graph.
+	 *
+	 * @constructor
+	 * @this {networkMap.Graph}
+	 * @param {string|element} A string or Element to attach to network graph to
+	 * @param {Object} A options object.
+	 */
 	initialize: function(target, options){
 		this.setOptions(options);
 		this.element = document.id(target);
@@ -753,10 +902,14 @@ networkMap.Graph = new Class({
 		this.setRefreshInterval(this.options.refreshInterval);
 		
 	},
-	/*** setRefreshInterval(interval)
-	* @var interval (int) interval in seconds. If null it 
-	* will disable the updates.  
-	*/
+
+	/** 
+	 * Set the intervall which the graph should refresh
+	 *
+	 * @param interval {int} interval in seconds. If null it 
+	 * will disable the updates.  
+	 * @return {networkMap.Graph} self
+	 */
 	setRefreshInterval: function(interval){
 		this.options.interval = interval;
 		
@@ -771,9 +924,27 @@ networkMap.Graph = new Class({
 		}
 		return this;
 	},
+
+	/**
+	 * Trigger an event in an object
+	 * @param event {string} The event name to trigger 
+	 * @param object {object} The object to trigger the event on
+	 * 
+	 * @return {networkMap.Graph} self
+	 * @todo Move to a statical function
+	 */
 	triggerEvent: function(event, object){
 		object.fireEvent(event, object);
+
+		return this;
 	},
+
+	/**
+	 * This will rescale the SVG element, and if it 
+	 * does not fit it will will zoom out.
+	 *
+	 * @ retrun {networkMap.Graph} self
+	 */
 	rescale: function(){
 		var docSize = this.element.getSize();	
 		
@@ -794,18 +965,62 @@ networkMap.Graph = new Class({
 		
 		return this;		
 	},
+
+	/**
+	 * Returns the root SVG object
+	 *
+	 * @ retrun {SVG}
+	 */
 	getSVG: function(){
 		return this.svg;
 	},
+
+	/**
+	 * Returns the main SVG group used for painting the graph
+	 *
+	 * @ retrun {SVG.Group}
+	 */
 	getPaintArea: function(){
 		return this.graph;
 	},
+
+	/**
+	 * Returns the settingsManager that is bound to the graph
+	 *
+	 * @ retrun {networkMap.SettingsManager}
+	 */
+	settingsManager: function(){
+		return this.settings();
+	},
+
+	/**
+	 * Load a network map, it can either be a URI string
+	 * or an configuration object.
+	 *
+	 * @param {string|object} The thing to load
+	 * @retrun {networkMap.Graph} self
+	 * @throws "TypeError"
+	 */
 	load: function(obj){
 		if (typeOf(obj) === 'string'){
 			return this.loadUrl(obj);
 		}
+		else if (typeOf(obj) === 'object'){
+			return this.loadObject(obj);
+		}
+		else{
+			throw new TypeError('Unknown type ' + typeOf(obj));
+		}
 		return this;
 	},
+
+	/**
+	 * Loads a JSON file from the URL and builds a 
+	 * network map.
+	 *
+	 * @param {string} The URL to the JSON file
+	 * @ retrun {networkMap.Graph} self
+	 */
 	loadUrl: function(url){
 		new Request.JSON({
 			url: url,
@@ -825,6 +1040,13 @@ networkMap.Graph = new Class({
 
 		return this;
 	},
+
+	/**
+	 * Load an object representation of a network map.
+	 *
+	 * @param {Object} The Object representation of the mao
+	 * @ retrun {networkMap.Graph} self
+	 */
 	loadObject: function(mapStruct){
 		mapStruct.nodes.each(function(node){
 			node.graph = this;
@@ -843,6 +1065,16 @@ networkMap.Graph = new Class({
 
 		return this;
 	},
+
+	/**
+	 * This will set the configuration that controlls
+	 * the save call. See documentation for onSave in
+	 * the configuration file documentation for more 
+	 * information.
+	 *
+	 * @param {Object} The onŚave configuration
+	 * @ retrun {networkMap.Graph} self
+	 */
 	setOnSave: function(saveData){
 		if (saveData){
 			if (this.validateSave(saveData))
@@ -850,18 +1082,35 @@ networkMap.Graph = new Class({
 		}
 		return this;
 	},
+
+	/**
+	 * Retreive the configuration object for the save
+	 * call. See documentation for onSave in the 
+	 * configuration file documentation for more 
+	 * information.
+	 *
+	 *
+	 * @ retrun {Object} The onSave configuration.
+	 */
 	getOnSave: function(){
 		return (this.saveData) ? this.saveData : {};
 	},
-	/** structure
-	* "onSave": {
-	*  "method": "post",
-	*  "url": "update.php",
-	*  "data": {
-	*   "id": "weathermap.json"		
-	*  }
-	* }
-	*/
+
+	
+	/**
+	 * Validate a onSave configuration object. Returns
+	 * true if it validates, false otherwise.
+	 * structure:
+	 * "onSave": {
+	 *  "method": "post|get",
+	 *  "url": "update.php",
+	 *  "data": {
+	 *   "id": "weathermap.json"		
+	 *  }
+	 * }
+	 *
+	 * @ retrun {boolean} The onSave configuration.
+	 */
 	validateSave: function(save){
 		if (save.method && !(save.method == 'post' || save.method == 'get')){
 			this.saveEnabled = false;
@@ -880,17 +1129,20 @@ networkMap.Graph = new Class({
 			return false;
 		}
 		
-		return true;
-				
+		return true;		
 	},
+
+	/**
+	 * Send a save request to the server.
+	 *
+	 * @ retrun {boolean} If request could be sent
+	 * @todo Emit event when save is compleated
+	 */
 	save: function(){
 		if (!this.saveData)
 			return false;
 			
 		var data = this.getConfiguration();
-		data.onSave = this.saveData;
-		console.log(data);
-
 		 
 		new Request.JSON({
 			url: this.saveData.url,
@@ -909,8 +1161,15 @@ networkMap.Graph = new Class({
 				
 			}
 		}).send();
-		 
+		
+		return true;
 	},
+
+	/**
+	 * Set nodes and links in edit mode
+	 *
+	 * @ retrun {networkManager.Graph} self
+	 */
 	enableEditor: function(){
 		this.enableDraggableNodes();
 		this.nodes.each(function(node){
@@ -920,7 +1179,14 @@ networkMap.Graph = new Class({
 		this.links.each(function(link){
 			link.mode('edit');
 		});
+
+		return this;
 	},
+
+	/**
+	 * Disable edit mode on nodes and links.
+	 *
+	 */
 	disableEditor: function(){
 		this.disableDraggableNodes();
 		
@@ -930,44 +1196,86 @@ networkMap.Graph = new Class({
 		this.links.each(function(link){
 			link.mode('normal');
 		});
+
+		return this;
 	},
+
+	/**
+	 * Enable draggable nodes
+	 *
+	 * @ retrun {networkMap.Graph} self
+	 */
 	enableDraggableNodes: function(){
 		this.nodes.each(function(node){
 			node.draggable();
 		});
+
+		return this;		
 	},
+
+	/**
+	 * disable draggable nodes
+	 *
+	 * @ retrun {networkMap.Graph} self
+	 */
 	disableDraggableNodes: function(){
 		this.nodes.each(function(node){
 			node.fixed();	
 		});
+
+		return this;
 	},
+
+	/**
+	 * Fetch configuration from links and nodes
+	 *
+	 * @ retrun {Object} A networkmap configuration object
+	 */
 	getConfiguration: function(){
 		var configuration = {
 			nodes: [],
 			links: []
 		};
 
+		// self
 		this.exportedOptions.each(function(option){
 			configuration[option] = this.options[option];
 		}.bind(this));
+		configuration.onSave = this.saveData;
 
+		// nodes
 		this.nodes.each(function(node){
 			configuration.nodes.push(node.getConfiguration());
 		});
 
+		// links
 		this.links.each(function(link){
 			configuration.links.push(link.getConfiguration());
 		});
 
 		return configuration;
 	},
-	/** DEPRICATED */
+
+	/**
+	 * Add a node to the graph
+	 *
+	 * @param {networkMap.Node} The node to add
+	 * @ retrun {networkMap.Graph} self
+	 * @todo refactor to a factory method
+	 */
 	addNode: function(node){
 		this.nodes.push(node);
 
 		return this;
 	},
 
+	/**
+	 * Get the node with ID = id, returns undefined 
+	 * if the node does not exist.
+	 *
+	 * @param {string} A node id
+	 * @ retrun {networkMap.Node} The node or undefined
+	 */
 	getNode: function(id){
 		return this.nodes.find(function(node){
 			if (node.options.id === id){
@@ -976,6 +1284,14 @@ networkMap.Graph = new Class({
 		});
 	},
 	
+	/**
+	 * Remove a node from the graph
+	 *
+	 * @param {networkMap.Node} The node to remove
+	 * @ retrun {networkMap.Graph} self
+	 * @todo refactor so the node is removed by unseting 
+	 * the graph reference in the node.
+	 */
 	removeNode: function(node){
 		this.nodes.erase(node);
 		node.setGraph(null);
@@ -987,12 +1303,21 @@ networkMap.Graph = new Class({
 		return this;
 	},
 
+	/**
+	 * Add a link to the graph
+	 *
+	 * @param {networkMap.Link} The link to add
+	 * @ retrun {networkMap.Graph} self
+	 * @todo this should happen when the setting 
+	 *	the graph in the link.
+	 */
 	addLink: function(link){
 		this.links.push(link);
 
 		return this;
 	},	
 	
+
 	getLink: function(nodeIdA, nodeIdB){
 		return this.links.find(function(link){
 			if (link.nodeA.options.id === nodeIdA && link.nodeB.options.id === nodeIdB){
@@ -1016,21 +1341,37 @@ networkMap.Graph = new Class({
 		return links;
 	},
 
+	/**
+	 * Remove a link from the graph
+	 *
+	 * @param {networkMap.Link} The link to remove
+	 * @ retrun {networkMap.Graph} self
+	 */
 	removeLink: function(link){
 		this.links.erase(link);
 		link.setGraph(null);
 		return this;
 	},
 
-	// signal to links to refresh 
+	/**
+	 * Signal links to call the datasource to refresh.
+	 *
+	 * @ retrun {networkMap.Graph} self
+	 */
 	refresh: function(){
 		this.links.each(function(link){
 			link.localUpdate();
 		});
+
+		return this;
 	},
 
-	// Refresh all links at the same time
-	// This function is not in a usable state at the moment.
+	/**
+	 * Refresh links in batch mode. This method does not work
+	 * at the moment.
+	 * 
+	 * @todo remove or refactor the method
+	 */
 	update: function(){
 		var requests = {};
 		this.links.each(function(link){
@@ -1136,9 +1477,21 @@ networkMap.Graph = new Class({
 		}
 
 	},
+
+	/* TODO: Remove
 	getEditables: function(){
 		return this.editTemplate;
 	},
+	*/
+
+	/**
+	 * Update an option
+	 *
+	 * @param {string} The property to change
+	 * @param {mixed} The value to set
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
 	setProperty: function(key, value){
 		if (!this.editTemplate[key]){
 			throw 'Unknow id: ' + key;
@@ -1149,6 +1502,14 @@ networkMap.Graph = new Class({
 		
 		return this;
 	},
+
+	/**
+	 * Ǵet a property value
+	 *
+	 * @param {string} The property to get
+	 * @this {networkMap.Node}
+	 * @return {mixed} The property value
+	 */
 	getProperty: function(key){
 		if (!this.editTemplate[key]){
 			throw 'Unknown id: ' + key;
@@ -1156,6 +1517,13 @@ networkMap.Graph = new Class({
 		
 		return this.options[key];
 	},
+
+	/**
+	 * Genereats a configuration object
+	 *
+	 * @this {networkMap.Node}
+	 * @return {Object} The node configuration
+	 */
 	getConfiguration: function(){
 		var configuration = {};
 
@@ -1164,6 +1532,7 @@ networkMap.Graph = new Class({
 		}.bind(this));
 		return configuration;
 	},
+
 	/**
 	 * Generates HTML that is used for configuration
 	 *
@@ -1188,6 +1557,16 @@ networkMap.Graph = new Class({
 		
 		return container;
 	},
+
+	/**
+	 * Set the graph that the Node is associated to. 
+	 * If set to null the Node will unregister from the 
+	 * graph.
+	 *
+	 * @param {networkMap.Graph} The graph
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
 	setGraph: function(graph){	
 		// remove the object from the graph
 		this.graph = null;
@@ -1198,7 +1577,21 @@ networkMap.Graph = new Class({
 			this.graph = graph;
 			this.draw();
 		}
+
+		return this;
 	},
+
+	/**
+	 * Get/set the mode of the node. The mode can either
+	 * be "normal" or "edit". In "edit" mode the nodes 
+	 * clickHandler will not forward click events to
+	 * click events registed with networkMap.registerEvent
+	 *
+	 * @param {string} The mode or undefined to get the mode
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node|String} Returns either the mode or 
+	 * self
+	 */
 	mode: function(mode){
 		if (!mode){
 			return this._mode;
@@ -1213,6 +1606,16 @@ networkMap.Graph = new Class({
 		
 		return this;
 	},
+
+	/**
+	 * The clickHandler is an internal function which forwards
+	 * click events to either the registed click event or to the 
+	 * settingsManager.
+	 *
+	 * @param {Event} The click event
+	 * @this {networkMap.Node}
+	 * @return {undefined}
+	 */
 	_clickhandler: function(e){
 		if (this._mode === 'normal' && this.options.events && this.options.events.click){
 			networkMap.events.click(e, this);
@@ -1221,13 +1624,33 @@ networkMap.Graph = new Class({
 			this.graph.settings.edit(this);	
 		}
 	},	
+
+	/**
+	 * Get the x coordinate of the node
+	 *
+	 * @this {networkMap.Node}
+	 * @return {number} The x coordinate of the node
+	 */
 	x: function(){
 		return this.svg.bbox().x;
 	},
 	
+	/**
+	 * Get the y coordinate of the node
+	 *
+	 * @this {networkMap.Node}
+	 * @return {number} The y coordinate of the node
+	 */
 	y: function(){
 		return this.svg.bbox().y;
 	},
+
+	/**
+	 * Make the node draggable
+	 *
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
 	draggable: function(){
 		this._draggable = true;
 		this.svg.draggable();
@@ -1235,6 +1658,13 @@ networkMap.Graph = new Class({
 		
 		return this;
 	},	
+
+	/**
+	 * Make the node fixed, i.e. ńot draggable.
+	 *
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
 	fixed: function(){
 		this._draggable = false;
 		this.svg.fixed();
@@ -1242,12 +1672,34 @@ networkMap.Graph = new Class({
 		
 		return this;
 	},
+
+	/**
+	 * Returns true if the node is draggable
+	 * false otherwise.
+	 *
+	 * @this {networkMap.Node}
+	 * @return {boolean} The draggable status
+	 */
 	isDraggable: function(){
 		return this._draggable;
 	},
+
+	/**
+	 * Get the bonding box of the node.
+	 *
+	 * @this {networkMap.Node}
+	 * @return {SVG.BBox} The nodes bounding box
+	 */
 	bbox: function(){
 		return this.svg.bbox();
 	},
+
+	/**
+	 * Draw/redraw the node
+	 *
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
 	draw: function(){
 		var redraw = false;
 		

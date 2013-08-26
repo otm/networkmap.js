@@ -9,12 +9,28 @@ networkMap.SettingsManager = new Class ({
 	
 	container: null,
 	editing: false,
-	initialize: function(container){
+
+	/**
+	 * Creates an instance of networkMap.SettingsManager.
+	 *
+	 * @constructor
+	 * @this {networkMap.SettingsManager}
+	 * @param {Element} The html element to inject into
+	 * @param {Object} A options object.
+	 */
+	initialize: function(container, options){
+		this.setOptions(options);
 		this.container = container;
 		this.nav = this.createMenu();
 		container.grab(this.nav);
 	},
 	
+	/**
+	 * Create the HTML for the settings manager
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {Element} The HTML for the settingsmanager.
+	 */
 	createMenu: function(){
 		var nav = new Element('nav', {
 			'class': 'nm-menu'
@@ -54,9 +70,26 @@ networkMap.SettingsManager = new Class ({
 		
 		return nav;
 	},
+
+	/**
+	 * Returns the content container. This container is
+	 * used when custom html should be injected.
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {Element} The content conainer
+	 */
 	getContentContainer: function(){
 		return this.nav.getElement('#nm-edit-content');
 	},
+
+	/**
+	 * By calling this function and sending in the 
+	 * object that shold be edited the settingsManager
+	 * will setup the UI. 
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	edit: function(obj){
 		this.editing = obj;
 		var editables;
@@ -81,31 +114,74 @@ networkMap.SettingsManager = new Class ({
 		
 		return this;
 	},
+
+	/**
+	 * Clears the content container.
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	clear: function(){
 		this.getContentContainer().empty();
+
+		return this;
 	},
+
+	/**
+	 * Toggle the settings manager. 
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	toggle: function(){
 		if (this.nav.hasClass('nm-menu-open')){
-			this.disable();
+			return this.disable();
 		}
 		else {
-			this.enable();
+			return this.enable();
 		}
 	},
 	
+
+	/**
+	 * Enable the settings manager. 
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	enable: function(){
 		this.nav.addClass('nm-menu-open');	
 		this.fireEvent('active');
+
+		return this;
 	},
 	
+
+	/**
+	 * Disable the settings manager. 
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	disable: function(){
 		this.nav.removeClass('nm-menu-open');
 		this.nav.getElement('#nm-edit-content').empty();
 		this.fireEvent('deactive');
+
+		return this;
 	},
 	
+
+	/**
+	 * This triggers a save event.
+	 *
+	 * @this {networkMap.SettingsManager}
+	 * @return {networkMap.SettingsManager} self
+	 */
 	save: function(){
 		this.fireEvent('save');
+
+		return this;
 	}
 
 });

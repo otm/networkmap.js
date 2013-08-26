@@ -78,9 +78,21 @@ networkMap.Node = new Class({
 		}
 
 	},
+
+	/* TODO: Remove
 	getEditables: function(){
 		return this.editTemplate;
 	},
+	*/
+
+	/**
+	 * Update an option
+	 *
+	 * @param {string} The property to change
+	 * @param {mixed} The value to set
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
 	setProperty: function(key, value){
 		if (!this.editTemplate[key]){
 			throw 'Unknow id: ' + key;
@@ -91,6 +103,14 @@ networkMap.Node = new Class({
 		
 		return this;
 	},
+
+	/**
+	 * Ǵet a property value
+	 *
+	 * @param {string} The property to get
+	 * @this {networkMap.Node}
+	 * @return {mixed} The property value
+	 */
 	getProperty: function(key){
 		if (!this.editTemplate[key]){
 			throw 'Unknown id: ' + key;
@@ -98,6 +118,13 @@ networkMap.Node = new Class({
 		
 		return this.options[key];
 	},
+
+	/**
+	 * Genereats a configuration object
+	 *
+	 * @this {networkMap.Node}
+	 * @return {Object} The node configuration
+	 */
 	getConfiguration: function(){
 		var configuration = {};
 
@@ -106,6 +133,7 @@ networkMap.Node = new Class({
 		}.bind(this));
 		return configuration;
 	},
+
 	/**
 	 * Generates HTML that is used for configuration
 	 *
@@ -130,6 +158,16 @@ networkMap.Node = new Class({
 		
 		return container;
 	},
+
+	/**
+	 * Set the graph that the Node is associated to. 
+	 * If set to null the Node will unregister from the 
+	 * graph.
+	 *
+	 * @param {networkMap.Graph} The graph
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
 	setGraph: function(graph){	
 		// remove the object from the graph
 		this.graph = null;
@@ -140,7 +178,21 @@ networkMap.Node = new Class({
 			this.graph = graph;
 			this.draw();
 		}
+
+		return this;
 	},
+
+	/**
+	 * Get/set the mode of the node. The mode can either
+	 * be "normal" or "edit". In "edit" mode the nodes 
+	 * clickHandler will not forward click events to
+	 * click events registed with networkMap.registerEvent
+	 *
+	 * @param {string} The mode or undefined to get the mode
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node|String} Returns either the mode or 
+	 * self
+	 */
 	mode: function(mode){
 		if (!mode){
 			return this._mode;
@@ -155,6 +207,16 @@ networkMap.Node = new Class({
 		
 		return this;
 	},
+
+	/**
+	 * The clickHandler is an internal function which forwards
+	 * click events to either the registed click event or to the 
+	 * settingsManager.
+	 *
+	 * @param {Event} The click event
+	 * @this {networkMap.Node}
+	 * @return {undefined}
+	 */
 	_clickhandler: function(e){
 		if (this._mode === 'normal' && this.options.events && this.options.events.click){
 			networkMap.events.click(e, this);
@@ -163,13 +225,33 @@ networkMap.Node = new Class({
 			this.graph.settings.edit(this);	
 		}
 	},	
+
+	/**
+	 * Get the x coordinate of the node
+	 *
+	 * @this {networkMap.Node}
+	 * @return {number} The x coordinate of the node
+	 */
 	x: function(){
 		return this.svg.bbox().x;
 	},
 	
+	/**
+	 * Get the y coordinate of the node
+	 *
+	 * @this {networkMap.Node}
+	 * @return {number} The y coordinate of the node
+	 */
 	y: function(){
 		return this.svg.bbox().y;
 	},
+
+	/**
+	 * Make the node draggable
+	 *
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
 	draggable: function(){
 		this._draggable = true;
 		this.svg.draggable();
@@ -177,6 +259,13 @@ networkMap.Node = new Class({
 		
 		return this;
 	},	
+
+	/**
+	 * Make the node fixed, i.e. ńot draggable.
+	 *
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
 	fixed: function(){
 		this._draggable = false;
 		this.svg.fixed();
@@ -184,12 +273,34 @@ networkMap.Node = new Class({
 		
 		return this;
 	},
+
+	/**
+	 * Returns true if the node is draggable
+	 * false otherwise.
+	 *
+	 * @this {networkMap.Node}
+	 * @return {boolean} The draggable status
+	 */
 	isDraggable: function(){
 		return this._draggable;
 	},
+
+	/**
+	 * Get the bonding box of the node.
+	 *
+	 * @this {networkMap.Node}
+	 * @return {SVG.BBox} The nodes bounding box
+	 */
 	bbox: function(){
 		return this.svg.bbox();
 	},
+
+	/**
+	 * Draw/redraw the node
+	 *
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
 	draw: function(){
 		var redraw = false;
 		
