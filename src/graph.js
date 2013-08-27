@@ -52,15 +52,15 @@ networkMap.Graph = new Class({
 		this.svg = SVG(this.container);
 		this.graph = this.svg.group();
 		
-		if (this.options.enableEditor){
-			this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this});
-		}
+		this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this, target: this.container});
 
-		this.settings = new networkMap.SettingsManager(this.container);
-		this.settings.addEvent('active', this.enableEditor.bind(this));
-		this.settings.addEvent('deactive', this.disableEditor.bind(this));
-		this.settings.addEvent('save', this.save.bind(this));
-		
+		if (this.options.enableEditor){
+			this.settings = new networkMap.SettingsManager(this.container);
+			this.settings.addEvent('active', this.enableEditor.bind(this));
+			this.settings.addEvent('deactive', this.disableEditor.bind(this));
+			this.settings.addEvent('save', this.save.bind(this));
+		}
+			
 		this.addEvent('resize', this.rescale.bind(this));
 		this.triggerEvent('resize', this);
 		
@@ -113,7 +113,7 @@ networkMap.Graph = new Class({
 	rescale: function(){
 		var docSize = this.element.getSize();	
 		
-		var bbox = this.svg.bbox();		
+		var bbox = this.graph.bbox();		
 		
 		// scale the svg if the docsize is to small
 		if (docSize.x < (bbox.width + bbox.x) || docSize.y < (bbox.height + bbox.y)){
