@@ -21,6 +21,9 @@ networkMap.LinkPath = new Class ({
 		
 		this.setupEvents();
 	},
+	remove: function(){
+		this.svg.remove();
+	},
 	getEditables: function(){
 		var editables = {
 			width: {

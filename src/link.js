@@ -6,7 +6,7 @@ networkMap.Link = new Class({
 		staticConnectionDistance: 30,
 		arrowHeadLength: 10,
 		width: 10,
-		debug: true,
+		debug: false,
 		background: '#777',
 		localUpdate: true,
 		refreshInterval: 300000,
@@ -79,8 +79,12 @@ networkMap.Link = new Class({
 				this.subpath.nodeA.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink).addEvent('change', this.redraw.bind(this)));
 			}.bind(this));
 		}
-		this.path.nodeA = new networkMap.LinkPath(this, networkMap.path(this.svg), link).addEvent('change', this.redraw.bind(this));
-			
+		this.path.nodeA = new networkMap.LinkPath(
+			this, 
+			networkMap.path(this.svg), 
+			link
+		).addEvent('change', this.redraw.bind(this));
+		
 		
 		// add a holder for SVG objects
 		if (this.options.nodeA.requestData || this.options.nodeA.sublinks){
@@ -107,9 +111,12 @@ networkMap.Link = new Class({
 				this.subpath.nodeB.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink).addEvent('change', this.redraw.bind(this)));
 			}.bind(this));
 		}
-		this.path.nodeB = new networkMap.LinkPath(this, networkMap.path(this.svg), link).addEvent('change', this.redraw.bind(this));
+		this.path.nodeB = new networkMap.LinkPath(
+			this, 
+			networkMap.path(this.svg), 
+			link
+		).addEvent('change', this.redraw.bind(this));
 		
-
 		// Add a holder for SVG objects
 		if (this.options.nodeB.requestData || this.options.nodeB.sublinks){
 			this.svgEl.nodeB = {};
@@ -639,6 +646,10 @@ networkMap.Link = new Class({
 				}
 			}
 		}
+		else{
+			// remove the svg if it's not going to be used.
+			this.path.nodeA.remove();	
+		}
 		
 		if (this.options.nodeB.requestUrl){
 			path = [
@@ -665,7 +676,10 @@ networkMap.Link = new Class({
 				}
 			}
 		}
-		
+		else{
+			// remove the svg if it's not going to be used.
+			this.path.nodeB.remove();	
+		}
 		return this;
 	},
 	drawArc: function(){

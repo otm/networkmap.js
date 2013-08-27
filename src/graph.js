@@ -62,7 +62,6 @@ networkMap.Graph = new Class({
 		}
 			
 		this.addEvent('resize', this.rescale.bind(this));
-		this.triggerEvent('resize', this);
 		
 		this.setRefreshInterval(this.options.refreshInterval);
 		
@@ -113,20 +112,25 @@ networkMap.Graph = new Class({
 	rescale: function(){
 		var docSize = this.element.getSize();	
 		
-		var bbox = this.graph.bbox();		
+		this.svg.size(
+			docSize.x, 
+			docSize.y
+		);
+		
+		var bbox = this.graph.bbox();	
+		var rbox = this.graph.rbox();	
 		
 		// scale the svg if the docsize is to small
 		if (docSize.x < (bbox.width + bbox.x) || docSize.y < (bbox.height + bbox.y)){
-			this.svg.viewbox(0,0,bbox.width + bbox.x, bbox.height + bbox.y);
+			//this.svg.viewbox(rbox.cx - bbox.cx, rbox.cy - bbox.cx, bbox.width + bbox.x, bbox.height + bbox.y);
+			this.svg.viewbox(bbox.x, bbox.y, bbox.width + bbox.x, bbox.height + bbox.y);
+			//this.svg.move(rbox.x * -1, rbox.y * -1);
 		}
 		else{
 			this.svg.viewbox(0, 0, docSize.x, docSize.y);
 		}
 		
-		this.svg.size(
-			docSize.x, 
-			docSize.y
-		);
+		
 		
 		return this;		
 	},
@@ -216,17 +220,18 @@ networkMap.Graph = new Class({
 		mapStruct.nodes.each(function(node){
 			node.graph = this;
 			node.draggable = this.options.allowDraggableNodes;
-			this.addNode(new networkMap.Node(node));
+			this.addNode(new networkMap.Node(node), false);
 		}.bind(this));
 
 		mapStruct.links.each(function(link){
 			link.graph = this;
-			this.addLink(new networkMap.Link(link));
+			this.addLink(new networkMap.Link(link), false);
 		}.bind(this));
 
 		this.setOnSave(mapStruct.onSave);
 		
 		this.fireEvent('load', [this]);
+		this.triggerEvent('resize', this);
 
 		return this;
 	},
@@ -425,11 +430,16 @@ networkMap.Graph = new Class({
 	 * Add a node to the graph
 	 *
 	 * @param {networkMap.Node} The node to add
+	 * @param {Boolean ? true } If set to false the resize event will not be triggered
 	 * @ retrun {networkMap.Graph} self
 	 * @todo refactor to a factory method
 	 */
-	addNode: function(node){
+	addNode: function(node, refresh){
 		this.nodes.push(node);
+
+		if (refresh !== false){
+			this.triggerEvent('resize', this);	
+		}
 
 		return this;
 	},
@@ -472,12 +482,18 @@ networkMap.Graph = new Class({
 	 * Add a link to the graph
 	 *
 	 * @param {networkMap.Link} The link to add
+	 * @param {Boolean ? true} If set to false the resize event will not be triggered
 	 * @ retrun {networkMap.Graph} self
 	 * @todo this should happen when the setting 
 	 *	the graph in the link.
 	 */
-	addLink: function(link){
+	addLink: function(link, refresh){
 		this.links.push(link);
+
+		if (refresh !== false){
+			this.triggerEvent('resize', this);	
+		}
+
 
 		return this;
 	},	

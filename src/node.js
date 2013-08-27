@@ -333,9 +333,9 @@ networkMap.Node = new Class({
 		var label = svg.text(this.options.name)
 			.font({
 				family:   'Helvetica',
-				size:     16,
+				size:     '16px',
 				anchor:   'start',
-				leading:  1.2
+				leading:  '15px'
 			})
 			.move(this.options.padding, this.options.padding);
 
@@ -345,7 +345,7 @@ networkMap.Node = new Class({
 			.fill({ color: '#ddd'})
 			.stroke({ color: '#000', width: 2 })
 			.attr({ 
-				rx: 4, 
+				rx: 4,
 				ry: 4
 			})
 			.size(
