@@ -1,1 +1,153 @@
-My GitHub Page
+<DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="assets/ico/favicon.png">
+
+    <title>Networkmap.js</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+
+    <link href="assets/css/networkmap.css" rel="stylesheet">
+    <script src="js/mootools-core.js"></script>
+    <script src="js/mootools-more.js"></script>
+    <script src="js/svg.js"></script>
+    <script src="js/svg.draggable.js"></script>
+    <script src="js/svg.math.js"></script>
+    <script src="js/svg.path.js"></script>
+    <script src="assets/js/networkmap.min.js"></script>
+
+    <style type="text/css">
+      .nm-icon-menu {
+        background-image: url(resources/img/settings.png) !important;
+      }
+      #example1 {
+        height: 500px;
+      }
+       #example2 {
+        height: 400px;
+      }
+    </style>
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="/assets/js/html5shiv.js"></script>
+      <script src="/assets/js/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="container">
+
+      <!-- Main component for a primary marketing message or call to action -->
+      <div class="jumbotron">
+        <h1>networkmap.js</h1>
+        <p>A library for visualizing flows in networks. The most common use case would be network weathermaps. Networkmap.js is compleatly running on the clientside, configuration can either be done by loading a JSON file or building the weathermap directly in the browser with the API.</p>
+      </div>
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h4 class="panel-titel">Simple Example</h4>
+        </div>
+        <div class="panel-body">
+          Initialize a networkmap and load a configuration file from the server. Here is the <a href="assets/weathermap/example1.json">JSON file</a> used in the example.
+<pre>
+  var map;
+  window.addEvent('load', function(){
+    map = new networkMap.Graph('example1').load('assets/weathermap/example1.json');
+  });
+</pre>
+        </div>
+        <div class="panel-footer">
+          <script>
+            var map;
+            window.addEvent('load', function(){
+              map = new networkMap.Graph('example1').load('assets/weathermap/example1.json');
+            });
+          </script>
+          <div id="example1"></div>
+        </div>
+      </div> <!-- panel -->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h4 class="panel-titel">Register a Datasource</h4>
+        </div>
+        <div class="panel-body">
+          By regitering a new datasource it is possible to load custom data into the graph. The datasource is a function that takes two parameters <code>url</code> and <code>requests</code>. <code>requests</code> is an array of request object. Each of the request objects has two properties <code>link</code> and <code>callback</code>.
+          <code>request.link</code> is a instance of <code>networkMap.LinkPath</code>, and <code>request.callback</code> should be called to update the LinkPath.<br><br>
+<pre>
+networkMap.registerDatasource('example', function(url, requests){
+  requests.each(function(request){
+    // Example on how to get the node to get node specific data
+    //request.link.getNode().options.id;
+
+    new Request.JSON({
+      url: 'assets/request/' + request.link.getNode().options.id + '/' + request.link.options.name,
+      onSuccess: function(response){
+        request.callback({
+          url: url,
+          request: request.link,
+          value: response.value,
+          realValue: response.realValue
+        });
+      }
+    }).get();
+
+    
+  });
+});
+
+var map;
+window.addEvent('load', function(){
+  map = new networkMap.Graph('example2', {datasource: 'example'}).load('assets/weathermap/example2.json');
+});
+</pre>
+        </div>
+        <div class="panel-footer">
+          <script>
+            networkMap.registerDatasource('example', function(url, requests){
+              requests.each(function(request){
+                // Example on how to get the node to get node specific data
+                //request.link.getNode().options.id;
+
+                new Request.JSON({
+                  url: 'assets/request/' + request.link.getNode().options.id + '/' + request.link.options.name,
+                  onSuccess: function(response){
+                    request.callback({
+                      url: url,
+                      request: request.link,
+                      value: response.value,
+                      realValue: response.realValue
+                    });
+                  }
+                }).get();
+
+                
+              });
+            });
+
+            var map2;
+            window.addEvent('load', function(){
+              map2 = new networkMap.Graph('example2', {datasource: 'example'}).load('assets/weathermap/example2.json');
+            });
+          </script>
+          <div id="example2"></div>
+        </div>
+      </div> <!-- panel -->
+
+    </div> <!-- /container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="../../assets/js/jquery.js"></script>
+    <script src="../../dist/js/bootstrap.min.js"></script>
+  </body>
+</html>
