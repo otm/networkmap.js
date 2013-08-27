@@ -531,7 +531,9 @@ networkMap.colormap.flat5 = {
 		/** The size of the the color square */
 		boxSize: 25,
 		/** margin */
-		margin: 10
+		margin: 10,
+		/** target */
+		target: null
 	},
 
 	/** The graph object to attach to */
@@ -556,8 +558,6 @@ networkMap.colormap.flat5 = {
 			throw 'Colormap "' + colormap + '" is not registerd';
 		}
 
-		this.graph.addEvent('resize', this.move.bind(this));
-
 		this.draw();
 	},
 
@@ -569,13 +569,20 @@ networkMap.colormap.flat5 = {
 	 */
 	draw: function(){
 		var colormap = this.colormap.map;
-		var svg = this.svg = this.graph.getSVG().group();
+
+		var container = this.container = new Element('div', {class: 'nm-colormap'}).inject(this.options.target);
+		var svg = this.svg = SVG(container).group();
+
+		
 
 		colormap.each(function(color, index){
 			svg.rect(this.options.boxSize, this.options.boxSize).attr({
 				fill: color,
 				'stroke-width': 1
-			}).move(0, (colormap.length - 1 - index) * this.options.boxSize);
+			}).move(
+				0, 
+				(colormap.length - 1 - index) * this.options.boxSize
+			);
 
 			svg.line(
 				-5, (colormap.length - 1 - index) * this.options.boxSize,
@@ -591,7 +598,7 @@ networkMap.colormap.flat5 = {
 					'font-size': this.options.boxSize/2
 				})
 				.move(
-				-this.options.boxSize/2, 
+				-this.options.boxSize/2,
 				(colormap.length - 1.3 - index) * this.options.boxSize ,
 				'end'
 			);
@@ -615,33 +622,26 @@ networkMap.colormap.flat5 = {
 			(colormap.length - 0.3) * this.options.boxSize ,
 			'end'
 		);
-
-		this.move();
+		
+		this._move();
 
 		return this;
 	},
 
 	/**
-	 * Move the legend to the x and y coordinate.
+	 * Move the legend and resize the containing div
 	 *
 	 * @this {networkMap.ColorLegend}
 	 * @return {networkMap.ColorLegend} self
-	 * @todo clean up 
 	 */
-	move: function(x, y){
-		var docSize;		
-		if (!x || !y){
-			docSize = this.graph.element.getSize();	
-		}
-		
-		
-		if (docSize.x && docSize.y){
-			this.svg.move(
-				docSize.x - this.options.boxSize - this.options.margin , 
-				docSize.y - this.options.boxSize * this.colormap.map.length - this.options.margin
-			);
-		}
-		
+	_move: function(){
+		var bbox = this.svg.bbox();
+		this.container.setStyles({
+			width: bbox.width,
+			height: bbox.height	
+		});
+		this.svg.move(Math.abs(bbox.x), Math.abs(bbox.y));
+
 		return this;
 	}
 
@@ -925,15 +925,15 @@ networkMap.Graph = new Class({
 		this.svg = SVG(this.container);
 		this.graph = this.svg.group();
 		
-		if (this.options.enableEditor){
-			this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this});
-		}
+		this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this, target: this.container});
 
-		this.settings = new networkMap.SettingsManager(this.container);
-		this.settings.addEvent('active', this.enableEditor.bind(this));
-		this.settings.addEvent('deactive', this.disableEditor.bind(this));
-		this.settings.addEvent('save', this.save.bind(this));
-		
+		if (this.options.enableEditor){
+			this.settings = new networkMap.SettingsManager(this.container);
+			this.settings.addEvent('active', this.enableEditor.bind(this));
+			this.settings.addEvent('deactive', this.disableEditor.bind(this));
+			this.settings.addEvent('save', this.save.bind(this));
+		}
+			
 		this.addEvent('resize', this.rescale.bind(this));
 		this.triggerEvent('resize', this);
 		
@@ -986,7 +986,7 @@ networkMap.Graph = new Class({
 	rescale: function(){
 		var docSize = this.element.getSize();	
 		
-		var bbox = this.svg.bbox();		
+		var bbox = this.graph.bbox();		
 		
 		// scale the svg if the docsize is to small
 		if (docSize.x < (bbox.width + bbox.x) || docSize.y < (bbox.height + bbox.y)){

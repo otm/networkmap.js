@@ -4,7 +4,9 @@ networkMap.ColorLegend = new Class({
 		/** The size of the the color square */
 		boxSize: 25,
 		/** margin */
-		margin: 10
+		margin: 10,
+		/** target */
+		target: null
 	},
 
 	/** The graph object to attach to */
@@ -29,8 +31,6 @@ networkMap.ColorLegend = new Class({
 			throw 'Colormap "' + colormap + '" is not registerd';
 		}
 
-		this.graph.addEvent('resize', this.move.bind(this));
-
 		this.draw();
 	},
 
@@ -42,13 +42,20 @@ networkMap.ColorLegend = new Class({
 	 */
 	draw: function(){
 		var colormap = this.colormap.map;
-		var svg = this.svg = this.graph.getSVG().group();
+
+		var container = this.container = new Element('div', {class: 'nm-colormap'}).inject(this.options.target);
+		var svg = this.svg = SVG(container).group();
+
+		
 
 		colormap.each(function(color, index){
 			svg.rect(this.options.boxSize, this.options.boxSize).attr({
 				fill: color,
 				'stroke-width': 1
-			}).move(0, (colormap.length - 1 - index) * this.options.boxSize);
+			}).move(
+				0, 
+				(colormap.length - 1 - index) * this.options.boxSize
+			);
 
 			svg.line(
 				-5, (colormap.length - 1 - index) * this.options.boxSize,
@@ -64,7 +71,7 @@ networkMap.ColorLegend = new Class({
 					'font-size': this.options.boxSize/2
 				})
 				.move(
-				-this.options.boxSize/2, 
+				-this.options.boxSize/2,
 				(colormap.length - 1.3 - index) * this.options.boxSize ,
 				'end'
 			);
@@ -88,33 +95,26 @@ networkMap.ColorLegend = new Class({
 			(colormap.length - 0.3) * this.options.boxSize ,
 			'end'
 		);
-
-		this.move();
+		
+		this._move();
 
 		return this;
 	},
 
 	/**
-	 * Move the legend to the x and y coordinate.
+	 * Move the legend and resize the containing div
 	 *
 	 * @this {networkMap.ColorLegend}
 	 * @return {networkMap.ColorLegend} self
-	 * @todo clean up 
 	 */
-	move: function(x, y){
-		var docSize;		
-		if (!x || !y){
-			docSize = this.graph.element.getSize();	
-		}
-		
-		
-		if (docSize.x && docSize.y){
-			this.svg.move(
-				docSize.x - this.options.boxSize - this.options.margin , 
-				docSize.y - this.options.boxSize * this.colormap.map.length - this.options.margin
-			);
-		}
-		
+	_move: function(){
+		var bbox = this.svg.bbox();
+		this.container.setStyles({
+			width: bbox.width,
+			height: bbox.height	
+		});
+		this.svg.move(Math.abs(bbox.x), Math.abs(bbox.y));
+
 		return this;
 	}
 
