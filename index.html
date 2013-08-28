@@ -19,7 +19,7 @@
     <script src="lib/svg.draggable.js"></script>
     <script src="lib/svg.math.js"></script>
     <script src="lib/svg.path.js"></script>
-    <script src="dist/networkmap.min.js"></script>
+    <script src="dist/networkmap.js"></script>
 
     <style type="text/css">
       .nm-icon-menu {
@@ -28,8 +28,11 @@
       #example1 {
         height: 500px;
       }
-       #example2 {
+      #example2 {
         height: 400px;
+      }
+      #example3 {
+        height: 500px;
       }
     </style>
 
@@ -41,6 +44,7 @@
   </head>
 
   <body>
+    <a href="https://github.com/otm/networkmap.js"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
 
     <div class="container">
 
@@ -56,6 +60,7 @@
         </div>
         <div class="panel-body">
           Initialize a networkmap and load a configuration file from the server. Here is the <a href="assets/weathermap/example1.json">JSON file</a> used in the example.
+          <br><br>
 <pre>
   var map;
   window.addEvent('load', function(){
@@ -140,6 +145,59 @@ window.addEvent('load', function(){
           <div id="example2"></div>
         </div>
       </div> <!-- panel -->
+
+     <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h4 class="panel-titel">Adding Custom Event Handlers</h4>
+        </div>
+        <div class="panel-body">
+          In this example the normal click event and hover event is replaced. 
+          <br>
+          The <code>click</code> function takes two arguments, <code>e</code> and <code>link</code>. <code>e</code> is an event, and <code>link</code> is an instance of <code>networkMap.LinkPath</code> from which it is posssible to access link and node information.
+          <br>
+          The <code>hover</code> function takes three arguments. <code>e</code> and <code>link</code> which is the same as above, and <code>el</code> which is a DOM element where it is possible to inject your own HTML.
+          <br><br>
+<pre>
+networkMap.registerEvent('click', function(e, link){
+  window.location.href = 'http://example.com/fqdn/' + link.getNode().options.id + '/if/' + link.options.name; 
+}); 
+
+networkMap.registerEvent('hover', function(e, link, el){
+  // remove the original click event
+  el.removeEvents('click'); 
+        
+  // set custom html in the hover popup
+  el.set('html', '<a href="http://example.com/fqdn/' + link.getNode().options.id + '/if/' + link.options.name + '">' + link.options.name + '</a>'); 
+});
+
+var map;
+window.addEvent('load', function(){
+  map = new networkMap.Graph('example3').load('assets/weathermap/example1.json');
+});
+</pre>
+        </div>
+        <div class="panel-footer">
+          <script>
+            networkMap.registerEvent('click', function(e, link){
+              window.location.href = 'http://example.com/fqdn/' + link.getNode().options.id + '/if/' + link.options.name; 
+            }); 
+
+            networkMap.registerEvent('hover', function(e, link, el){
+              // remove the original click event
+              el.removeEvents('click'); 
+                    
+              // set custom html in the hover popup
+              el.set('html', '<a href="http://example.com/fqdn/' + link.getNode().options.id + '/if/' + link.options.name + '">' + link.options.name + '</a>'); 
+            });
+            var map;
+            window.addEvent('load', function(){
+              map = new networkMap.Graph('example3').load('assets/weathermap/example1.json');
+            });
+          </script>
+          <div id="example3"></div>
+        </div>
+      </div> <!-- panel -->
+
 
     </div> <!-- /container -->
 
