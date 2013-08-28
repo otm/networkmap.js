@@ -1996,7 +1996,12 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		}
 	},
 	_hoverHandler: function(e){
-		networkMap.events.mouseover(e, this);
+		if (e.type === 'mouseover'){
+			networkMap.events.mouseover(e, this);
+		}
+		if (e.type === 'mouseout'){
+			networkMap.events.mouseout(e, this);
+		}
 	}
 });
 ;networkMap.Link = new Class({

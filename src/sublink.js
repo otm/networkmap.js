@@ -130,6 +130,11 @@ networkMap.LinkPath = new Class ({
 		}
 	},
 	_hoverHandler: function(e){
-		networkMap.events.mouseover(e, this);
+		if (e.type === 'mouseover'){
+			networkMap.events.mouseover(e, this);
+		}
+		if (e.type === 'mouseout'){
+			networkMap.events.mouseout(e, this);
+		}
 	}
 });
