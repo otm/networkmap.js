@@ -32,6 +32,17 @@ networkMap.ColorLegend = new Class({
 		}
 
 		this.draw();
+		
+		// Fix for FF 
+		// A timing issue seems to cause the bbox to
+		// return an incorrect value
+		(function(){
+			var bbox = this.svg.bbox();
+			if (bbox.x === 0 && bbox.y === 0){
+				return this;
+			}
+			this._move();
+		}.bind(this)).delay(0);
 	},
 
 	/**
@@ -109,6 +120,7 @@ networkMap.ColorLegend = new Class({
 	 */
 	_move: function(){
 		var bbox = this.svg.bbox();
+		
 		this.container.setStyles({
 			width: bbox.width,
 			height: bbox.height	
