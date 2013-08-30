@@ -55,7 +55,7 @@ networkMap.SettingsManager = new Class ({
 			class: 'clearfix nm-menu-buttons', 
 		});
 
-		var saveButton = new Element('button', {
+		var saveButton = this.btnSave = new Element('button', {
 			text: 'Save',
 			class: 'btn btn-primary pull-right',
 			events: {

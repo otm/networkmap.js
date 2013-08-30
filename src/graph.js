@@ -308,13 +308,25 @@ networkMap.Graph = new Class({
 			return false;
 			
 		var data = this.getConfiguration();
+
+		var html = this.settings.btnSave.get('html');
+		this.settings.btnSave.set('text', '.....');
 		 
 		new Request.JSON({
 			url: this.saveData.url,
 			method: this.saveData.method,
 			'data': data,
 			onSuccess: function(response){
-				
+				this.settings.btnSave.set('html', html);
+				if (response.status === 'ok'){
+					new networkMap.widget.Modal().alert('Weathermap saved');
+				}
+				if (response.status === 'nok'){
+					new networkMap.widget.Modal().alert(response.error, {title: 'Error'});
+				}
+				if (response.status == 'deleted'){
+					new networkMap.widget.Modal().alert('The networkmap is deleted', {title: 'Error'});
+				}
 			}.bind(this),
 			onFailure: function(){
 				

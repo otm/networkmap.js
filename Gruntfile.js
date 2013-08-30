@@ -27,6 +27,7 @@ module.exports = function(grunt) {
 					'src/widgets/accordion.js',
 					'src/widgets/list.js',
 					'src/widgets/select.js',
+					'src/widgets/modal.js',
 					'src/datasource.js',
 					'src/events.js', 
 					'src/colormap.js', 
