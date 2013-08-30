@@ -11,6 +11,9 @@ networkMap.Node = new Class({
 		weight: null,
 		fontFamily: 'Helvetica',
 		fontSize: 16,
+		bgColor: '#ddd',
+		strokeColor: '#000',
+		strokeWidth: 2, 
 		information: {
 		},
 		data:{
@@ -46,7 +49,10 @@ networkMap.Node = new Class({
 		'style',
 		'events',
 		'fontFamily',
-		'fontSize'
+		'fontSize',
+		'bgColor',
+		'strokeColor',
+		'strokeWidth' 
 	],
 	editTemplate: {
 		id: {
@@ -65,7 +71,20 @@ networkMap.Node = new Class({
 		fontSize: {
 			label: 'Font size',
 			type: 'int'
+		},
+		bgColor: {
+			label: 'Color',
+			type: 'color'
+		},
+		strokeColor: {
+			label: 'Stroke color',
+			type: 'color'
+		},
+		strokeWidth: {
+			label: 'Stroke width',
+			type: 'int'
 		}
+		
 	},
 	initialize: function(options){
 		this.graph = options.graph;
@@ -349,8 +368,8 @@ networkMap.Node = new Class({
 		// create the rect
 		var bboxLabel = label.bbox();
 		var rect = svg.rect(1,1)
-			.fill({ color: '#ddd'})
-			.stroke({ color: '#000', width: 2 })
+			.fill({ color: this.options.bgColor})
+			.stroke({ color: this.options.strokeColor, width: this.options.strokeWidth })
 			.attr({ 
 				rx: 4,
 				ry: 4
@@ -358,8 +377,11 @@ networkMap.Node = new Class({
 			.size(
 				bboxLabel.width + this.options.padding * 2, 
 				bboxLabel.height + this.options.padding * 2
-		);
+			);
+							
 		label.front();
+		
+
 		
 		svg.on('click', this._clickhandler.bind(this));
 		if (this.options.events){
