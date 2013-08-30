@@ -1468,6 +1468,8 @@ networkMap.Graph = new Class({
 		lat: null,
 		lng: null,
 		weight: null,
+		fontFamily: 'Helvetica',
+		fontSize: 16,
 		information: {
 		},
 		data:{
@@ -1501,7 +1503,9 @@ networkMap.Graph = new Class({
 		'padding',
 		'href',
 		'style',
-		'events'
+		'events',
+		'fontFamily',
+		'fontSize'
 	],
 	editTemplate: {
 		id: {
@@ -1516,7 +1520,11 @@ networkMap.Graph = new Class({
 		padding: {
 			label: 'Padding',
 			type: 'int'
-		}		
+		},
+		fontSize: {
+			label: 'Font size',
+			type: 'int'
+		}
 	},
 	initialize: function(options){
 		this.graph = options.graph;
@@ -1790,10 +1798,10 @@ networkMap.Graph = new Class({
 		// create the label first to get size
 		var label = svg.text(this.options.name)
 			.font({
-				family:   'Helvetica',
-				size:     '16px',
+				family:   this.options.fontFamily,
+				size:     this.options.fontSize,
 				anchor:   'start',
-				leading:  '15px'
+				leading:  this.options.fontSize - 1
 			})
 			.move(this.options.padding, this.options.padding);
 
