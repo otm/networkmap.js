@@ -146,7 +146,6 @@ networkMap.Node = new Class({
 
 		var changeHandler = function(key, obj){
 			return function(e){
-				console.log('test');
 				obj.setProperty(key, e.target.value);	
 			};
 		};

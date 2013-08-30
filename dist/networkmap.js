@@ -309,15 +309,13 @@ networkMap.registerDatasource('simulate', function(url, requests){
 			window.location.href = link.options.events.click.href;
 		}
 	},
+	
 	hover: function(e, link, el){
 		el.set('text', link.options.name);
 	},
-	mouseover: function(e, options, hover){
-		console.log("mouse over");
-	},
-	mouseout: function(e, options, hover){
-		console.log('mouse out');	
-	}
+	mouseover: function(e, options, hover){},
+	
+	mouseout: function(e, options, hover){}
 };
 
 networkMap.registerEvent = function(name, f){
@@ -1001,21 +999,16 @@ networkMap.Graph = new Class({
 			docSize.x, 
 			docSize.y
 		);
-		
+					
 		var bbox = this.graph.bbox();	
-		var rbox = this.graph.rbox();	
-		
+			
 		// scale the svg if the docsize is to small
 		if (docSize.x < (bbox.width + bbox.x) || docSize.y < (bbox.height + bbox.y)){
-			//this.svg.viewbox(rbox.cx - bbox.cx, rbox.cy - bbox.cx, bbox.width + bbox.x, bbox.height + bbox.y);
 			this.svg.viewbox(bbox.x, bbox.y, bbox.width + bbox.x, bbox.height + bbox.y);
-			//this.svg.move(rbox.x * -1, rbox.y * -1);
 		}
 		else{
 			this.svg.viewbox(0, 0, docSize.x, docSize.y);
 		}
-		
-		
 		
 		return this;		
 	},
@@ -1204,7 +1197,7 @@ networkMap.Graph = new Class({
 			method: this.saveData.method,
 			'data': data,
 			onSuccess: function(response){
-				console.log(response);
+				
 			}.bind(this),
 			onFailure: function(){
 				
@@ -1452,7 +1445,7 @@ networkMap.Graph = new Class({
 
 		Object.each(requests, function(requestData, requestUrl){
 			requestData.callback = function(result){
-				console.log(result);
+				
 			};
 			
 			networkMap.datasource[this.options.datasource](
@@ -1612,7 +1605,6 @@ networkMap.Graph = new Class({
 
 		var changeHandler = function(key, obj){
 			return function(e){
-				console.log('test');
 				obj.setProperty(key, e.target.value);	
 			};
 		};

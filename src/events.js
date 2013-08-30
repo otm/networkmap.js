@@ -4,15 +4,13 @@ networkMap.events = networkMap.events || {
 			window.location.href = link.options.events.click.href;
 		}
 	},
+	
 	hover: function(e, link, el){
 		el.set('text', link.options.name);
 	},
-	mouseover: function(e, options, hover){
-		console.log("mouse over");
-	},
-	mouseout: function(e, options, hover){
-		console.log('mouse out');	
-	}
+	mouseover: function(e, options, hover){},
+	
+	mouseout: function(e, options, hover){}
 };
 
 networkMap.registerEvent = function(name, f){
