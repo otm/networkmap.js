@@ -17,7 +17,7 @@ networkMap.widget.IntegerInput = new Class ({
 			text: label
 		});
 		this.input = new Element('input', {
-			type: 'text',
+			type: 'number',
 			value: value
 		}).addEvent('change', function(e){
 			this.fireEvent('change', [e]);

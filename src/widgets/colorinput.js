@@ -1,10 +1,9 @@
 networkMap.widget = networkMap.widget || {};
 
-networkMap.widget.TextInput = new Class ({
+networkMap.widget.ColorInput = new Class ({
 	Implements: [Options, Events],
 	options: {
-		class: 'nm-input-text',
-		type: 'text'
+		class: 'nm-input-color'
 	},
 	wrapper: null,
 	label: null,
@@ -17,16 +16,23 @@ networkMap.widget.TextInput = new Class ({
 		this.label = new Element('span', {
 			text: label
 		});
+
+		this.div = new Element('div');		
+		
 		this.input = new Element('input', {
-			type: this.options.type,
+			type: 'color',
 			value: value
-		}); 
-	
+		}).addEvent('change', function(e){
+			this.fireEvent('change', [e]);
+		}.bind(this)); 
+		
+		console.log(value);		
+		
 		if (this.options.disabled === true){
 			this.input.disabled = true;
 		}
 		
-		this.wrapper.grab(this.label).grab(this.input);
+		this.wrapper.grab(this.label).grab(this.div.grab(this.input));
 	},
 	toElement: function(){
 		return this.wrapper;

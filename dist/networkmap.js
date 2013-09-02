@@ -34,7 +34,7 @@ networkMap.widget.IntegerInput = new Class ({
 			text: label
 		});
 		this.input = new Element('input', {
-			type: 'text',
+			type: 'number',
 			value: value
 		}).addEvent('change', function(e){
 			this.fireEvent('change', [e]);
@@ -54,7 +54,8 @@ networkMap.widget.IntegerInput = new Class ({
 networkMap.widget.TextInput = new Class ({
 	Implements: [Options, Events],
 	options: {
-		class: 'nm-input-text'
+		class: 'nm-input-text',
+		type: 'text'
 	},
 	wrapper: null,
 	label: null,
@@ -68,7 +69,7 @@ networkMap.widget.TextInput = new Class ({
 			text: label
 		});
 		this.input = new Element('input', {
-			type: 'text',
+			type: this.options.type,
 			value: value
 		}); 
 	
@@ -77,6 +78,45 @@ networkMap.widget.TextInput = new Class ({
 		}
 		
 		this.wrapper.grab(this.label).grab(this.input);
+	},
+	toElement: function(){
+		return this.wrapper;
+	}
+});;networkMap.widget = networkMap.widget || {};
+
+networkMap.widget.ColorInput = new Class ({
+	Implements: [Options, Events],
+	options: {
+		class: 'nm-input-color'
+	},
+	wrapper: null,
+	label: null,
+	input: null,
+	initialize: function(label, value, options){
+		this.setOptions(options);
+		this.wrapper = new Element('div', {
+			class: this.options.class
+		});
+		this.label = new Element('span', {
+			text: label
+		});
+
+		this.div = new Element('div');		
+		
+		this.input = new Element('input', {
+			type: 'color',
+			value: value
+		}).addEvent('change', function(e){
+			this.fireEvent('change', [e]);
+		}.bind(this)); 
+		
+		console.log(value);		
+		
+		if (this.options.disabled === true){
+			this.input.disabled = true;
+		}
+		
+		this.wrapper.grab(this.label).grab(this.div.grab(this.input));
 	},
 	toElement: function(){
 		return this.wrapper;
@@ -1575,8 +1615,8 @@ networkMap.Graph = new Class({
 		weight: null,
 		fontFamily: 'Helvetica',
 		fontSize: 16,
-		bgColor: '#ddd',
-		strokeColor: '#000',
+		bgColor: '#dddddd',
+		strokeColor: '#000000',
 		strokeWidth: 2, 
 		information: {
 		},
@@ -1630,11 +1670,11 @@ networkMap.Graph = new Class({
 		},
 		padding: {
 			label: 'Padding',
-			type: 'int'
+			type: 'number'
 		},
 		fontSize: {
 			label: 'Font size',
-			type: 'int'
+			type: 'number'
 		},
 		bgColor: {
 			label: 'Color',
@@ -1646,7 +1686,7 @@ networkMap.Graph = new Class({
 		},
 		strokeWidth: {
 			label: 'Stroke width',
-			type: 'int'
+			type: 'number'
 		}
 		
 	},
@@ -1743,7 +1783,15 @@ networkMap.Graph = new Class({
 	
 		accordionGroup = container.add('Globals');		
 		Object.each(this.editTemplate, function(option, key){
-			accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
+			if (option.type === 'number'){
+				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
+			}
+			else if(option.type === 'text'){
+				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
+			}
+			else if (option.type === 'color'){
+				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));	
+			}
 		}.bind(this));
 		
 		return container;
@@ -2170,23 +2218,23 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 	editTemplate: {
 		width: {
 			label: 'Width',
-			type: 'int'
+			type: 'number'
 		},
 		inset: {
 			label: 'Inset',
-			type: 'int'
+			type: 'number'
 		},
 		connectionDistance: {
 			label: 'Chamfer',
-			type: 'int'
+			type: 'number'
 		},
 		staticConnectionDistance: {
 			label: 'Offset',
-			type: 'int'
+			type: 'number'
 		},
 		arrowHeadLength: {
 			label: 'Arrow Head',
-			type: 'int'
+			type: 'number'
 		}
 	},
 	pathPoints: [],
@@ -2316,7 +2364,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 			}, 
 			width: {
 				label: 'Width',
-				type: 'int'	
+				type: 'number'	
 			}
 		};		
 		
@@ -2326,11 +2374,14 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.nodeA)));
 			}
 			else{
-				if (option.type === 'int'){
+				if (option.type === 'number'){
 					accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
 				}
 				else if(option.type === 'text'){
 					accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
+				}
+				else if(option.type === 'color'){
+					accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
 				}
 			}
 		}.bind(this));

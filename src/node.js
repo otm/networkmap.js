@@ -11,8 +11,8 @@ networkMap.Node = new Class({
 		weight: null,
 		fontFamily: 'Helvetica',
 		fontSize: 16,
-		bgColor: '#ddd',
-		strokeColor: '#000',
+		bgColor: '#dddddd',
+		strokeColor: '#000000',
 		strokeWidth: 2, 
 		information: {
 		},
@@ -66,11 +66,11 @@ networkMap.Node = new Class({
 		},
 		padding: {
 			label: 'Padding',
-			type: 'int'
+			type: 'number'
 		},
 		fontSize: {
 			label: 'Font size',
-			type: 'int'
+			type: 'number'
 		},
 		bgColor: {
 			label: 'Color',
@@ -82,7 +82,7 @@ networkMap.Node = new Class({
 		},
 		strokeWidth: {
 			label: 'Stroke width',
-			type: 'int'
+			type: 'number'
 		}
 		
 	},
@@ -179,7 +179,15 @@ networkMap.Node = new Class({
 	
 		accordionGroup = container.add('Globals');		
 		Object.each(this.editTemplate, function(option, key){
-			accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
+			if (option.type === 'number'){
+				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
+			}
+			else if(option.type === 'text'){
+				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
+			}
+			else if (option.type === 'color'){
+				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));	
+			}
 		}.bind(this));
 		
 		return container;

@@ -25,23 +25,23 @@ networkMap.Link = new Class({
 	editTemplate: {
 		width: {
 			label: 'Width',
-			type: 'int'
+			type: 'number'
 		},
 		inset: {
 			label: 'Inset',
-			type: 'int'
+			type: 'number'
 		},
 		connectionDistance: {
 			label: 'Chamfer',
-			type: 'int'
+			type: 'number'
 		},
 		staticConnectionDistance: {
 			label: 'Offset',
-			type: 'int'
+			type: 'number'
 		},
 		arrowHeadLength: {
 			label: 'Arrow Head',
-			type: 'int'
+			type: 'number'
 		}
 	},
 	pathPoints: [],
@@ -171,7 +171,7 @@ networkMap.Link = new Class({
 			}, 
 			width: {
 				label: 'Width',
-				type: 'int'	
+				type: 'number'	
 			}
 		};		
 		
@@ -181,11 +181,14 @@ networkMap.Link = new Class({
 				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.nodeA)));
 			}
 			else{
-				if (option.type === 'int'){
+				if (option.type === 'number'){
 					accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
 				}
 				else if(option.type === 'text'){
 					accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
+				}
+				else if(option.type === 'color'){
+					accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
 				}
 			}
 		}.bind(this));

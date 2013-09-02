@@ -24,6 +24,7 @@ module.exports = function(grunt) {
 					'src/networkMap.js', 
 					'src/widgets/integerinput.js',
 					'src/widgets/textinput.js',
+					'src/widgets/colorinput.js',
 					'src/widgets/accordion.js',
 					'src/widgets/list.js',
 					'src/widgets/select.js',
