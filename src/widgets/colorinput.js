@@ -26,8 +26,6 @@ networkMap.widget.ColorInput = new Class ({
 			this.fireEvent('change', [e]);
 		}.bind(this)); 
 		
-		console.log(value);		
-		
 		if (this.options.disabled === true){
 			this.input.disabled = true;
 		}
