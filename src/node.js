@@ -4,6 +4,7 @@ networkMap.Node = new Class({
 		graph: null,
 		id: null,
 		name: null,
+		comment: null,
 		x: null,
 		y: null,
 		lat: null,
@@ -13,7 +14,7 @@ networkMap.Node = new Class({
 		fontSize: 16,
 		bgColor: '#dddddd',
 		strokeColor: '#000000',
-		strokeWidth: 2, 
+		strokeWidth: 2,
 		information: {
 		},
 		data:{
@@ -36,6 +37,7 @@ networkMap.Node = new Class({
 	exportedOptions: [
 		'id',
 		'name',
+		'comment',
 		'x',
 		'y',
 		'lat',
@@ -62,6 +64,10 @@ networkMap.Node = new Class({
 		},
 		name: {
 			label: 'Name',
+			type: 'text'
+		},
+		comment: {
+			label: 'Comment',
 			type: 'text'
 		},
 		padding: {
@@ -373,8 +379,25 @@ networkMap.Node = new Class({
 			})
 			.move(this.options.padding, this.options.padding);
 
-		// create the rect
+		
+		// This is needed to center an scale the comment text
+		// as it is not possible to get a bbox on a tspan
 		var bboxLabel = label.bbox();
+		var comment;
+		if (this.options.comment && this.options.comment !== ''){
+			label.text(function(add){
+				add.tspan(this.options.name).newLine();
+				comment = add.tspan(this.options.comment).newLine().attr('font-size', this.options.fontSize - 2);
+			}.bind(this));
+			comment.attr('text-anchor', 'middle');
+			comment.dx(bboxLabel.width / 2);
+		}	
+		while (bboxLabel.width < label.bbox().width){
+			comment.attr('font-size', comment.attr('font-size') - 1);
+		}
+
+		// create the rect
+		bboxLabel = label.bbox();		
 		var rect = svg.rect(1,1)
 			.fill({ color: this.options.bgColor})
 			.stroke({ color: this.options.strokeColor, width: this.options.strokeWidth })
