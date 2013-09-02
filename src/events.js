@@ -38,22 +38,40 @@ networkMap.registerEvent = function(name, f){
 				}	
 			}
 			
-			
+			/*
 			var position = e.target.getPosition(),
-				svg = e.target.instance;
+			svg = e.target.instance;
 				
-				
-			var segment11 = svg.getSegment(2),
+			var midX, midY;
+			var viewbox = svg.doc().viewbox();
+			if (svg.getSegment(6).type !== 'Z'){
+				var segment11 = svg.getSegment(2),
 				segment12 = svg.getSegment(3),
 				segment21 = svg.getSegment(5),
 				segment22 = svg.getSegment(6);
+				
+				midX = ((segment11.coords[0] + segment22.coords[0])/2 +
+					(segment12.coords[0] + segment21.coords[0])/2)/2;
+	
+				midY = ((segment11.coords[1] + segment22.coords[1])/2 +
+					(segment12.coords[1] + segment21.coords[1])/2)/2;
+			}
+			else{
+				var s1 = svg.getSegment(1),
+				s2 = svg.getSegment(2),
+				s4 = svg.getSegment(4),
+				s5 = svg.getSegment(5);
+				
+				midX = ((s1.coords[0] + s2.coords[0] + s4.coords[0] + s5.coords[0]) / 4 + viewbox.x ) * viewbox.zoomX;
+	
+				midY = ((s1.coords[1] + s2.coords[1] + s4.coords[1] + s5.coords[1]) / 4  + viewbox.y ) * viewbox.zoomY;
+				
+				console.log(s1.coords[0] , s2.coords[0] , s4.coords[0] , s5.coords[0]);
+			}
+
+			*/
 			
-			var midX = ((segment11.coords[0] + segment22.coords[0])/2 +
-				(segment12.coords[0] + segment21.coords[0])/2)/2;
-	
-			var midY = ((segment11.coords[1] + segment22.coords[1])/2 +
-				(segment12.coords[1] + segment21.coords[1])/2)/2;
-	
+			
 			el = new Element('div', {
 				'id': 'nm-active-hover',
 				'class': 'nm-hover',
@@ -71,9 +89,6 @@ networkMap.registerEvent = function(name, f){
 						}).delay(10);
 					},
 					click: function(ev){
-						// swap targets :)
-						//ev.target = e.target;
-						//e.target.instance.clickHandler(e);
 						link._clickHandler(e);
 					}
 						
@@ -93,10 +108,13 @@ networkMap.registerEvent = function(name, f){
 			f(e, link, el);
 			
 			var size = el.getSize();
+			var bboxClient = e.target.getBoundingClientRect();
+			
 			el.setStyles({
-				top: midY - size.y/2 + e.target.instance.doc().parent.getPosition().y,
-				left: midX - size.x/2 + e.target.instance.doc().parent.getPosition().x
+				top: (bboxClient.top + bboxClient.bottom)/2 - size.y/2,
+				left: (bboxClient.left + bboxClient.right)/2 - size.x/2
 			});
+		
 		};
 		
 		networkMap.events.mouseout = function(e, link){
