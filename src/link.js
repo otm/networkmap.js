@@ -207,7 +207,17 @@ networkMap.Link = new Class({
 				}
 			}
 		}.bind(this));
-				
+		
+		// Add sublinks
+		// TODO: Add support for asymmetric links
+		if (this.subpath.nodeA) {
+			accordionGroup = container.add('Sublinks');
+			var sublinkList = new networkMap.widget.List();
+			this.subpath.nodeA.each(function(subpath, index){
+				sublinkList.add(subpath.options.name + ' - ' + this.subpath.nodeB[index].options.name, {enableDelete: false});
+			}.bind(this));
+			accordionGroup.grab(sublinkList);
+		}
 		
 		return container;
 		
@@ -731,6 +741,7 @@ networkMap.Link = new Class({
 							.Z().back();
 					}
 
+					/*
 					if (sublink[index].getProperty('events')){
 						// removed due to new event system
 						//sublink[index].link = nodeOptions.sublinks[sublink].events;
@@ -744,6 +755,7 @@ networkMap.Link = new Class({
 							sublink[index].svg.on('mouseout', networkMap.events.mouseout);
 						}
 					}
+					*/
 		
 					index += 1;
 				}

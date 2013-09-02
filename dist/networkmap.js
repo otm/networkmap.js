@@ -110,8 +110,6 @@ networkMap.widget.ColorInput = new Class ({
 			this.fireEvent('change', [e]);
 		}.bind(this)); 
 		
-		console.log(value);		
-		
 		if (this.options.disabled === true){
 			this.input.disabled = true;
 		}
@@ -462,7 +460,7 @@ networkMap.registerEvent = function(name, f){
 		};
 	}
 	else if (name === 'hover'){	
-		networkMap.events.mouseover = function(e, link){			
+		networkMap.events.mouseover = function(e, link){
 			var el = document.id('nm-active-hover');
 			var id = e.target.instance.attr('id');
 			
@@ -2422,7 +2420,17 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 				}
 			}
 		}.bind(this));
-				
+		
+		// Add sublinks
+		// TODO: Add support for asymmetric links
+		if (this.subpath.nodeA) {
+			accordionGroup = container.add('Sublinks');
+			var sublinkList = new networkMap.widget.List();
+			this.subpath.nodeA.each(function(subpath, index){
+				sublinkList.add(subpath.options.name + ' - ' + this.subpath.nodeB[index].options.name, {enableDelete: false});
+			}.bind(this));
+			accordionGroup.grab(sublinkList);
+		}
 		
 		return container;
 		
@@ -2946,6 +2954,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 							.Z().back();
 					}
 
+					/*
 					if (sublink[index].getProperty('events')){
 						// removed due to new event system
 						//sublink[index].link = nodeOptions.sublinks[sublink].events;
@@ -2959,6 +2968,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 							sublink[index].svg.on('mouseout', networkMap.events.mouseout);
 						}
 					}
+					*/
 		
 					index += 1;
 				}
