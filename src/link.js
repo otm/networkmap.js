@@ -11,7 +11,7 @@ networkMap.Link = new Class({
 		localUpdate: true,
 		refreshInterval: 300000,
 		datasource: null,
-		colormap: null,
+		colormap: null
 	},
 	exportedOptions: [
 		'inset',

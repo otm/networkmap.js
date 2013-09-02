@@ -130,6 +130,10 @@ networkMap.LinkPath = new Class ({
 		}
 	},
 	_hoverHandler: function(e){
+		if (this.link.mode() === 'edit'){
+			return;
+		}
+		
 		if (e.type === 'mouseover'){
 			networkMap.events.mouseover(e, this);
 		}

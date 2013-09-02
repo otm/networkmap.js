@@ -462,7 +462,7 @@ networkMap.registerEvent = function(name, f){
 		};
 	}
 	else if (name === 'hover'){	
-		networkMap.events.mouseover = function(e, link){
+		networkMap.events.mouseover = function(e, link){			
 			var el = document.id('nm-active-hover');
 			var id = e.target.instance.attr('id');
 			
@@ -2201,6 +2201,10 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		}
 	},
 	_hoverHandler: function(e){
+		if (this.link.mode() === 'edit'){
+			return;
+		}
+		
 		if (e.type === 'mouseover'){
 			networkMap.events.mouseover(e, this);
 		}
@@ -2222,7 +2226,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		localUpdate: true,
 		refreshInterval: 300000,
 		datasource: null,
-		colormap: null,
+		colormap: null
 	},
 	exportedOptions: [
 		'inset',
