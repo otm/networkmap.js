@@ -20,7 +20,9 @@ networkMap.widget.TextInput = new Class ({
 		this.input = new Element('input', {
 			type: this.options.type,
 			value: value
-		}); 
+		}).addEvent('change', function(e){
+			this.fireEvent('change', [e]);
+		}.bind(this)); 
 	
 		if (this.options.disabled === true){
 			this.input.disabled = true;
