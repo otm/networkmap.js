@@ -20,6 +20,24 @@ networkMap.Graph = new Class({
 		refreshInterval: null
 	},
 
+	/** The default configuration */
+	defaults: {
+		node: {
+			padding: 10,
+			fontSize: 16,
+			bgColor: '#dddddd',
+			strokeColor: '#000000',
+			strokeWidth: 2
+		},
+		link: {
+			width: 10,
+			inset: 10,
+			connectionDistance: 10,
+			staticConnectionDistance: 30,
+			arrowHeadLength: 10
+		}
+	},
+
 	/** This array controls what is exported in getConfiguration*/
 	exportedOptions: [
 		//'width',
@@ -34,6 +52,9 @@ networkMap.Graph = new Class({
 
 	/** An internal reference to onSave configuration */
 	saveData: {},
+
+	/** An internal reference to check keep track of the mode */
+	_mode: 'normal',
 
 	/**
 	 * Creates an instance of networkMap.Graph.
@@ -65,6 +86,42 @@ networkMap.Graph = new Class({
 		
 		this.setRefreshInterval(this.options.refreshInterval);
 		
+		this.svg.on('click', this._clickHandler.bind(this));		
+	},
+	
+	/**
+	 * Set the default options for the graph. The defaults will be 
+	 * merged with the current defaults.
+	 * 
+	 * @param element {string} The element to set default options for.
+	 * Can be one of (node|link)
+	 * @param defaults {object} An object with key value pairs of options
+	 * @return {networkMap.Graph} self
+	 */
+	setDefaults: function(element, defaults){
+		if (!this.defaults[element]){
+			throw "Illigal element";
+		}
+		
+		Object.merge(this.defaults[element], defaults);
+		
+		this.fireEvent('redraw', [{defaultsUpdated: true}]);
+		
+		return this;
+	},
+
+	/**
+	 * Retrive the default configuration for a graph element
+	 *
+	 * @param element {string} The graph element to return defaults for.
+	 * @return {object} the default configuration 
+	 */
+	getDefaults: function(element){
+		if (!this.defaults[element]){
+			throw "Illigal element";
+		}
+		
+		return this.defaults[element];
 	},
 
 	/** 
@@ -155,6 +212,54 @@ networkMap.Graph = new Class({
 	 */
 	settingsManager: function(){
 		return this.settings();
+	},
+
+	/**
+	 * Generates HTML that is used for configuration
+	 *
+	 * @this {networkMap.Graph}
+	 * @return {Element} A HTML Element that contains the UI
+	 */
+	getSettingsWidget: function(){
+		var container = new networkMap.widget.Accordion();
+		var accordionGroup;
+
+		var changeHandler = function(defaults, key){
+			return function(e){
+				defaults[key] = e.target.value;
+				this.fireEvent('redraw', [{defaultsUpdated: true}]);
+			}.bind(this);
+		}.bind(this);
+			
+	
+		accordionGroup = container.add('Node Defaults');		
+		Object.each(networkMap.Node.defaultTemplate, function(option, key){
+			if (option.type === 'number'){
+				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+			}
+			else if(option.type === 'text'){
+				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+			}
+			else if (option.type === 'color'){
+				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+			}
+		}.bind(this));
+		
+		accordionGroup = container.add('Link Defaults');		
+		Object.each(networkMap.Link.defaultTemplate, function(option, key){
+			if (option.type === 'number'){
+				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+			}
+			else if(option.type === 'text'){
+				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+			}
+			else if (option.type === 'color'){
+				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+			}
+		}.bind(this));
+				
+		
+		return container;
 	},
 
 	/**
@@ -356,6 +461,8 @@ networkMap.Graph = new Class({
 		this.links.each(function(link){
 			link.mode('edit');
 		});
+		
+		this._mode = 'edit';
 
 		return this;
 	},
@@ -374,7 +481,19 @@ networkMap.Graph = new Class({
 			link.mode('normal');
 		});
 
+		this._mode = 'normal';
+
 		return this;
+	},
+	
+	_clickHandler: function(e){
+		if (this._mode !== 'edit'){
+			return;
+		}
+		
+		if (e.target.instance === this.svg || e.target.instance === this.graph){
+			this.settings.edit(this);
+		}
 	},
 
 	/**
