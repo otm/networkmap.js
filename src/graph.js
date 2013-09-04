@@ -317,6 +317,13 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	loadObject: function(mapStruct){
+		this.setOnSave(mapStruct.onSave);
+		
+		if (mapStruct.defaults){
+			this.setDefaults('node', mapStruct.defaults.node || this.defaults.node);
+			this.setDefaults('link', mapStruct.defaults.link || this.defaults.link);
+		}
+		
 		mapStruct.nodes.each(function(node){
 			node.graph = this;
 			node.draggable = this.options.allowDraggableNodes;
@@ -327,8 +334,6 @@ networkMap.Graph = new Class({
 			link.graph = this;
 			this.addLink(new networkMap.Link(link), false);
 		}.bind(this));
-
-		this.setOnSave(mapStruct.onSave);
 		
 		this.fireEvent('load', [this]);
 		this.triggerEvent('resize', this);
@@ -529,8 +534,10 @@ networkMap.Graph = new Class({
 	 */
 	getConfiguration: function(){
 		var configuration = {
+			defaults: this.defaults,
 			nodes: [],
-			links: []
+			links: [],
+			onSave: this.saveData
 		};
 
 		// self
