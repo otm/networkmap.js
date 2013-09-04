@@ -23,6 +23,10 @@ networkMap.widget.IntegerInput = new Class ({
 			this.fireEvent('change', [e]);
 		}.bind(this)); 
 		
+		if (this.options.min !== undefined){
+			this.input.set('min', this.options.min);	
+		}		
+		
 		if (this.options.disabled === true){
 			this.input.disabled = true;
 		}
