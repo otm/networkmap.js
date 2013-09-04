@@ -157,6 +157,11 @@ networkMap.SettingsManager = new Class ({
 		return this;
 	},
 
+	defaultView: function(){
+		this.clear();
+		this.fireEvent('defaultView', [this]);	
+	},
+
 	/**
 	 * Toggle the settings manager. 
 	 *
@@ -182,6 +187,7 @@ networkMap.SettingsManager = new Class ({
 	enable: function(){
 		this.nav.addClass('nm-menu-open');	
 		this.fireEvent('active');
+		this.fireEvent('defaultView', [this]);
 
 		return this;
 	},
