@@ -100,14 +100,6 @@ networkMap.SettingsManager = new Class ({
 		this.clear();
 		this.displayButtons();
 		
-		// Check if the object is a link
-		if (obj.getLink){
-			link = obj.getLink();
-			this.fireEvent('edit', [link]);
-			content.grab(link.getSettingsWidget());
-			return this;			
-		}
-	
 		// This is for other types of nodes.
 		content.grab(obj.getSettingsWidget());		
 		

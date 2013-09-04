@@ -45,6 +45,9 @@ networkMap.LinkPath = new Class ({
 	getNode: function(){
 		return this.getLink().getNode(this);
 	},
+	getSettingsWidget: function(){
+		return this.getLink().getSettingsWidget();
+	},
 	getProperty: function(key){
 		if (key == 'width'){
 			var link = this.getMainPath();
