@@ -77,6 +77,9 @@ networkMap.Graph = new Class({
 
 		if (this.options.enableEditor){
 			this.settings = new networkMap.SettingsManager(this.container);
+			this.settings.addEvent('defaultView', function(){
+				this.settings.edit(this);
+			}.bind(this));
 			this.settings.addEvent('active', this.enableEditor.bind(this));
 			this.settings.addEvent('deactive', this.disableEditor.bind(this));
 			this.settings.addEvent('save', this.save.bind(this));
@@ -451,6 +454,7 @@ networkMap.Graph = new Class({
 		
 		return true;
 	},
+
 
 	/**
 	 * Set nodes and links in edit mode
