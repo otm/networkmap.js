@@ -909,16 +909,6 @@ networkMap.colormap.flat5 = {
 		this.clear();
 		this.displayButtons();
 		
-		// Check if the object is a link
-		/*
-		if (obj.getLink){
-			link = obj.getLink();
-			this.fireEvent('edit', [link]);
-			content.grab(link.getSettingsWidget());
-			return this;			
-		}
-		*/
-		
 		// This is for other types of nodes.
 		content.grab(obj.getSettingsWidget());		
 		
@@ -2203,6 +2193,8 @@ networkMap.Graph = new Class({
 		svg.dragend = function(){
 			this.options.x = this.x();
 			this.options.y = this.y();
+			this._localConfig.x = this.x();
+			this._localConfig.y = this.y();
 			this.fireEvent('dragend');
 		}.bind(this);
 		

@@ -461,6 +461,8 @@ networkMap.Node = new Class({
 		svg.dragend = function(){
 			this.options.x = this.x();
 			this.options.y = this.y();
+			this._localConfig.x = this.x();
+			this._localConfig.y = this.y();
 			this.fireEvent('dragend');
 		}.bind(this);
 		
