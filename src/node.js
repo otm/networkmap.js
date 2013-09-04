@@ -1,5 +1,7 @@
 networkMap.Node = new Class({
 	Implements: [Options, Events],
+	
+	/** These are sane defaults */
 	options:{
 		graph: null,
 		id: null,
@@ -96,6 +98,12 @@ networkMap.Node = new Class({
 		this.graph = options.graph;
 		delete options.graph;
 
+		this._localConfig = options;
+
+		if (this.graph){
+			this.setOptions(this.graph.getDefaults('node'));
+		}
+		
 		this.setOptions(options);
 
 		if (!this.options.id){
@@ -108,15 +116,17 @@ networkMap.Node = new Class({
 
 		if (this.graph){
 			this.draw();
+			
+			this.graph.addEvent('redraw', function(e){
+				if (e.defaultsUpdated === true){
+					this.setOptions(this.graph.getDefaults('node'));
+					this.setOptions(this._localConfig);
+				}
+				this.draw();
+			}.bind(this));
 		}
 
 	},
-
-	/* TODO: Remove
-	getEditables: function(){
-		return this.editTemplate;
-	},
-	*/
 
 	/**
 	 * Update an option
@@ -132,6 +142,8 @@ networkMap.Node = new Class({
 		}
 		
 		this.options[key] = value;
+		this._localConfig[key] = value;
+		
 		this.draw();
 		
 		return this;
@@ -149,7 +161,7 @@ networkMap.Node = new Class({
 			throw 'Unknown id: ' + key;
 		}
 		
-		return this.options[key];
+		return this._localConfig[key];
 	},
 
 	/**
@@ -162,8 +174,11 @@ networkMap.Node = new Class({
 		var configuration = {};
 
 		this.exportedOptions.each(function(option){
-			configuration[option] = this.options[option];
+			if (this._localConfig[option]){
+				configuration[option] = this._localConfig[option];
+			}
 		}.bind(this));
+		
 		return configuration;
 	},
 
@@ -377,7 +392,7 @@ networkMap.Node = new Class({
 				anchor:   'start',
 				leading:  this.options.fontSize - 1
 			})
-			.move(this.options.padding, this.options.padding);
+			.move(parseFloat(this.options.padding), parseFloat(this.options.padding));
 
 		
 		// This is needed to center an scale the comment text
@@ -429,7 +444,7 @@ networkMap.Node = new Class({
 		var cover = rect.clone().fill({opacity: 0}).front();
 
 		// move it in place
-		svg.move(this.options.x, this.options.y);
+		svg.move(parseFloat(this.options.x), parseFloat(this.options.y));
 		
 	
 		
@@ -459,6 +474,29 @@ networkMap.Node = new Class({
 		return true;
 	}
 });
+
+networkMap.Node.defaultTemplate = {
+	padding: {
+		label: 'Padding',
+		type: 'number'
+	},
+	fontSize: {
+		label: 'Font size',
+		type: 'number'
+	},
+	bgColor: {
+		label: 'Color',
+		type: 'color'
+	},
+	strokeColor: {
+		label: 'Stroke color',
+		type: 'color'
+	},
+	strokeWidth: {
+		label: 'Stroke width',
+		type: 'number'
+	}
+};
 
 networkMap.Node.renderer = networkMap.Node.renderer || {};
 

@@ -54,7 +54,10 @@ networkMap.Link = new Class({
 		var link, sublink;
 		
 		this.graph = options.graph;
-		options.graph = null;
+		delete options.graph;		
+		
+		
+		/* I should call the setGraph function and handle this there */
 		this.options.datasource = this.options.datasource || this.graph.options.datasource;
 		this.svg = this.graph.getPaintArea().group();
 
@@ -127,6 +130,13 @@ networkMap.Link = new Class({
 
 		}
 
+		// Set defaults
+		if (this.graph){
+			this.setOptions(this.graph.getDefaults('link'));
+		}
+		
+		// set local optioins
+		this._localConfig = options;
 		this.setOptions(options);
 
 		if (!this.options.colormap){
@@ -139,6 +149,14 @@ networkMap.Link = new Class({
 
 		if (this.graph){
 			this.draw();
+			
+			this.graph.addEvent('redraw', function(e){
+				if (e.defaultsUpdated === true){
+					this.setOptions(this.graph.getDefaults('link'));
+					this.setOptions(this._localConfig);
+				}
+				//this.redraw();
+			}.bind(this));
 		}
 	},
 	getSettingsWidget: function(){
@@ -234,6 +252,8 @@ networkMap.Link = new Class({
 		}
 		
 		this.options[key] = value;
+		this._localConfig[key] = value;
+		
 		this.redraw();
 	},
 	getProperty: function(key){
@@ -241,8 +261,9 @@ networkMap.Link = new Class({
 			throw 'Unknow id: ' + key;
 		}
 		
-		return this.options[key];
+		return this._localConfig[key];
 	},
+	
 	/**
 	 * Get the node which is assosiated a linkPath
 	 *
@@ -303,7 +324,9 @@ networkMap.Link = new Class({
 		var configuration = {};
 
 		this.exportedOptions.each(function(option){
-			configuration[option] = this.options[option];
+			if (this._localConfig[option]){
+				configuration[option] = this._localConfig[option];
+			}
 		}.bind(this));
 
 		if (this.path.nodeA){
@@ -695,13 +718,19 @@ networkMap.Link = new Class({
 		}
 		return this;
 	},
+
+
+
 	drawArc: function(){
 		
 	},
+		
+	
 	drawSublinks: function(){
 		var maxLinkCount, lastSegment, offset, path, width;
 		
-		var draw = function(sublink, node, startPoint, path){
+		/** The sign will change the draw order */
+		var draw = function(sublink, startPoint, path, sign){
 			var index = 0;
 
 			var updateColor = function(self, path){
@@ -711,13 +740,12 @@ networkMap.Link = new Class({
 			};
 			
 			while (offset >= -maxLinkCount / 2){
-				var options = {
+				var opts = {
 					width: width,
 					linkCount: maxLinkCount
 				};
-				
 
-				var currentSegment = this.calculateSublinkPath(path, offset, options);
+				var currentSegment = this.calculateSublinkPath(path, offset * sign, opts);
 
 				if (lastSegment){
 					
@@ -740,22 +768,6 @@ networkMap.Link = new Class({
 							.L(currentSegment[2]).L(currentSegment[1]).L(currentSegment[0])
 							.Z().back();
 					}
-
-					/*
-					if (sublink[index].getProperty('events')){
-						// removed due to new event system
-						//sublink[index].link = nodeOptions.sublinks[sublink].events;
-							
-						if (sublink[index].getProperty('events').click){
-							sublink[index].svg.on('click', networkMap.events.click);
-							sublink[index].svg.attr('cursor', 'pointer');
-						}
-						if (sublink[index].getProperty('events').hover){
-							sublink[index].svg.on('mouseover', networkMap.events.mouseover);
-							sublink[index].svg.on('mouseout', networkMap.events.mouseout);
-						}
-					}
-					*/
 		
 					index += 1;
 				}
@@ -775,7 +787,7 @@ networkMap.Link = new Class({
 				new SVG.math.Line(this.pathPoints[2], this.pathPoints[3]).midPoint()
 			];
 			width = this.path.nodeA.getProperty('width') || this.options.width;
-			draw(this.subpath.nodeA, this.subpath.nodeA, this.pathPoints[0], path);
+			draw(this.subpath.nodeA, this.pathPoints[0], path, 1);
 		}
 		if (this.subpath.nodeB){
 			maxLinkCount = this.subpath.nodeB.length;
@@ -788,7 +800,7 @@ networkMap.Link = new Class({
 				new SVG.math.Line(this.pathPoints[3], this.pathPoints[2]).midPoint()
 			];
 			width = this.path.nodeB.getProperty('width') || this.options.width;
-			draw(this.subpath.nodeB, this.subpath.nodeB, this.pathPoints[5], path);
+			draw(this.subpath.nodeB, this.pathPoints[5], path, -1);
 		}
 
 		return this;
@@ -937,5 +949,27 @@ networkMap.Link = new Class({
 		}
 	}
 
-
 });
+
+networkMap.Link.defaultTemplate = {
+	width: {
+		label: 'Width',
+		type: 'number'
+	},
+	inset: {
+		label: 'Inset',
+		type: 'number'
+	},
+	connectionDistance: {
+		label: 'Chamfer',
+		type: 'number'
+	},
+	staticConnectionDistance: {
+		label: 'Offset',
+		type: 'number'
+	},
+	arrowHeadLength: {
+		label: 'Arrow Head',
+		type: 'number'
+	}
+};

@@ -910,13 +910,15 @@ networkMap.colormap.flat5 = {
 		this.displayButtons();
 		
 		// Check if the object is a link
+		/*
 		if (obj.getLink){
 			link = obj.getLink();
 			this.fireEvent('edit', [link]);
 			content.grab(link.getSettingsWidget());
 			return this;			
 		}
-	
+		*/
+		
 		// This is for other types of nodes.
 		content.grab(obj.getSettingsWidget());		
 		
@@ -1054,6 +1056,24 @@ networkMap.Graph = new Class({
 		refreshInterval: null
 	},
 
+	/** The default configuration */
+	defaults: {
+		node: {
+			padding: 10,
+			fontSize: 16,
+			bgColor: '#dddddd',
+			strokeColor: '#000000',
+			strokeWidth: 2
+		},
+		link: {
+			width: 10,
+			inset: 10,
+			connectionDistance: 10,
+			staticConnectionDistance: 30,
+			arrowHeadLength: 10
+		}
+	},
+
 	/** This array controls what is exported in getConfiguration*/
 	exportedOptions: [
 		//'width',
@@ -1068,6 +1088,9 @@ networkMap.Graph = new Class({
 
 	/** An internal reference to onSave configuration */
 	saveData: {},
+
+	/** An internal reference to check keep track of the mode */
+	_mode: 'normal',
 
 	/**
 	 * Creates an instance of networkMap.Graph.
@@ -1099,6 +1122,42 @@ networkMap.Graph = new Class({
 		
 		this.setRefreshInterval(this.options.refreshInterval);
 		
+		this.svg.on('click', this._clickHandler.bind(this));		
+	},
+	
+	/**
+	 * Set the default options for the graph. The defaults will be 
+	 * merged with the current defaults.
+	 * 
+	 * @param element {string} The element to set default options for.
+	 * Can be one of (node|link)
+	 * @param defaults {object} An object with key value pairs of options
+	 * @return {networkMap.Graph} self
+	 */
+	setDefaults: function(element, defaults){
+		if (!this.defaults[element]){
+			throw "Illigal element";
+		}
+		
+		Object.merge(this.defaults[element], defaults);
+		
+		this.fireEvent('redraw', [{defaultsUpdated: true}]);
+		
+		return this;
+	},
+
+	/**
+	 * Retrive the default configuration for a graph element
+	 *
+	 * @param element {string} The graph element to return defaults for.
+	 * @return {object} the default configuration 
+	 */
+	getDefaults: function(element){
+		if (!this.defaults[element]){
+			throw "Illigal element";
+		}
+		
+		return this.defaults[element];
 	},
 
 	/** 
@@ -1189,6 +1248,54 @@ networkMap.Graph = new Class({
 	 */
 	settingsManager: function(){
 		return this.settings();
+	},
+
+	/**
+	 * Generates HTML that is used for configuration
+	 *
+	 * @this {networkMap.Graph}
+	 * @return {Element} A HTML Element that contains the UI
+	 */
+	getSettingsWidget: function(){
+		var container = new networkMap.widget.Accordion();
+		var accordionGroup;
+
+		var changeHandler = function(defaults, key){
+			return function(e){
+				defaults[key] = e.target.value;
+				this.fireEvent('redraw', [{defaultsUpdated: true}]);
+			}.bind(this);
+		}.bind(this);
+			
+	
+		accordionGroup = container.add('Node Defaults');		
+		Object.each(networkMap.Node.defaultTemplate, function(option, key){
+			if (option.type === 'number'){
+				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+			}
+			else if(option.type === 'text'){
+				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+			}
+			else if (option.type === 'color'){
+				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+			}
+		}.bind(this));
+		
+		accordionGroup = container.add('Link Defaults');		
+		Object.each(networkMap.Link.defaultTemplate, function(option, key){
+			if (option.type === 'number'){
+				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+			}
+			else if(option.type === 'text'){
+				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+			}
+			else if (option.type === 'color'){
+				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+			}
+		}.bind(this));
+				
+		
+		return container;
 	},
 
 	/**
@@ -1390,6 +1497,8 @@ networkMap.Graph = new Class({
 		this.links.each(function(link){
 			link.mode('edit');
 		});
+		
+		this._mode = 'edit';
 
 		return this;
 	},
@@ -1408,7 +1517,19 @@ networkMap.Graph = new Class({
 			link.mode('normal');
 		});
 
+		this._mode = 'normal';
+
 		return this;
+	},
+	
+	_clickHandler: function(e){
+		if (this._mode !== 'edit'){
+			return;
+		}
+		
+		if (e.target.instance === this.svg || e.target.instance === this.graph){
+			this.settings.edit(this);
+		}
 	},
 
 	/**
@@ -1619,9 +1740,10 @@ networkMap.Graph = new Class({
 	}
 
 
-});
-;networkMap.Node = new Class({
+});;networkMap.Node = new Class({
 	Implements: [Options, Events],
+	
+	/** These are sane defaults */
 	options:{
 		graph: null,
 		id: null,
@@ -1718,6 +1840,12 @@ networkMap.Graph = new Class({
 		this.graph = options.graph;
 		delete options.graph;
 
+		this._localConfig = options;
+
+		if (this.graph){
+			this.setOptions(this.graph.getDefaults('node'));
+		}
+		
 		this.setOptions(options);
 
 		if (!this.options.id){
@@ -1730,15 +1858,17 @@ networkMap.Graph = new Class({
 
 		if (this.graph){
 			this.draw();
+			
+			this.graph.addEvent('redraw', function(e){
+				if (e.defaultsUpdated === true){
+					this.setOptions(this.graph.getDefaults('node'));
+					this.setOptions(this._localConfig);
+				}
+				this.draw();
+			}.bind(this));
 		}
 
 	},
-
-	/* TODO: Remove
-	getEditables: function(){
-		return this.editTemplate;
-	},
-	*/
 
 	/**
 	 * Update an option
@@ -1754,6 +1884,8 @@ networkMap.Graph = new Class({
 		}
 		
 		this.options[key] = value;
+		this._localConfig[key] = value;
+		
 		this.draw();
 		
 		return this;
@@ -1771,7 +1903,7 @@ networkMap.Graph = new Class({
 			throw 'Unknown id: ' + key;
 		}
 		
-		return this.options[key];
+		return this._localConfig[key];
 	},
 
 	/**
@@ -1784,8 +1916,11 @@ networkMap.Graph = new Class({
 		var configuration = {};
 
 		this.exportedOptions.each(function(option){
-			configuration[option] = this.options[option];
+			if (this._localConfig[option]){
+				configuration[option] = this._localConfig[option];
+			}
 		}.bind(this));
+		
 		return configuration;
 	},
 
@@ -1999,7 +2134,7 @@ networkMap.Graph = new Class({
 				anchor:   'start',
 				leading:  this.options.fontSize - 1
 			})
-			.move(this.options.padding, this.options.padding);
+			.move(parseFloat(this.options.padding), parseFloat(this.options.padding));
 
 		
 		// This is needed to center an scale the comment text
@@ -2051,7 +2186,7 @@ networkMap.Graph = new Class({
 		var cover = rect.clone().fill({opacity: 0}).front();
 
 		// move it in place
-		svg.move(this.options.x, this.options.y);
+		svg.move(parseFloat(this.options.x), parseFloat(this.options.y));
 		
 	
 		
@@ -2081,6 +2216,29 @@ networkMap.Graph = new Class({
 		return true;
 	}
 });
+
+networkMap.Node.defaultTemplate = {
+	padding: {
+		label: 'Padding',
+		type: 'number'
+	},
+	fontSize: {
+		label: 'Font size',
+		type: 'number'
+	},
+	bgColor: {
+		label: 'Color',
+		type: 'color'
+	},
+	strokeColor: {
+		label: 'Stroke color',
+		type: 'color'
+	},
+	strokeWidth: {
+		label: 'Stroke width',
+		type: 'number'
+	}
+};
 
 networkMap.Node.renderer = networkMap.Node.renderer || {};
 
@@ -2138,6 +2296,9 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 	 */
 	getNode: function(){
 		return this.getLink().getNode(this);
+	},
+	getSettingsWidget: function(){
+		return this.getLink().getSettingsWidget();
 	},
 	getProperty: function(key){
 		if (key == 'width'){
@@ -2292,7 +2453,10 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		var link, sublink;
 		
 		this.graph = options.graph;
-		options.graph = null;
+		delete options.graph;		
+		
+		
+		/* I should call the setGraph function and handle this there */
 		this.options.datasource = this.options.datasource || this.graph.options.datasource;
 		this.svg = this.graph.getPaintArea().group();
 
@@ -2365,6 +2529,13 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 
 		}
 
+		// Set defaults
+		if (this.graph){
+			this.setOptions(this.graph.getDefaults('link'));
+		}
+		
+		// set local optioins
+		this._localConfig = options;
 		this.setOptions(options);
 
 		if (!this.options.colormap){
@@ -2377,6 +2548,14 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 
 		if (this.graph){
 			this.draw();
+			
+			this.graph.addEvent('redraw', function(e){
+				if (e.defaultsUpdated === true){
+					this.setOptions(this.graph.getDefaults('link'));
+					this.setOptions(this._localConfig);
+				}
+				//this.redraw();
+			}.bind(this));
 		}
 	},
 	getSettingsWidget: function(){
@@ -2472,6 +2651,8 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		}
 		
 		this.options[key] = value;
+		this._localConfig[key] = value;
+		
 		this.redraw();
 	},
 	getProperty: function(key){
@@ -2479,8 +2660,9 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 			throw 'Unknow id: ' + key;
 		}
 		
-		return this.options[key];
+		return this._localConfig[key];
 	},
+	
 	/**
 	 * Get the node which is assosiated a linkPath
 	 *
@@ -2541,7 +2723,9 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		var configuration = {};
 
 		this.exportedOptions.each(function(option){
-			configuration[option] = this.options[option];
+			if (this._localConfig[option]){
+				configuration[option] = this._localConfig[option];
+			}
 		}.bind(this));
 
 		if (this.path.nodeA){
@@ -2933,13 +3117,19 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		}
 		return this;
 	},
+
+
+
 	drawArc: function(){
 		
 	},
+		
+	
 	drawSublinks: function(){
 		var maxLinkCount, lastSegment, offset, path, width;
 		
-		var draw = function(sublink, node, startPoint, path){
+		/** The sign will change the draw order */
+		var draw = function(sublink, startPoint, path, sign){
 			var index = 0;
 
 			var updateColor = function(self, path){
@@ -2949,13 +3139,12 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 			};
 			
 			while (offset >= -maxLinkCount / 2){
-				var options = {
+				var opts = {
 					width: width,
 					linkCount: maxLinkCount
 				};
-				
 
-				var currentSegment = this.calculateSublinkPath(path, offset, options);
+				var currentSegment = this.calculateSublinkPath(path, offset * sign, opts);
 
 				if (lastSegment){
 					
@@ -2978,22 +3167,6 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 							.L(currentSegment[2]).L(currentSegment[1]).L(currentSegment[0])
 							.Z().back();
 					}
-
-					/*
-					if (sublink[index].getProperty('events')){
-						// removed due to new event system
-						//sublink[index].link = nodeOptions.sublinks[sublink].events;
-							
-						if (sublink[index].getProperty('events').click){
-							sublink[index].svg.on('click', networkMap.events.click);
-							sublink[index].svg.attr('cursor', 'pointer');
-						}
-						if (sublink[index].getProperty('events').hover){
-							sublink[index].svg.on('mouseover', networkMap.events.mouseover);
-							sublink[index].svg.on('mouseout', networkMap.events.mouseout);
-						}
-					}
-					*/
 		
 					index += 1;
 				}
@@ -3013,7 +3186,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 				new SVG.math.Line(this.pathPoints[2], this.pathPoints[3]).midPoint()
 			];
 			width = this.path.nodeA.getProperty('width') || this.options.width;
-			draw(this.subpath.nodeA, this.subpath.nodeA, this.pathPoints[0], path);
+			draw(this.subpath.nodeA, this.pathPoints[0], path, 1);
 		}
 		if (this.subpath.nodeB){
 			maxLinkCount = this.subpath.nodeB.length;
@@ -3026,7 +3199,7 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 				new SVG.math.Line(this.pathPoints[3], this.pathPoints[2]).midPoint()
 			];
 			width = this.path.nodeB.getProperty('width') || this.options.width;
-			draw(this.subpath.nodeB, this.subpath.nodeB, this.pathPoints[5], path);
+			draw(this.subpath.nodeB, this.pathPoints[5], path, -1);
 		}
 
 		return this;
@@ -3175,5 +3348,27 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 		}
 	}
 
-
 });
+
+networkMap.Link.defaultTemplate = {
+	width: {
+		label: 'Width',
+		type: 'number'
+	},
+	inset: {
+		label: 'Inset',
+		type: 'number'
+	},
+	connectionDistance: {
+		label: 'Chamfer',
+		type: 'number'
+	},
+	staticConnectionDistance: {
+		label: 'Offset',
+		type: 'number'
+	},
+	arrowHeadLength: {
+		label: 'Arrow Head',
+		type: 'number'
+	}
+};
