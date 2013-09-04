@@ -74,11 +74,13 @@ networkMap.Node = new Class({
 		},
 		padding: {
 			label: 'Padding',
-			type: 'number'
+			type: 'number',
+			min: 0
 		},
 		fontSize: {
 			label: 'Font size',
-			type: 'number'
+			type: 'number',
+			min: 1
 		},
 		bgColor: {
 			label: 'Color',
@@ -90,7 +92,8 @@ networkMap.Node = new Class({
 		},
 		strokeWidth: {
 			label: 'Stroke width',
-			type: 'number'
+			type: 'number',
+			min: 0
 		}
 		
 	},
@@ -480,11 +483,13 @@ networkMap.Node = new Class({
 networkMap.Node.defaultTemplate = {
 	padding: {
 		label: 'Padding',
-		type: 'number'
+		type: 'number',
+		min: 0
 	},
 	fontSize: {
 		label: 'Font size',
-		type: 'number'
+		type: 'number',
+		min: 1
 	},
 	bgColor: {
 		label: 'Color',
@@ -496,7 +501,8 @@ networkMap.Node.defaultTemplate = {
 	},
 	strokeWidth: {
 		label: 'Stroke width',
-		type: 'number'
+		type: 'number',
+		min: 0
 	}
 };
 

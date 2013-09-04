@@ -40,6 +40,10 @@ networkMap.widget.IntegerInput = new Class ({
 			this.fireEvent('change', [e]);
 		}.bind(this)); 
 		
+		if (this.options.min !== undefined){
+			this.input.set('min', this.options.min);	
+		}		
+		
 		if (this.options.disabled === true){
 			this.input.disabled = true;
 		}
@@ -966,6 +970,11 @@ networkMap.colormap.flat5 = {
 		return this;
 	},
 
+	defaultView: function(){
+		this.clear();
+		this.fireEvent('defaultView', [this]);	
+	},
+
 	/**
 	 * Toggle the settings manager. 
 	 *
@@ -991,6 +1000,7 @@ networkMap.colormap.flat5 = {
 	enable: function(){
 		this.nav.addClass('nm-menu-open');	
 		this.fireEvent('active');
+		this.fireEvent('defaultView', [this]);
 
 		return this;
 	},
@@ -1103,6 +1113,9 @@ networkMap.Graph = new Class({
 
 		if (this.options.enableEditor){
 			this.settings = new networkMap.SettingsManager(this.container);
+			this.settings.addEvent('defaultView', function(){
+				this.settings.edit(this);
+			}.bind(this));
 			this.settings.addEvent('active', this.enableEditor.bind(this));
 			this.settings.addEvent('deactive', this.disableEditor.bind(this));
 			this.settings.addEvent('save', this.save.bind(this));
@@ -1343,6 +1356,13 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	loadObject: function(mapStruct){
+		this.setOnSave(mapStruct.onSave);
+		
+		if (mapStruct.defaults){
+			this.setDefaults('node', mapStruct.defaults.node || this.defaults.node);
+			this.setDefaults('link', mapStruct.defaults.link || this.defaults.link);
+		}
+		
 		mapStruct.nodes.each(function(node){
 			node.graph = this;
 			node.draggable = this.options.allowDraggableNodes;
@@ -1353,8 +1373,6 @@ networkMap.Graph = new Class({
 			link.graph = this;
 			this.addLink(new networkMap.Link(link), false);
 		}.bind(this));
-
-		this.setOnSave(mapStruct.onSave);
 		
 		this.fireEvent('load', [this]);
 		this.triggerEvent('resize', this);
@@ -1473,6 +1491,7 @@ networkMap.Graph = new Class({
 		return true;
 	},
 
+
 	/**
 	 * Set nodes and links in edit mode
 	 *
@@ -1555,8 +1574,10 @@ networkMap.Graph = new Class({
 	 */
 	getConfiguration: function(){
 		var configuration = {
+			defaults: this.defaults,
 			nodes: [],
-			links: []
+			links: [],
+			onSave: this.saveData
 		};
 
 		// self
@@ -1806,11 +1827,13 @@ networkMap.Graph = new Class({
 		},
 		padding: {
 			label: 'Padding',
-			type: 'number'
+			type: 'number',
+			min: 0
 		},
 		fontSize: {
 			label: 'Font size',
-			type: 'number'
+			type: 'number',
+			min: 1
 		},
 		bgColor: {
 			label: 'Color',
@@ -1822,7 +1845,8 @@ networkMap.Graph = new Class({
 		},
 		strokeWidth: {
 			label: 'Stroke width',
-			type: 'number'
+			type: 'number',
+			min: 0
 		}
 		
 	},
@@ -2212,11 +2236,13 @@ networkMap.Graph = new Class({
 networkMap.Node.defaultTemplate = {
 	padding: {
 		label: 'Padding',
-		type: 'number'
+		type: 'number',
+		min: 0
 	},
 	fontSize: {
 		label: 'Font size',
-		type: 'number'
+		type: 'number',
+		min: 1
 	},
 	bgColor: {
 		label: 'Color',
@@ -2228,7 +2254,8 @@ networkMap.Node.defaultTemplate = {
 	},
 	strokeWidth: {
 		label: 'Stroke width',
-		type: 'number'
+		type: 'number',
+		min: 0
 	}
 };
 
@@ -2416,23 +2443,28 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 	editTemplate: {
 		width: {
 			label: 'Width',
-			type: 'number'
+			type: 'number',
+			min: 0
 		},
 		inset: {
 			label: 'Inset',
-			type: 'number'
+			type: 'number',
+			min: 1
 		},
 		connectionDistance: {
 			label: 'Chamfer',
-			type: 'number'
+			type: 'number',
+			min: 0
 		},
 		staticConnectionDistance: {
 			label: 'Offset',
-			type: 'number'
+			type: 'number',
+			min: 1
 		},
 		arrowHeadLength: {
 			label: 'Arrow Head',
-			type: 'number'
+			type: 'number',
+			min: 0
 		}
 	},
 	pathPoints: [],
@@ -2580,7 +2612,8 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 			}, 
 			width: {
 				label: 'Width',
-				type: 'number'	
+				type: 'number',
+				min: 0
 			}
 		};		
 		
@@ -3345,22 +3378,27 @@ networkMap.Node.label.rederer.normal = function(){};;networkMap.LinkPath = new C
 networkMap.Link.defaultTemplate = {
 	width: {
 		label: 'Width',
-		type: 'number'
+		type: 'number',
+		min: 0
 	},
 	inset: {
 		label: 'Inset',
-		type: 'number'
+		type: 'number',
+		min: 1
 	},
 	connectionDistance: {
 		label: 'Chamfer',
-		type: 'number'
+		type: 'number',
+		min: 0
 	},
 	staticConnectionDistance: {
 		label: 'Offset',
-		type: 'number'
+		type: 'number',
+		min: 1
 	},
 	arrowHeadLength: {
 		label: 'Arrow Head',
-		type: 'number'
+		type: 'number',
+		min: 0
 	}
 };

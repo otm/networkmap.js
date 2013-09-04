@@ -25,23 +25,28 @@ networkMap.Link = new Class({
 	editTemplate: {
 		width: {
 			label: 'Width',
-			type: 'number'
+			type: 'number',
+			min: 0
 		},
 		inset: {
 			label: 'Inset',
-			type: 'number'
+			type: 'number',
+			min: 1
 		},
 		connectionDistance: {
 			label: 'Chamfer',
-			type: 'number'
+			type: 'number',
+			min: 0
 		},
 		staticConnectionDistance: {
 			label: 'Offset',
-			type: 'number'
+			type: 'number',
+			min: 1
 		},
 		arrowHeadLength: {
 			label: 'Arrow Head',
-			type: 'number'
+			type: 'number',
+			min: 0
 		}
 	},
 	pathPoints: [],
@@ -189,7 +194,8 @@ networkMap.Link = new Class({
 			}, 
 			width: {
 				label: 'Width',
-				type: 'number'	
+				type: 'number',
+				min: 0
 			}
 		};		
 		
@@ -954,22 +960,27 @@ networkMap.Link = new Class({
 networkMap.Link.defaultTemplate = {
 	width: {
 		label: 'Width',
-		type: 'number'
+		type: 'number',
+		min: 0
 	},
 	inset: {
 		label: 'Inset',
-		type: 'number'
+		type: 'number',
+		min: 1
 	},
 	connectionDistance: {
 		label: 'Chamfer',
-		type: 'number'
+		type: 'number',
+		min: 0
 	},
 	staticConnectionDistance: {
 		label: 'Offset',
-		type: 'number'
+		type: 'number',
+		min: 1
 	},
 	arrowHeadLength: {
 		label: 'Arrow Head',
-		type: 'number'
+		type: 'number',
+		min: 0
 	}
 };
