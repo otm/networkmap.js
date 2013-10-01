@@ -1216,11 +1216,16 @@ networkMap.Graph = new Class({
 		var bbox = this.graph.bbox();	
 			
 		// scale the svg if the docsize is to small
-		if (docSize.x < (bbox.width + bbox.x) || docSize.y < (bbox.height + bbox.y)){
-			this.svg.viewbox(bbox.x, bbox.y, bbox.width + bbox.x, bbox.height + bbox.y);
+		if (docSize.x < (bbox.width + Math.abs(bbox.x)) || docSize.y < (bbox.height + Math.abs(bbox.y))){
+			this.svg.viewbox(bbox.x, bbox.y, bbox.width + Math.abs(bbox.x), bbox.height + Math.abs(bbox.y));
 		}
 		else{
-			this.svg.viewbox(0, 0, docSize.x, docSize.y);
+			this.svg.viewbox(
+				(bbox.x < 0) ? bbox.x : 0,
+				(bbox.y < 0) ? bbox.y : 0, 
+				docSize.x,
+				docSize.y
+			);
 		}
 		
 		return this;		
@@ -1969,7 +1974,44 @@ networkMap.Graph = new Class({
 		
 		return container;
 	},
+	
+	/**
+	 * Enable an event on the node
+	 *
+	 * @param {string} The type of event [hover|click]
+	 * @this {options} The options for event
+	 * @return {networkMap.Node} self
+	 */
+	enableEvent: function(name, options){
+		if (name !== 'hover' && name !== 'click'){
+			throw "Unknown event";
+		}
+		
+		this.options.events = this.options.events || {};		
+		this._localConfig.events = this._localConfig.events || {};
+		
+		var defaultOptions = {enabled: true};
+		this.options.events[name] = options || defaultOptions;
+		this._localConfig.events[name] = options || defaultOptions;
 
+		return this;
+	},
+	
+	/**
+	 * Disable an event on the node
+	 *
+	 * @param {string} The type of event [hover|click]
+	 * @return {networkMap.Node} self
+	 */
+	disableEvent: function(name, options){
+		if (this.options.events && this.options.events[name]){
+			delete this.options.events[name];
+			delete this._localConfig.events[name];
+		}
+		
+		return this;
+	},
+	
 	/**
 	 * Set the graph that the Node is associated to. 
 	 * If set to null the Node will unregister from the 
