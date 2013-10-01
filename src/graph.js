@@ -180,11 +180,16 @@ networkMap.Graph = new Class({
 		var bbox = this.graph.bbox();	
 			
 		// scale the svg if the docsize is to small
-		if (docSize.x < (bbox.width + bbox.x) || docSize.y < (bbox.height + bbox.y)){
-			this.svg.viewbox(bbox.x, bbox.y, bbox.width + bbox.x, bbox.height + bbox.y);
+		if (docSize.x < (bbox.width + Math.abs(bbox.x)) || docSize.y < (bbox.height + Math.abs(bbox.y))){
+			this.svg.viewbox(bbox.x, bbox.y, bbox.width + Math.abs(bbox.x), bbox.height + Math.abs(bbox.y));
 		}
 		else{
-			this.svg.viewbox(0, 0, docSize.x, docSize.y);
+			this.svg.viewbox(
+				(bbox.x < 0) ? bbox.x : 0,
+				(bbox.y < 0) ? bbox.y : 0, 
+				docSize.x,
+				docSize.y
+			);
 		}
 		
 		return this;		
