@@ -350,6 +350,7 @@ networkMap.Node = new Class({
 	draggable: function(){
 		this._draggable = true;
 		this.svg.draggable();
+		this.svg.remember('cursor', this.svg.style('cursor'));
 		this.svg.style('cursor', 'move');
 		
 		return this;
@@ -364,7 +365,9 @@ networkMap.Node = new Class({
 	fixed: function(){
 		this._draggable = false;
 		this.svg.fixed();
-		this.svg.style('cursor', 'default');
+		var cursor = this.svg.remember('cursor');
+		this.svg.forget('cursor');
+		this.svg.style('cursor', cursor || 'default');
 		
 		return this;
 	},
