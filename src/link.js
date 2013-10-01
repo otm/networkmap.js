@@ -223,11 +223,14 @@ networkMap.Link = new Class({
 				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.nodeB)));
 			}
 			else{
-				if (option.type === 'int'){
+				if (option.type === 'number'){
 					accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
 				}
 				else if(option.type === 'text'){
 					accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
+				}
+				else if(option.type === 'color'){
+					accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
 				}
 			}
 		}.bind(this));
