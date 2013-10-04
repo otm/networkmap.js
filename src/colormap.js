@@ -62,24 +62,28 @@ networkMap.colormap.rasta5 = {
 networkMap.colormap.flat5 = {
 	translate: function(value){
 		var map = networkMap.colormap.flat5;
-		if (!value)
+		if (!value && value !== 0)
 			return map.nodata;
-
-		if (value < 0.2)
+	
+		if (value === 0)
 			return map.map[0];
 
-		if (value < 0.4)
+		if (value < 0.2)
 			return map.map[1];
 
-		if (value < 0.6)
+		if (value < 0.4)
 			return map.map[2];
-		
-		if (value < 0.8)
+
+		if (value < 0.6)
 			return map.map[3];
 		
-		return map.map[4];
+		if (value < 0.8)
+			return map.map[4];
+		
+		return map.map[5];
 	},
 	map: [
+		'#000000',
 		'#27ae60',
 		'#2ecc71',
 		'#f1c40f',
@@ -87,6 +91,7 @@ networkMap.colormap.flat5 = {
 		'#c0392b'
 	],
 	limits: [
+		0,
 		0.2,
 		0.4,
 		0.6,
