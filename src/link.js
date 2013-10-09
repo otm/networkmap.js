@@ -136,9 +136,11 @@ networkMap.Link = new Class({
 		}
 
 		// Set defaults
+		/*** TODO: Removed temporary
 		if (this.graph){
 			this.setOptions(this.graph.getDefaults('link'));
 		}
+		*/
 		
 		// set local optioins
 		this._localConfig = options;
@@ -157,7 +159,9 @@ networkMap.Link = new Class({
 			
 			this.graph.addEvent('redraw', function(e){
 				if (e.defaultsUpdated === true){
+					/*** TODO: Removed temporary
 					this.setOptions(this.graph.getDefaults('link'));
+					*/
 					this.setOptions(this._localConfig);
 				}
 				//this.redraw();

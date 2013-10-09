@@ -21,22 +21,7 @@ networkMap.Graph = new Class({
 	},
 
 	/** The default configuration */
-	defaults: {
-		node: {
-			padding: 10,
-			fontSize: 16,
-			bgColor: '#dddddd',
-			strokeColor: '#000000',
-			strokeWidth: 2
-		},
-		link: {
-			width: 10,
-			inset: 10,
-			connectionDistance: 10,
-			staticConnectionDistance: 30,
-			arrowHeadLength: 10
-		}
-	},
+	defaults: {},
 
 	/** This array controls what is exported in getConfiguration*/
 	exportedOptions: [
@@ -90,20 +75,40 @@ networkMap.Graph = new Class({
 		this.setRefreshInterval(this.options.refreshInterval);
 		
 		this.svg.on('click', this._clickHandler.bind(this));		
+
+		Object.each(networkMap.Node.defaults, function(defaults, element){
+			this.registerDefaults(element, defaults);
+		}.bind(this));
 	},
 	
+	/**
+	 * This will register a default configuration
+	 * 
+	 * @param element {string} The element to set default options for.
+	 * @param defaults {object} An object with key value pairs of options
+	 * @return {networkMap.Graph} self
+	 */
+	registerDefaults: function(element, defaults){
+		if (this.defaults[element]){
+			throw "defaultsPrivouslyRegsiterd";
+		}
+
+		this.defaults[element] = defaults;
+
+		return this;
+	},
+
 	/**
 	 * Set the default options for the graph. The defaults will be 
 	 * merged with the current defaults.
 	 * 
-	 * @param element {string} The element to set default options for.
-	 * Can be one of (node|link)
+	 * @param element {string} The element to set default options for. (it must be registed)
 	 * @param defaults {object} An object with key value pairs of options
 	 * @return {networkMap.Graph} self
 	 */
 	setDefaults: function(element, defaults){
 		if (!this.defaults[element]){
-			throw "Illigal element";
+			throw "Illigal element: " + element;
 		}
 		
 		Object.merge(this.defaults[element], defaults);
@@ -121,10 +126,15 @@ networkMap.Graph = new Class({
 	 */
 	getDefaults: function(element){
 		if (!this.defaults[element]){
-			throw "Illigal element";
+			throw "Illigal element: " + element;
 		}
 		
 		return this.defaults[element];
+	},
+
+	getDefault: function(element, key){
+		var defaults = this.getDefaults(element);
+		return defaults[key];
 	},
 
 	/** 
@@ -328,6 +338,8 @@ networkMap.Graph = new Class({
 		this.setOnSave(mapStruct.onSave);
 		
 		if (mapStruct.defaults){
+			// TODO: Need to save/load defaults
+
 			this.setDefaults('node', mapStruct.defaults.node || this.defaults.node);
 			this.setDefaults('link', mapStruct.defaults.link || this.defaults.link);
 		}

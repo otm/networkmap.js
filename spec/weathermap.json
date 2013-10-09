@@ -5,18 +5,18 @@
             "name": "node1",
             "x": "36",
             "y": "94",
-            "renderer": "rect",
+            "view": {
+                "name": "rect",
+                "options": {
+                    "padding": 12
+                }
+            },
             "information": {
                 "test": "some value"
             },
-            "label": {
-                "position": "internal",
-                "visable": "true"
-            },
-            "padding": "10",
             "events": {
                 "click": {
-                    "href": "http:\/\/example.com"
+                    "enabled": true
                 }
             }
         },

@@ -101,11 +101,20 @@ networkMap.Node = new Class({
 		this.graph = options.graph;
 		delete options.graph;
 
+		if (options.view){
+			this.view = networkMap.Node.createView(options.view.name, this.graph, options.view.options);
+		}
+		else{ // this is a compability shim for old configuration files
+			this.view = networkMap.Node.createView('rect', this.graph, options);
+		}
+
+		/*** TODO: Removed temporary
 		this._localConfig = options;
 
 		if (this.graph){
 			this.setOptions(this.graph.getDefaults('node'));
 		}
+		*/
 		
 		this.setOptions(options);
 
@@ -118,14 +127,16 @@ networkMap.Node = new Class({
 		this.options.padding = parseFloat(this.options.padding); 
 
 		if (this.graph){
-			this.draw();
+			this.svg = this.view.render(this);
 			
 			this.graph.addEvent('redraw', function(e){
+				/*** TODO: Remove
 				if (e.defaultsUpdated === true){
 					this.setOptions(this.graph.getDefaults('node'));
 					this.setOptions(this._localConfig);
 				}
-				this.draw();
+				*/
+				this.svg = this.view.render(this);
 			}.bind(this));
 		}
 
@@ -159,12 +170,13 @@ networkMap.Node = new Class({
 	 * @this {networkMap.Node}
 	 * @return {mixed} The property value
 	 */
+	get: function(key){return this.getProperty(key);},
 	getProperty: function(key){
 		if (!this.editTemplate[key]){
 			throw 'Unknown id: ' + key;
 		}
 		
-		return this._localConfig[key];
+		return this.options[key];
 	},
 
 	/**
@@ -473,8 +485,9 @@ networkMap.Node = new Class({
 
 		
 		svg.on('click', this._clickhandler.bind(this));
+
 		if (this.options.events){
-			svg.link = this.options.events;
+			svg.link = model.options.events;
 			
 			if (this.options.events.click){
 				svg.attr('cursor', 'pointer');
@@ -547,13 +560,234 @@ networkMap.Node.defaultTemplate = {
 };
 
 networkMap.Node.renderer = networkMap.Node.renderer || {};
+networkMap.Node.defaults = networkMap.Node.defaults || {};
 
-networkMap.registerNodeRenderer = function(name, renderer){
-	networkMap.Node.renderer[name] = renderer;
+networkMap.Node.registerView = function(view){
+	// add duck typing code
+
+	if (!view.name) throw "name property missing";
+	if (!view.renderer) throw "render property missing";
+	view.defaults = view.defaults || {};
+
+	networkMap.Node.defaults['NodeView' + view.name] = view.defaults;
+
+	view.renderer.Implements = networkMap.Node.renderInterface;
+	view.renderer.name = view.name;
+	networkMap.Node.renderer['NodeView' + view.name] = new Class(view.renderer);
 };
-networkMap.Node.renderer.rect = function(){};
 
 
-networkMap.Node.label = networkMap.Node.label || {};
-networkMap.Node.label.rederer = networkMap.Node.label.rederer || {};
-networkMap.Node.label.rederer.normal = function(){};
+networkMap.Node.createView = function(name, graph, options){
+	options = options || {};
+	return new networkMap.Node.renderer['NodeView' + name](graph, options);
+};
+
+networkMap.Options = new Class({
+	setOptions: function(){
+		var options = this.options = Object.merge.apply(null, [{}, this.options].append(arguments));
+		if (this.addEvent) for (var option in options){
+			if (typeOf(options[option]) != 'function' || !(/^on[A-Z]/).test(option)) continue;
+			this.addEvent(option, options[option]);
+			delete options[option];
+		}
+		return this;
+	}
+});
+
+
+networkMap.Node.baseRenderer = new Class({
+	Implements: [networkMap.Options, Events],
+	options: {},
+	initialize: function(graph){
+		this.graph = graph;
+
+		if (this.setup && typeof this.setup === 'function'){
+			this.setup();
+		}
+	},
+
+	set: function(key, value){
+		this.options[key] = value;
+
+		return this;
+	},
+
+	get: function(key){
+		return (!!this.options[key]) ? this.options[key] : this.graph.getDefault('NodeView' + this.name, key).value;
+	}
+
+});
+
+networkMap.Node.renderInterface = new Class({
+	Extends: networkMap.Node.baseRenderer,
+
+	//defaults: {},
+	
+	//setup: function(){},
+
+	//getSettingsWidget: function(){},
+
+	//render: function(){}
+});
+
+
+
+
+networkMap.Node.registerView({
+	name: 'rect', 
+	defaults: {
+		padding: {
+			label: 'Padding',
+			type: 'number',
+			min: 0,
+			value: 10
+		},
+		fontSize: {
+			label: 'Font size',
+			type: 'number',
+			min: 4,
+			value: 16
+		},
+		bgColor: {
+			label: 'Color',
+			type: 'color',
+			value: '#dddddd'
+		},
+		strokeColor: {
+			label: 'Stroke color',
+			type: 'color',
+			value: '#000000'
+		},
+		strokeWidth: {
+			label: 'Stroke width',
+			type: 'number',
+			min: 0,
+			value: 2
+		},
+		fontFamily: {
+			label: 'Font family',
+			type: 'text',
+			value: 'Helvetica',
+			display: 'none'
+		}
+	},
+
+	renderer: {
+		setup: function(options){
+
+		},
+
+		render: function(model){
+			var svg = this.graph.getPaintArea().group(), graph = this.graph;
+
+			if (this.debugLayer){
+				this.debugLayer.remove();
+			}
+			
+			if (this.options.debug){
+				this.debugLayer = graph.getPaintArea().group();
+			}
+			
+			// create the label first to get size
+			var label = svg.text(model.get('name'))
+				.font({
+					family:   this.get('fontFamily'),
+					size:     this.get('fontSize'),
+					anchor:   'start',
+					leading:  this.get('fontSize') - 1
+				})
+				.move(parseFloat(this.get('padding')), parseFloat(this.get('padding')));
+
+			
+			// This is needed to center an scale the comment text
+			// as it is not possible to get a bbox on a tspan
+			var bboxLabel = label.bbox();
+			var commentText = model.get('comment');
+			var comment;
+			if (commentText && commentText !== ''){
+				label.text(function(add){
+					add.tspan(this.get('name')).newLine();
+					comment = add.tspan(commentText).newLine().attr('font-size', this.get('fontSize') - 2);
+				}.bind(this));
+				comment.attr('text-anchor', 'middle');
+				comment.dx(bboxLabel.width / 2);
+			}
+
+			while (bboxLabel.width < label.bbox().width){
+				comment.attr('font-size', comment.attr('font-size') - 1);
+			}
+
+			// create the rect
+			bboxLabel = label.bbox();		
+			var rect = svg.rect(1,1)
+				.fill({ color: this.get('bgColor')})
+				.stroke({ color: this.get('strokeColor'), width: this.get('strokeWidth') })
+				.attr({ 
+					rx: 4,
+					ry: 4
+				})
+				.size(
+					bboxLabel.width + this.get('padding') * 2, 
+					bboxLabel.height + this.get('padding') * 2
+				);
+								
+			label.front();
+			
+
+			
+			//svg.on('click', this._clickhandler.bind(this));
+			if (model.options.events){
+				svg.link = model.options.events;
+				
+				if (model.options.events.click){
+					svg.attr('cursor', 'pointer');
+				}	
+				
+			}
+
+			// this cover is here there to prevent user from selecting 
+			// text in the label
+			var cover = rect.clone().fill({opacity: 0}).front();
+
+			// move it in place
+			svg.move(parseFloat(model.options.x), parseFloat(model.options.y));
+			
+
+			
+			if (this.options.draggable){
+				this.draggable();
+			}
+			
+			svg.dragstart = function(){
+				this.fireEvent('dragstart');
+			}.bind(this);
+
+			svg.dragmove = function(delta, event){
+				this.fireEvent('drag', [delta, event]);
+			}.bind(this);
+			
+			svg.dragend = function(){
+				this.options.x = this.x();
+				this.options.y = this.y();
+				this._localConfig.x = this.x();
+				this._localConfig.y = this.y();
+				this.fireEvent('dragend');
+			}.bind(this);
+			
+			// need to make sure the draggable state persists
+			if (model.isDraggable()){
+				svg.draggable();
+			}
+
+			// why
+			this.fireEvent('dragend');
+
+			return svg;
+		},
+
+		getSettingsWidget: function(){
+
+		}
+
+	}
+});
