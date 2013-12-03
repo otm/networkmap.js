@@ -29,6 +29,7 @@ module.exports = function(grunt) {
 					'src/widgets/list.js',
 					'src/widgets/select.js',
 					'src/widgets/modal.js',
+					'src/widgets/checkbox.js',
 					'src/datasource.js',
 					'src/events.js', 
 					'src/colormap.js', 
