@@ -281,13 +281,16 @@ networkMap.widget.Select = new Class ({
 			this.addOption(value);
 		}.bind(this));
 	},
-	addOption: function(value, selected){
-		this.input.grab(new Element('option', {
-			value: value,
-			text: value,
-			selected: selected
-		}));
-		return this;
+	addOption: function(text, options){
+		options = options || {};
+		
+		var el = new Element('option', {
+			value: (options.value) ? options.value : text,
+			text: text,
+			selected: options.selected
+		});
+		this.input.grab(el);
+		return el;
 	},
 	getSelected: function(){
 		return this.input.getSelected()[0].value;
