@@ -15,3 +15,8 @@ Array.implement('find', function(fn){
 			return this[i];
 	}
 });
+
+networkMap.isFunction = function(f){
+	var getType = {};
+	return f && getType.toString.call(f) === '[object Function]';
+};
