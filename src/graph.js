@@ -17,7 +17,14 @@ networkMap.Graph = new Class({
 		/** Controls if the nodes are draggable */
 		allowDraggableNodes: false,
 		/** Controlls how often the links refresh the data */
-		refreshInterval: null
+		refreshInterval: null,
+		
+		node: {
+			linkGenerator: null
+		},
+		link: {
+			linkGenerator: null
+		}
 	},
 
 	/** The default configuration */
@@ -66,6 +73,15 @@ networkMap.Graph = new Class({
 	 */
 	initialize: function(target, options){
 		this.setOptions(options);
+
+		if (!this.options.node.linkGenerator){
+			this.options.node.linkGenerator = networkMap.Node._linkGenerator;		
+		}
+		
+		if (!this.options.link.linkGenerator){
+			this.options.link.linkGenerator = networkMap.Link._linkGenerator;		
+		}
+		
 		this.element = document.id(target);
 		this.container = new Element('div', {'class': 'nm-container'});
 		this.element.grab(this.container);
@@ -335,6 +351,7 @@ networkMap.Graph = new Class({
 		mapStruct.nodes.each(function(node){
 			node.graph = this;
 			node.draggable = this.options.allowDraggableNodes;
+			
 			this.addNode(new networkMap.Node(node), false);
 		}.bind(this));
 
@@ -568,6 +585,10 @@ networkMap.Graph = new Class({
 		return configuration;
 	},
 
+	registerLinkGenerator: function(component, f){
+		this._linkGenerator[component] = f;
+	},
+
 	/**
 	 * Add a node to the graph
 	 *
@@ -578,6 +599,12 @@ networkMap.Graph = new Class({
 	 */
 	addNode: function(node, refresh){
 		this.nodes.push(node);
+
+		// listen to the requestHref to provide node href
+		node.addEvent('requestHref', this.options.node.linkGenerator);
+		
+		// as the node is already created we need to trigger an update of the link
+		node.updateLink();
 
 		if (refresh !== false){
 			this.triggerEvent('resize', this);	
@@ -631,6 +658,13 @@ networkMap.Graph = new Class({
 	 */
 	addLink: function(link, refresh){
 		this.links.push(link);
+
+		// listen to the requestHref to provide link href
+		link.addEvent('requestHref', this.options.link.linkGenerator);
+		
+		// as the link is already created we need to trigger an update of the link
+		link.updateLink();
+
 
 		if (refresh !== false){
 			this.triggerEvent('resize', this);	

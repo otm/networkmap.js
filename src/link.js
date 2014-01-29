@@ -1,5 +1,5 @@
 networkMap.Link = new Class({
-	Implements: [Options],
+	Implements: [Options, Events],
 	options:{
 		inset: 10,
 		connectionDistance: 10,
@@ -84,14 +84,19 @@ networkMap.Link = new Class({
 			delete link.sublinks;
 			this.subpath.nodeA = [];
 			sublinks.each(function(sublink){
-				this.subpath.nodeA.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink).addEvent('change', this.redraw.bind(this)));
+				this.subpath.nodeA.push(
+					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
+					.addEvent('change', this.redraw.bind(this))
+					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
+				);
 			}.bind(this));
 		}
 		this.path.nodeA = new networkMap.LinkPath(
 			this, 
 			networkMap.path(this.svg), 
 			link
-		).addEvent('change', this.redraw.bind(this));
+		).addEvent('change', this.redraw.bind(this))
+		.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this));
 		
 		
 		// add a holder for SVG objects
@@ -116,14 +121,19 @@ networkMap.Link = new Class({
 			delete link.sublinks;
 			this.subpath.nodeB = [];
 			sublinks.each(function(sublink){
-				this.subpath.nodeB.push(new networkMap.LinkPath(this, networkMap.path(this.svg), sublink).addEvent('change', this.redraw.bind(this)));
+				this.subpath.nodeB.push(
+					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
+					.addEvent('change', this.redraw.bind(this))
+					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
+				);
 			}.bind(this));
 		}
 		this.path.nodeB = new networkMap.LinkPath(
 			this, 
 			networkMap.path(this.svg), 
 			link
-		).addEvent('change', this.redraw.bind(this));
+		).addEvent('change', this.redraw.bind(this))
+		.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this));
 		
 		// Add a holder for SVG objects
 		if (this.options.nodeB.requestData || this.options.nodeB.sublinks){
@@ -272,6 +282,34 @@ networkMap.Link = new Class({
 		
 		return this._localConfig[key];
 	},
+	
+	/**
+	 * This will create/update a link tag for the
+	 * node. Order of presence is:
+	 * - options.href
+	 * - emit url event
+	 *
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
+	updateLink: function(){
+		if (this.subpath.nodeA){
+			this.subpath.nodeA.each(function(sublink){
+				sublink.updateLink();
+			});
+		}
+
+		if (this.subpath.nodeB){
+			this.subpath.nodeB.each(function(sublink){
+				sublink.updateLink();
+			});
+		}
+		if (this.path.nodeA)
+			this.path.nodeA.updateLink();
+		if (this.path.nodeB)
+			this.path.nodeB.updateLink();
+		return this;
+	},	
 	
 	/**
 	 * Get the node which is assosiated a linkPath
@@ -987,3 +1025,30 @@ networkMap.Link.defaultTemplate = {
 		min: 0
 	}
 };
+
+/**
+ * Register a global handler to provide a href to Links
+ * This can be overridden on the networkMap instance or
+ * or setting it directly on the link.
+ * 
+ * The registered function should return a url string 
+ * or null if no link should be created.
+ *
+ * @param {function} A function that returns a URL or null
+ */
+networkMap.Link.registerLinkGenerator = function(f){
+	networkMap.Link._linkGenerator = function(sublink){
+		if (sublink.options.href){
+			if (networkMap.isFunction(sublink.options.href))
+				sublink.setLink(sublink.options.href());
+			else
+				sublink.setLink(sublink.options.href);
+			return;
+		}
+		
+		sublink.setLink(f(sublink));
+	};
+};
+
+/** Register a default link generator which will not create a link */
+networkMap.Link.registerLinkGenerator(function(sublink){return null;});

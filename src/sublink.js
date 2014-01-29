@@ -34,6 +34,53 @@ networkMap.LinkPath = new Class ({
 		
 		return editables;		
 	},
+
+	/**
+	 * This will create/update a link tag for the
+	 * link. Order of presence is:
+	 * - options.href
+	 * - emit url event
+	 *
+	 * @this {networkMap.Link}
+	 * @return {networkMap.Link} self
+	 */
+	updateLink: function(){
+		var href = this.options.href;
+		if (href){
+			if (networkMap.isFunction(href))
+				this.setLink(href(this));
+			else
+				this.setLink(href);
+			return this;
+		}
+		
+		this.fireEvent('requestHref', [this]);
+		return this;
+	},
+
+	/**
+	 * This will create/update the link to
+	 * the specified URL.
+	 *
+	 * @param {string} The URL
+	 * @this {networkMap.Link}
+	 * @return {networkMap.Link} self
+	 * @TODO: Add functionality to remove the link
+	 */
+	setLink: function(url){
+		if (url){
+			if (this.a){
+				this.a.to(url);
+				return this;
+			}
+			
+			this.a = this.svg.linkTo(url);
+			return this;
+		}
+		
+		return this;						
+	},	
+	
 	getLink: function(){
 		return this.link;
 	},

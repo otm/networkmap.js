@@ -117,18 +117,7 @@ networkMap.Node = new Class({
 		this.options.y = parseFloat(this.options.y);
 		this.options.padding = parseFloat(this.options.padding); 
 
-		if (this.graph){
-			this.draw();
-			
-			this.graph.addEvent('redraw', function(e){
-				if (e.defaultsUpdated === true){
-					this.setOptions(this.graph.getDefaults('node'));
-					this.setOptions(this._localConfig);
-				}
-				this.draw();
-			}.bind(this));
-		}
-
+		this.setGraph(this.graph);
 	},
 
 	/**
@@ -263,18 +252,31 @@ networkMap.Node = new Class({
 	 * @this {networkMap.Node}
 	 * @return {networkMap.Node} self
 	 */
-	setGraph: function(graph){	
-		// remove the object from the graph
-		this.graph = null;
-		this.draw();
+	setGraph: function(graph){
 
-		// if a graph is defined draw 
+		// remove the current graph if it excists		
+		if (this.graph){
+			this.graph.removeEvent('redraw', this._redraw.bind(this));
+			this.graph = null;
+			this.draw();
+		}
+
+		// add graph object if it exists
 		if (graph){
 			this.graph = graph;
+			this.graph.addEvent('redraw', this._redraw.bind(this));
 			this.draw();
 		}
 
 		return this;
+	},
+	
+	_redraw: function(){
+		if (e.defaultsUpdated === true){
+			this.setOptions(this.graph.getDefaults('node'));
+			this.setOptions(this._localConfig);
+		}
+		this.draw();
 	},
 
 	/**
@@ -317,6 +319,7 @@ networkMap.Node = new Class({
 			networkMap.events.click(e, this);
 		}
 		else if (this._mode === 'edit'){
+			e.preventDefault();
 			this.graph.settings.edit(this);	
 		}
 	},	
@@ -384,6 +387,52 @@ networkMap.Node = new Class({
 	},
 
 	/**
+	 * This will create/update a link tag for the
+	 * node. Order of presence is:
+	 * - options.href
+	 * - emit url event
+	 *
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 */
+	updateLink: function(){
+		var href = this.options.href;
+		if (href){
+			if (networkMap.isFunction(href))
+				this.setLink(href(this));
+			else
+				this.setLink(href);
+			return this;
+		}
+		
+		this.fireEvent('requestHref', [this]);
+		return this;
+	},
+	
+	/**
+	 * This will create/update the link to
+	 * the specified URL.
+	 *
+	 * @param {string} The URL
+	 * @this {networkMap.Node}
+	 * @return {networkMap.Node} self
+	 * @TODO: Add functionality to remove the link
+	 */
+	setLink: function(url){
+		if (url){
+			if (this.link){
+				this.link.to(url);
+				return this;
+			}
+			
+			this.link = this.svg.linkTo(url);
+			return this;
+		}
+		
+		return this;						
+	},
+
+	/**
 	 * Get the bonding box of the node.
 	 *
 	 * @this {networkMap.Node}
@@ -402,15 +451,20 @@ networkMap.Node = new Class({
 	draw: function(){
 		var redraw = false;
 		
-		if (this.svg && !this.graph){
+		if (this.svg){
 			this.svg.remove();
-			return false;
+			if (this.link) link.remove();
+		
+			if (!this.graph)
+				return false;			
+			
+			redraw = true;
 		}
-
+		
 		if (!this.graph){
 			return false;
 		}
-
+		
 		if (this.debug){
 			this.debug.remove();
 		}
@@ -418,14 +472,12 @@ networkMap.Node = new Class({
 		if (this.options.debug){
 			this.debug = this.graph.getPaintArea().group();
 		}
-		
-		if (this.svg){
-			this.svg.remove();
-			redraw = true;
-		}
 
 		// create a group object 
 		var svg = this.svg = this.graph.getPaintArea().group();
+		
+				
+		this.updateLink();
 
 		// create the label first to get size
 		var label = svg.text(this.options.name)
@@ -546,6 +598,145 @@ networkMap.Node.defaultTemplate = {
 	}
 };
 
+/**
+ * Register global event handlers. These can be over ridden on the 
+ * networkMap instance and on the node instance.
+ *
+ * @param {string} The event name (click, mouseover, mouseout, hover)
+ * @param {function} The value to set
+ * @this {???}
+ * @return {???}
+ */
+networkMap.Node.registerEvent = function(name, f){
+	if (!networkMap.events[name])
+		throw "Invalid event: " + name;
+		
+	networkMap.events[name] = f;
+};
+
+/** Default implementaion of events */
+networkMap.Node.events = {
+	/** default click event */
+	click: function(e, node){},
+	
+	/** default hover event */
+	hover: function(e, node, el){
+		el.set('text', node.options.name);
+	},
+	
+	/** default mouseover event
+	 * By overriding this function the hover 
+	 * will stop working event 
+	 */
+	mouseover: function(e, options, hover){
+		var el = document.id('nm-active-hover');
+		var id = e.target.instance.attr('id');
+		
+		if (el){
+			if (el.retrieve('id') === e.target.instance.attr('id')){
+				el.store('keep', true);
+				return;
+			}
+			
+			el.destroy();	
+		}
+		
+		el = new Element('div', {
+			'id': 'nm-active-hover',
+			'class': 'nm-hover',
+			events: {
+				mouseover: function(){
+					el.store('mouseover', true);
+				},
+				mouseout: function(){
+					el.eliminate('mouseover');
+					(function(){
+						if (!el.retrieve('keep'))
+							el.destroy();
+						else
+							el.eliminate('keep');
+					}).delay(10);
+				},
+				click: function(ev){
+					link._clickHandler(e);
+				}
+					
+				
+			}
+		})
+		.store('id', e.target.instance.attr('id'));
+		
+		el.setStyles({
+			top: -1000,
+			left: -1000	
+		});
+				
+		
+		document.id(document.body).grab(el);
+					
+		f(e, link, el);
+		
+		var size = el.getSize();
+		var bboxClient = e.target.getBoundingClientRect();
+		
+		el.setStyles({
+			top: (bboxClient.top + bboxClient.bottom)/2 - size.y/2,
+			left: (bboxClient.left + bboxClient.right)/2 - size.x/2
+		});
+	},
+	
+	/** default mouseout event
+	 * By overriding this function the hover 
+	 * will stop working event 
+	 */
+	mouseout: function(e, node){
+		var options = e.target.instance.link;
+		(function(){
+			var el = document.id('nm-active-hover');
+			if (el && el.retrieve('id') !== e.target.instance.attr('id')){
+				return;	
+			}
+
+			if (el && !el.retrieve('mouseover')){
+				el.destroy();
+			}
+		}).delay(10);
+	}
+};
+
+
+/**
+ * Register a global handler to provide a href to Nodes
+ * This can be overridden on the networkMap instance or
+ * or setting it directly on the node.
+ * 
+ * The registered function should return a url string 
+ * or null if no link should be created. See implementation
+ * of networkMap.Node._linkGenerator for a reference 
+ * implementation
+ *
+ * @param {function} A function that returns an URL or null
+ */
+networkMap.Node.registerLinkGenerator = function(f){
+	networkMap.Node._linkGenerator = function(node){
+		if (node.options.href){
+			if (networkMap.isFunction(node.options.href))
+				node.setLink(node.options.href());
+			else
+				node.setLink(node.options.href);
+			return;
+		}
+		
+		node.setLink(f(node));
+	};
+};
+
+/** Register a default link generator which will not create a link */
+networkMap.Node.registerLinkGenerator(function(node){return null;});
+
+
+/** Removed as we are going to change the implementation, kept for reference at the moment
+
 networkMap.Node.renderer = networkMap.Node.renderer || {};
 
 networkMap.registerNodeRenderer = function(name, renderer){
@@ -557,3 +748,4 @@ networkMap.Node.renderer.rect = function(){};
 networkMap.Node.label = networkMap.Node.label || {};
 networkMap.Node.label.rederer = networkMap.Node.label.rederer || {};
 networkMap.Node.label.rederer.normal = function(){};
+*/
