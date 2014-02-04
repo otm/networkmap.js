@@ -76,7 +76,7 @@ networkMap.ColorLegend = new Class({
 
 			});
 
-			svg.text(this.colormap.limits[index].toString() * 100 + '%')
+			svg.text(Math.round(this.colormap.limits[index].toString() * 100) + '%')
 				.attr({
 					'text-anchor': 'end',
 					'font-size': this.options.boxSize/2
