@@ -11,7 +11,7 @@ networkMap.Graph = new Class({
 		/** The name of the datasoruce to use */
 		datasource: 'simulate',
 		/** The name of the colormap to use */
-		colormap: 'flat5',
+		colormap: 'hsl15',
 		/** Controls of the settings manager is created */
 		enableEditor: true,
 		/** Controls if the nodes are draggable */
