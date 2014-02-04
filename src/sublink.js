@@ -73,8 +73,11 @@ networkMap.LinkPath = new Class ({
 				this.a.to(url);
 				return this;
 			}
+
+			if (this.svg.parent){
+				this.a = this.svg.linkTo(url);
+			}
 			
-			this.a = this.svg.linkTo(url);
 			return this;
 		}
 		
