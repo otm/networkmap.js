@@ -6,18 +6,28 @@ networkMap.Graph = new Class({
 	options:{
 		/** The with of the graph */
 		width: 10,
+		
 		/** The height of the graph */
 		height: 10,
+		
 		/** The name of the datasoruce to use */
 		datasource: 'simulate',
+		
 		/** The name of the colormap to use */
 		colormap: 'hsl15',
+		
 		/** Controls of the settings manager is created */
 		enableEditor: true,
+		
 		/** Controls if the nodes are draggable */
 		allowDraggableNodes: false,
+		
 		/** Controlls how often the links refresh the data */
-		refreshInterval: null,
+		refreshInterval: 300,
+		
+		/** Controls if the link update should be controlled 
+		 * by the graph or the link */ 
+		batchUpdate: true,
 		
 		node: {
 			linkGenerator: null
@@ -105,7 +115,9 @@ networkMap.Graph = new Class({
 		
 		this.setRefreshInterval(this.options.refreshInterval);
 		
-		this.svg.on('click', this._clickHandler.bind(this));		
+		this.svg.on('click', this._clickHandler.bind(this));
+		
+		this.addEvent('load', this.update.bind(this));
 	},
 	
 	/**
@@ -155,13 +167,14 @@ networkMap.Graph = new Class({
 		
 		if (interval){
 			this.intervalId = setInterval(function(){
-				this.refresh();
+				this.update();
 			}.bind(this), interval*1000);
 		}
 		else if (this.intervalId){
 			clearInterval(this.intervalId);
 			delete this.intervalId;
 		}
+		
 		return this;
 	},
 
@@ -717,11 +730,21 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	refresh: function(){
-		this.links.each(function(link){
-			link.localUpdate();
-		});
+		console.log("refresh is depricated, use update instead");
 
-		return this;
+		return this.update();
+	},
+
+	registerUpdateEvent: function(datasource, url, link, callback){
+		this.$updateQ = this.$updateQ || {}; 
+		this.$updateQ[datasource] = this.$updateQ[datasource] || {};
+		this.$updateQ[datasource][url] = this.$updateQ[datasource][url] || [];
+
+		// register datasources for internal use in the link
+		this.$updateQ[datasource][url].push({
+			link: link,
+			callback: callback
+		});
 	},
 
 	/**
@@ -731,27 +754,31 @@ networkMap.Graph = new Class({
 	 * @todo remove or refactor the method
 	 */
 	update: function(){
-		var requests = {};
+		if (this.options.batchUpdate)
+			return this.batchUpdate();		
+		
 		this.links.each(function(link){
-			[link.options.nodeA, link.options.nodeB].each(function(node){
-				if (!requests[node.requestUrl])
-				requests[node.requestUrl] = [];
-
-				requests[node.requestUrl].push(node.requestData);
-			});	
+			link.localUpdate();
 		});
 
-		Object.each(requests, function(requestData, requestUrl){
-			requestData.callback = function(result){
-				
-			};
+		return this;
+	},
+	
+	batchUpdate: function(){
+		Object.each(this.$updateQ, function(urls, datasource){
+			if (!networkMap.datasource[datasource]){
+				throw 'Unknown datasource (' + datasource + ')';
+			}
 			
-			networkMap.datasource[this.options.datasource](
-				requestUrl, 
-				requestData
-			);
+			Object.each(urls, function(requests, url){
+				networkMap.datasource[datasource](url, requests);
+			}.bind(this));
 		}.bind(this));
-	}
+		
+		return this;
+	},
+	
+	
 
 
 });

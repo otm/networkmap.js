@@ -8,9 +8,10 @@ networkMap.Link = new Class({
 		width: 10,
 		debug: false,
 		background: '#777',
-		localUpdate: true,
+		localUpdate: false,
 		refreshInterval: 300000,
 		datasource: null,
+		batchUpdate: true,
 		colormap: null
 	},
 	exportedOptions: [
@@ -49,6 +50,9 @@ networkMap.Link = new Class({
 			min: 0
 		}
 	},
+	/** internal debug variable, 0 = off, 1 = normal debug */
+	$debug: 0,
+	
 	pathPoints: [],
 	svgEl: {},
 	updateQ: {},
@@ -92,7 +96,7 @@ networkMap.Link = new Class({
 			}.bind(this));
 		}
 		this.path.nodeA = new networkMap.LinkPath(
-			this, 
+			this,
 			networkMap.path(this.svg), 
 			link
 		).addEvent('change', this.redraw.bind(this))
@@ -174,6 +178,7 @@ networkMap.Link = new Class({
 			}.bind(this));
 		}
 	},
+	
 	getSettingsWidget: function(){
 		var container = new networkMap.widget.Accordion();
 		var accordionGroup;
@@ -902,21 +907,30 @@ networkMap.Link = new Class({
 	},
 
 	registerUpdateEvent: function(datasource, url, link, callback){
-		if (!this.updateQ[datasource]){
-			this.updateQ[datasource] = {};
-		}
+		var graph;
+		
+		this.updateQ[datasource] = this.updateQ[datasource] || {};
+		this.updateQ[datasource][url] = this.updateQ[datasource][url] || [];
 
-		if (!this.updateQ[datasource][url]){
-			this.updateQ[datasource][url] = [];
-		}
-
+		// register datasources for internal use in the link
 		this.updateQ[datasource][url].push({
 			link: link,
 			callback: callback
 		});
+		
+		// register the update event in the graf
+		this.graph.registerUpdateEvent(datasource, url, link, callback);
 	},
 
+	/** This is depricated */
 	localUpdate: function(){
+		console.log('localUpdate is depricated, please use update instead');
+		
+		if (!this.graph.options.batchUpdate)
+			return this.update();
+	}, 
+
+	update: function(){
 		Object.each(this.updateQ, function(urls, datasource){
 			if (!networkMap.datasource[datasource]){
 				throw 'Unknown datasource (' + datasource + ')';
@@ -932,6 +946,8 @@ networkMap.Link = new Class({
 				}
 			}.bind(this));
 		}.bind(this));
+		
+		return this;
 	},
 
 	/**
@@ -940,6 +956,7 @@ networkMap.Link = new Class({
 	* with the current version. Use localUpdate
 	* instead.
 	*/
+	/* removed this should not be used !?!??!?
 	update: function(){
 		if (this.svgEl.nodeA.mainPath){
 			this.datasource(
@@ -987,6 +1004,7 @@ networkMap.Link = new Class({
 
 		return this;
 	},
+	*/
 	updateBgColor: function(path, color){
 		if (!color){
 			path.svg.fill(this.options.background);
