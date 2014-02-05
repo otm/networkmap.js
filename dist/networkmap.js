@@ -732,7 +732,77 @@ networkMap.colormap.flat5 = {
 	],
 	nodata: '#ecf0f1'
 };
-;networkMap.ColorLegend = new Class({
+
+/**
+ * HSL colormap
+ */
+networkMap.colormap.hsl15 = {
+	translate: function(value){
+		var map = networkMap.colormap.hsl15;
+		
+		if (!value && value !== 0)
+			return map.nodata;
+	
+			
+	
+		if (value === 0)
+			return '#000';
+
+		
+		var hue = 220 - (Math.floor(value * 24) * 10);
+		if (hue < 0) {
+			hue = 360 - hue;
+		}
+		return "hsl(" + hue + ", 100%, 50%)";
+	},
+	map: [
+		'#000',
+		'#007fff',
+		'#0af',
+		'#00d4ff',
+		'#0ff',
+		'#0fa',
+		'#00ff80',
+		'#0f5',
+		'#00ff2b',
+		'#0f0',
+		'#5f0',
+		'#80ff00',
+		'#af0',
+		'#d4ff00',
+		'#ff0',
+		'#fa0',
+		'#ff8000',
+		'#f50',
+		'#ff2b00',
+		'#f00',
+		'#f05'
+	],
+	limits: [
+		0, //#000
+		0.05, //#007fff
+		0.1, //#0af
+		0.15, //#00d4ff
+		0.2, //#0ff
+		0.25, //#0fa
+		0.3, //#00ff80
+		0.35, //#0f5
+		0.4, //#00ff2b
+		0.45, //#0f0
+		0.5, //#5f0
+		0.55, //#80ff00
+		0.6, //#af0
+		0.65, //#d4ff00
+		0.7, //#ff0
+		0.75, //#fa0
+		0.8, //#ff8000
+		0.85, //#f50
+		0.9, //#ff2b00
+		0.95, //#f00
+		1		//#f05
+	],
+	nodata: '#ecf0f1'
+};;networkMap.ColorLegend = new Class({
 	Implements: [Options],
 	options: {
 		/** The size of the the color square */
@@ -810,7 +880,7 @@ networkMap.colormap.flat5 = {
 
 			});
 
-			svg.text(this.colormap.limits[index].toString() * 100 + '%')
+			svg.text(Math.round(this.colormap.limits[index].toString() * 100) + '%')
 				.attr({
 					'text-anchor': 'end',
 					'font-size': this.options.boxSize/2
@@ -1096,18 +1166,28 @@ networkMap.Graph = new Class({
 	options:{
 		/** The with of the graph */
 		width: 10,
+		
 		/** The height of the graph */
 		height: 10,
+		
 		/** The name of the datasoruce to use */
 		datasource: 'simulate',
+		
 		/** The name of the colormap to use */
-		colormap: 'flat5',
+		colormap: 'hsl15',
+		
 		/** Controls of the settings manager is created */
 		enableEditor: true,
+		
 		/** Controls if the nodes are draggable */
 		allowDraggableNodes: false,
+		
 		/** Controlls how often the links refresh the data */
-		refreshInterval: null,
+		refreshInterval: 300,
+		
+		/** Controls if the link update should be controlled 
+		 * by the graph or the link */ 
+		batchUpdate: true,
 		
 		node: {
 			linkGenerator: null
@@ -1195,7 +1275,9 @@ networkMap.Graph = new Class({
 		
 		this.setRefreshInterval(this.options.refreshInterval);
 		
-		this.svg.on('click', this._clickHandler.bind(this));		
+		this.svg.on('click', this._clickHandler.bind(this));
+		
+		this.addEvent('load', this.update.bind(this));
 	},
 	
 	/**
@@ -1245,13 +1327,14 @@ networkMap.Graph = new Class({
 		
 		if (interval){
 			this.intervalId = setInterval(function(){
-				this.refresh();
+				this.update();
 			}.bind(this), interval*1000);
 		}
 		else if (this.intervalId){
 			clearInterval(this.intervalId);
 			delete this.intervalId;
 		}
+		
 		return this;
 	},
 
@@ -1807,11 +1890,21 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	refresh: function(){
-		this.links.each(function(link){
-			link.localUpdate();
-		});
+		console.log("refresh is depricated, use update instead");
 
-		return this;
+		return this.update();
+	},
+
+	registerUpdateEvent: function(datasource, url, link, callback){
+		this.$updateQ = this.$updateQ || {}; 
+		this.$updateQ[datasource] = this.$updateQ[datasource] || {};
+		this.$updateQ[datasource][url] = this.$updateQ[datasource][url] || [];
+
+		// register datasources for internal use in the link
+		this.$updateQ[datasource][url].push({
+			link: link,
+			callback: callback
+		});
 	},
 
 	/**
@@ -1821,27 +1914,31 @@ networkMap.Graph = new Class({
 	 * @todo remove or refactor the method
 	 */
 	update: function(){
-		var requests = {};
+		if (this.options.batchUpdate)
+			return this.batchUpdate();		
+		
 		this.links.each(function(link){
-			[link.options.nodeA, link.options.nodeB].each(function(node){
-				if (!requests[node.requestUrl])
-				requests[node.requestUrl] = [];
-
-				requests[node.requestUrl].push(node.requestData);
-			});	
+			link.localUpdate();
 		});
 
-		Object.each(requests, function(requestData, requestUrl){
-			requestData.callback = function(result){
-				
-			};
+		return this;
+	},
+	
+	batchUpdate: function(){
+		Object.each(this.$updateQ, function(urls, datasource){
+			if (!networkMap.datasource[datasource]){
+				throw 'Unknown datasource (' + datasource + ')';
+			}
 			
-			networkMap.datasource[this.options.datasource](
-				requestUrl, 
-				requestData
-			);
+			Object.each(urls, function(requests, url){
+				networkMap.datasource[datasource](url, requests);
+			}.bind(this));
 		}.bind(this));
-	}
+		
+		return this;
+	},
+	
+	
 
 
 });;networkMap.Node = new Class({
@@ -2445,113 +2542,6 @@ networkMap.Node.defaultTemplate = {
 };
 
 /**
- * Register global event handlers. These can be over ridden on the 
- * networkMap instance and on the node instance.
- *
- * @param {string} The event name (click, mouseover, mouseout, hover)
- * @param {function} The value to set
- * @this {???}
- * @return {???}
- */
-networkMap.Node.registerEvent = function(name, f){
-	if (!networkMap.events[name])
-		throw "Invalid event: " + name;
-		
-	networkMap.events[name] = f;
-};
-
-/** Default implementaion of events */
-networkMap.Node.events = {
-	/** default click event */
-	click: function(e, node){},
-	
-	/** default hover event */
-	hover: function(e, node, el){
-		el.set('text', node.options.name);
-	},
-	
-	/** default mouseover event
-	 * By overriding this function the hover 
-	 * will stop working event 
-	 */
-	mouseover: function(e, options, hover){
-		var el = document.id('nm-active-hover');
-		var id = e.target.instance.attr('id');
-		
-		if (el){
-			if (el.retrieve('id') === e.target.instance.attr('id')){
-				el.store('keep', true);
-				return;
-			}
-			
-			el.destroy();	
-		}
-		
-		el = new Element('div', {
-			'id': 'nm-active-hover',
-			'class': 'nm-hover',
-			events: {
-				mouseover: function(){
-					el.store('mouseover', true);
-				},
-				mouseout: function(){
-					el.eliminate('mouseover');
-					(function(){
-						if (!el.retrieve('keep'))
-							el.destroy();
-						else
-							el.eliminate('keep');
-					}).delay(10);
-				},
-				click: function(ev){
-					link._clickHandler(e);
-				}
-					
-				
-			}
-		})
-		.store('id', e.target.instance.attr('id'));
-		
-		el.setStyles({
-			top: -1000,
-			left: -1000	
-		});
-				
-		
-		document.id(document.body).grab(el);
-					
-		f(e, link, el);
-		
-		var size = el.getSize();
-		var bboxClient = e.target.getBoundingClientRect();
-		
-		el.setStyles({
-			top: (bboxClient.top + bboxClient.bottom)/2 - size.y/2,
-			left: (bboxClient.left + bboxClient.right)/2 - size.x/2
-		});
-	},
-	
-	/** default mouseout event
-	 * By overriding this function the hover 
-	 * will stop working event 
-	 */
-	mouseout: function(e, node){
-		var options = e.target.instance.link;
-		(function(){
-			var el = document.id('nm-active-hover');
-			if (el && el.retrieve('id') !== e.target.instance.attr('id')){
-				return;	
-			}
-
-			if (el && !el.retrieve('mouseover')){
-				el.destroy();
-			}
-		}).delay(10);
-	}
-};
-
-
-/**
  * Register a global handler to provide a href to Nodes
  * This can be overridden on the networkMap instance or
  * or setting it directly on the node.
@@ -2594,7 +2584,125 @@ networkMap.Node.renderer.rect = function(){};
 networkMap.Node.label = networkMap.Node.label || {};
 networkMap.Node.label.rederer = networkMap.Node.label.rederer || {};
 networkMap.Node.label.rederer.normal = function(){};
-*/;networkMap.LinkPath = new Class ({
+*/;/**
+ * Register global event handlers. These can be over ridden on the 
+ * networkMap instance and on the node instance.
+ *
+ * @param {string} The event name (click, mouseover, mouseout, hover)
+ * @param {function} The value to set
+ * @this {???}
+ * @return {???}
+ */
+networkMap.Node.registerEvent = function(name, f){
+	if (name === 'hover'){
+		return this.registerHover(f);
+	}
+
+	if (!networkMap._events[name])
+		throw "Invalid event: " + name;
+		
+	networkMap._events[name] = f;
+};
+
+networkMap.Node.registerEvent.registerHover = function(f){
+	
+	/** default mouseover event
+	 * By overriding this function the hover 
+	 * will stop working event 
+	 */
+	var mouseover = function(e, options, hover){
+		var el = document.id('nm-active-hover');
+		var id = e.target.instance.attr('id');
+		
+		if (el){
+			if (el.retrieve('id') === e.target.instance.attr('id')){
+				el.store('keep', true);
+				return;
+			}
+			
+			el.destroy();	
+		}
+		
+		el = new Element('div', {
+			'id': 'nm-active-hover',
+			'class': 'nm-hover',
+			events: {
+				mouseover: function(){
+					el.store('mouseover', true);
+				},
+				mouseout: function(){
+					el.eliminate('mouseover');
+					(function(){
+						if (!el.retrieve('keep'))
+							el.destroy();
+						else
+							el.eliminate('keep');
+					}).delay(10);
+				},
+				click: function(ev){
+					node._clickHandler(e);
+				}
+			}
+		})
+		.store('id', e.target.instance.attr('id'));
+		
+		el.setStyles({
+			top: -1000,
+			left: -1000	
+		});
+				
+		document.id(document.body).grab(el);
+					
+		f(e, node, el);
+		
+		var size = el.getSize();
+		var bboxClient = e.target.getBoundingClientRect();
+		
+		el.setStyles({
+			top: (bboxClient.top + bboxClient.bottom)/2 - size.y/2,
+			left: (bboxClient.left + bboxClient.right)/2 - size.x/2
+		});
+	};
+	
+	/** default mouseout event
+	 * By overriding this function the hover 
+	 * will stop working event 
+	 */
+	var mouseout = function(e, node){
+		var options = e.target.instance.node;
+		(function(){
+			var el = document.id('nm-active-hover');
+			if (el && el.retrieve('id') !== e.target.instance.attr('id')){
+				return;	
+			}
+
+			if (el && !el.retrieve('mouseover')){
+				el.destroy();
+			}
+		}).delay(10);
+	};
+	
+	networkMap.Node.registerEvent('mouseover', mouseover);
+	networkMap.Node.registerEvent('mouseout', mouseout);
+};
+
+
+/** Default implementaion of events */
+networkMap.Node._events = {
+	/** default click event */
+	click: function(e, node){},
+	
+	mouseover: function(e, options, hover){},	
+
+	mouseout: function(e, node){},	
+	
+	/** default hover event */
+	hover: function(e, node, el){
+		el.set('text', node.options.name);
+	}
+};
+
+;networkMap.LinkPath = new Class ({
 	Implements: [Options, Events],
 	options: {},
 	svg: null,
@@ -2669,8 +2777,11 @@ networkMap.Node.label.rederer.normal = function(){};
 				this.a.to(url);
 				return this;
 			}
+
+			if (this.svg.parent){
+				this.a = this.svg.linkTo(url);
+			}
 			
-			this.a = this.svg.linkTo(url);
 			return this;
 		}
 		
@@ -2772,6 +2883,7 @@ networkMap.Node.label.rederer.normal = function(){};
 			networkMap.events.click(e, this);
 		}
 		else if (this.link.mode() === 'edit'){
+			e.preventDefault();
 			this.link.graph.settings.edit(this);	
 		}
 	},
@@ -2798,9 +2910,10 @@ networkMap.Node.label.rederer.normal = function(){};
 		width: 10,
 		debug: false,
 		background: '#777',
-		localUpdate: true,
+		localUpdate: false,
 		refreshInterval: 300000,
 		datasource: null,
+		batchUpdate: true,
 		colormap: null
 	},
 	exportedOptions: [
@@ -2839,6 +2952,9 @@ networkMap.Node.label.rederer.normal = function(){};
 			min: 0
 		}
 	},
+	/** internal debug variable, 0 = off, 1 = normal debug */
+	$debug: 0,
+	
 	pathPoints: [],
 	svgEl: {},
 	updateQ: {},
@@ -2882,7 +2998,7 @@ networkMap.Node.label.rederer.normal = function(){};
 			}.bind(this));
 		}
 		this.path.nodeA = new networkMap.LinkPath(
-			this, 
+			this,
 			networkMap.path(this.svg), 
 			link
 		).addEvent('change', this.redraw.bind(this))
@@ -2964,6 +3080,7 @@ networkMap.Node.label.rederer.normal = function(){};
 			}.bind(this));
 		}
 	},
+	
 	getSettingsWidget: function(){
 		var container = new networkMap.widget.Accordion();
 		var accordionGroup;
@@ -3692,21 +3809,30 @@ networkMap.Node.label.rederer.normal = function(){};
 	},
 
 	registerUpdateEvent: function(datasource, url, link, callback){
-		if (!this.updateQ[datasource]){
-			this.updateQ[datasource] = {};
-		}
+		var graph;
+		
+		this.updateQ[datasource] = this.updateQ[datasource] || {};
+		this.updateQ[datasource][url] = this.updateQ[datasource][url] || [];
 
-		if (!this.updateQ[datasource][url]){
-			this.updateQ[datasource][url] = [];
-		}
-
+		// register datasources for internal use in the link
 		this.updateQ[datasource][url].push({
 			link: link,
 			callback: callback
 		});
+		
+		// register the update event in the graf
+		this.graph.registerUpdateEvent(datasource, url, link, callback);
 	},
 
+	/** This is depricated */
 	localUpdate: function(){
+		console.log('localUpdate is depricated, please use update instead');
+		
+		if (!this.graph.options.batchUpdate)
+			return this.update();
+	}, 
+
+	update: function(){
 		Object.each(this.updateQ, function(urls, datasource){
 			if (!networkMap.datasource[datasource]){
 				throw 'Unknown datasource (' + datasource + ')';
@@ -3722,6 +3848,8 @@ networkMap.Node.label.rederer.normal = function(){};
 				}
 			}.bind(this));
 		}.bind(this));
+		
+		return this;
 	},
 
 	/**
@@ -3730,6 +3858,7 @@ networkMap.Node.label.rederer.normal = function(){};
 	* with the current version. Use localUpdate
 	* instead.
 	*/
+	/* removed this should not be used !?!??!?
 	update: function(){
 		if (this.svgEl.nodeA.mainPath){
 			this.datasource(
@@ -3777,6 +3906,7 @@ networkMap.Node.label.rederer.normal = function(){};
 
 		return this;
 	},
+	*/
 	updateBgColor: function(path, color){
 		if (!color){
 			path.svg.fill(this.options.background);
