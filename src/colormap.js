@@ -114,7 +114,7 @@ networkMap.colormap.hsl15 = {
 			
 	
 		if (value === 0)
-			return map.map[0];
+			return '#000';
 
 		
 		var hue = 220 - (Math.floor(value * 24) * 10);
@@ -124,7 +124,7 @@ networkMap.colormap.hsl15 = {
 		return "hsl(" + hue + ", 100%, 50%)";
 	},
 	map: [
-		'#05f',
+		'#000',
 		'#007fff',
 		'#0af',
 		'#00d4ff',
@@ -147,7 +147,7 @@ networkMap.colormap.hsl15 = {
 		'#f05'
 	],
 	limits: [
-		0, //#05f
+		0, //#000
 		0.05, //#007fff
 		0.1, //#0af
 		0.15, //#00d4ff
