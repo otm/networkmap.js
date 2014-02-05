@@ -179,6 +179,7 @@ networkMap.LinkPath = new Class ({
 			networkMap.events.click(e, this);
 		}
 		else if (this.link.mode() === 'edit'){
+			e.preventDefault();
 			this.link.graph.settings.edit(this);	
 		}
 	},
