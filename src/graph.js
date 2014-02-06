@@ -28,6 +28,12 @@ networkMap.Graph = new Class({
 		/** Controls if the link update should be controlled 
 		 * by the graph or the link */ 
 		batchUpdate: true,
+
+		/** Controls if the grid is enabled */
+		gridEnabled: true,		
+		
+		/** A grid size for objects to snap to */
+		grid: {x:10, y:10},
 		
 		node: {
 			linkGenerator: null
@@ -267,7 +273,18 @@ networkMap.Graph = new Class({
 				this.fireEvent('redraw', [{defaultsUpdated: true}]);
 			}.bind(this);
 		}.bind(this);
-			
+	
+		accordionGroup = container.add('Globals');
+		accordionGroup.grab(new networkMap.widget.GridInput('Grid', {
+			enabled: this.options.gridEnabled,
+			grid: this.options.grid
+		}).addEvent('change', function(e){
+			if (e.value.enabled)
+				this.grid(e.value.grid);
+			else
+				this.grid(false);
+		}.bind(this)));
+				
 	
 		accordionGroup = container.add('Node Defaults');		
 		Object.each(networkMap.Node.defaultTemplate, function(option, key){
@@ -297,6 +314,31 @@ networkMap.Graph = new Class({
 				
 		
 		return container;
+	},
+
+	grid: function(grid){
+		if (grid === true){
+			this.options.gridEnabled = true;
+			
+			return this;
+		}
+		
+		if (grid === false){
+			this.options.gridEnabled = false;	
+		}		
+		
+		if (!grid){
+			if (!this.options.gridEnabled)
+				return false;
+				
+			return this.options.grid;
+		}
+		
+		this.options.gridEnabled = true;			
+		this.options.grid = grid;
+		this.disableDraggableNodes();
+		this.enableDraggableNodes();
+		return this;
 	},
 
 	/**
