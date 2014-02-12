@@ -25,7 +25,7 @@ networkMap.registerEvent = function(name, f){
 	}
 	else if (name === 'hover'){	
 		networkMap.events.mouseover = function(e, link){
-			var el = document.id('nm-active-hover');
+			var el = document.getElementById('nm-active-hover');
 			var id = e.target.instance.attr('id');
 			
 			if (el){

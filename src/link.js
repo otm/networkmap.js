@@ -1,19 +1,45 @@
-networkMap.Link = new Class({
-	Implements: [Options, Events],
-	options:{
-		inset: 10,
-		connectionDistance: 10,
-		staticConnectionDistance: 30,
-		arrowHeadLength: 10,
-		width: 10,
-		debug: false,
-		background: '#777',
-		localUpdate: false,
-		refreshInterval: 300000,
-		datasource: null,
-		batchUpdate: true,
-		colormap: null
-	},
+networkMap.Link = function(options){
+	
+
+	/** internal debug variable, 0 = off, 1 = normal debug */
+	this.$debug = 0;
+	this.pathPoints = [];
+	this.svgEl = {};
+	this.updateQ = {};
+	this._mode = 'normal';
+	this.path = {};
+	this.subpath = {};
+
+	var link, sublink;
+	
+	this.graph = options.graph;
+	delete options.graph;		
+
+	this.properties = new networkMap.Properties(options, networkMap.Link.defaults);
+	this.properties.addEvent('change', function(change){
+		this.options = this.properties.configuration();
+		this.draw();
+	}.bind(this));
+
+	// TODO: Remove this hack
+	this.options = this.properties.configuration();
+
+	this.configurationWidget = new networkMap.Link.Module.Settings();
+
+	this.colormap = networkMap.colormap[this.properties.get('colormap')];
+
+	// setup datasource
+	this.datasource = networkMap.datasource[this.properties.get('datasource')];
+
+
+	this.setGraph(this.graph);
+};
+
+networkMap.extend(networkMap.Link, networkMap.Options);
+networkMap.extend(networkMap.Link, networkMap.Observable);
+
+networkMap.extend(networkMap.Link, {
+
 	exportedOptions: [
 		'inset',
 		'connectionDistance',
@@ -50,223 +76,8 @@ networkMap.Link = new Class({
 			min: 0
 		}
 	},
-	/** internal debug variable, 0 = off, 1 = normal debug */
-	$debug: 0,
 	
-	pathPoints: [],
-	svgEl: {},
-	updateQ: {},
-	_mode: 'normal',
-	path: {},
-	subpath: {},
-	initialize: function(options){
-		var link, sublink;
-		
-		this.graph = options.graph;
-		delete options.graph;		
-		
-		
-		/* I should call the setGraph function and handle this there */
-		this.options.datasource = this.options.datasource || this.graph.options.datasource;
-		this.svg = this.graph.getPaintArea().group();
 
-
-		if (!options.nodeA || !options.nodeB){
-			throw "Link(create, missing node in link definition)";
-		}
-
-		this.nodeA = this.graph.getNode(options.nodeA.id);
-		if (!this.nodeA){
-			throw "Link(create, nodeA does not exist (" + this.options.nodeA.id + ")";
-		}
-
-		link = options.nodeA;
-		this.options.nodeA = link.id;
-
-		if (link.sublinks){
-			sublinks = link.sublinks;
-			delete link.sublinks;
-			this.subpath.nodeA = [];
-			sublinks.each(function(sublink){
-				this.subpath.nodeA.push(
-					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
-					.addEvent('change', this.redraw.bind(this))
-					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
-				);
-			}.bind(this));
-		}
-		this.path.nodeA = new networkMap.LinkPath(
-			this,
-			networkMap.path(this.svg), 
-			link
-		).addEvent('change', this.redraw.bind(this))
-		.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this));
-		
-		
-		// add a holder for SVG objects
-		if (this.options.nodeA.requestData || this.options.nodeA.sublinks){
-			this.svgEl.nodeA = {};
-
-			if (this.options.nodeA.sublinks){
-				this.svgEl.nodeA.sublinks = [];
-			}
-		}
-
-		this.nodeB = this.graph.getNode(options.nodeB.id);
-		if (!this.nodeB){
-			throw "Link(create, nodeB does not exist (" + this.options.nodeB.id + ")";
-		}
-
-		link = options.nodeB;
-		this.options.nodeB = link.id;
-
-		if (link.sublinks){
-			sublinks = link.sublinks;
-			delete link.sublinks;
-			this.subpath.nodeB = [];
-			sublinks.each(function(sublink){
-				this.subpath.nodeB.push(
-					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
-					.addEvent('change', this.redraw.bind(this))
-					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
-				);
-			}.bind(this));
-		}
-		this.path.nodeB = new networkMap.LinkPath(
-			this, 
-			networkMap.path(this.svg), 
-			link
-		).addEvent('change', this.redraw.bind(this))
-		.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this));
-		
-		// Add a holder for SVG objects
-		if (this.options.nodeB.requestData || this.options.nodeB.sublinks){
-			this.svgEl.nodeB = {};
-
-			if (this.options.nodeB.sublinks){
-				this.svgEl.nodeB.sublinks = [];
-			}
-
-		}
-
-		// Set defaults
-		if (this.graph){
-			this.setOptions(this.graph.getDefaults('link'));
-		}
-		
-		// set local optioins
-		this._localConfig = options;
-		this.setOptions(options);
-
-		if (!this.options.colormap){
-			this.options.colormap = networkMap.colormap[this.graph.options.colormap];
-		}
-
-		// setup datasource
-		this.datasource = networkMap.datasource[this.options.datasource];
-
-
-		if (this.graph){
-			this.draw();
-			
-			this.graph.addEvent('redraw', function(e){
-				if (e.defaultsUpdated === true){
-					this.setOptions(this.graph.getDefaults('link'));
-					this.setOptions(this._localConfig);
-				}
-				//this.redraw();
-			}.bind(this));
-		}
-	},
-	
-	getSettingsWidget: function(){
-		var container = new networkMap.widget.Accordion();
-		var accordionGroup;
-
-		var changeHandler = function(key, obj){
-			return function(e){
-				obj.setProperty(key, e.target.value);	
-			};
-		};
-	
-		accordionGroup = container.add('Globals');		
-		Object.each(this.editTemplate, function(option, key){
-			accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
-		}.bind(this));		
-		
-		
-		
-		var linkTemplate = {
-			id: {
-				label: 'Node',
-				type: 'text',
-				disabled: true
-			},
-			name: {
-				label: 'Interface',
-				type: 'text',
-				disabled: true
-			}, 
-			width: {
-				label: 'Width',
-				type: 'number',
-				min: 0
-			}
-		};		
-		
-		accordionGroup = container.add('Node A');
-		Object.each(linkTemplate, function(option, key){
-			if (['id'].some(function(item){ return item == key;})){
-				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.nodeA)));
-			}
-			else{
-				if (option.type === 'number'){
-					accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
-				}
-				else if(option.type === 'text'){
-					accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
-				}
-				else if(option.type === 'color'){
-					accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
-				}
-			}
-		}.bind(this));
-			
-		accordionGroup = container.add('Node B');
-		Object.each(linkTemplate, function(option, key){
-			if (['id'].some(function(item){ return item == key;})){
-				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.nodeB)));
-			}
-			else{
-				if (option.type === 'number'){
-					accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
-				}
-				else if(option.type === 'text'){
-					accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
-				}
-				else if(option.type === 'color'){
-					accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
-				}
-			}
-		}.bind(this));
-		
-		// Add sublinks
-		// TODO: Add support for asymmetric links
-		if (this.subpath.nodeA) {
-			accordionGroup = container.add('Sublinks');
-			var sublinkList = new networkMap.widget.List();
-			this.subpath.nodeA.each(function(subpath, index){
-				sublinkList.add(subpath.options.name + ' - ' + this.subpath.nodeB[index].options.name, {enableDelete: false});
-			}.bind(this));
-			accordionGroup.grab(sublinkList);
-		}
-		
-		return container;
-		
-		
-		
-	
-	},
 	getEditables: function(){
 		return this.editTemplate;
 	},
@@ -285,7 +96,7 @@ networkMap.Link = new Class({
 			throw 'Unknow id: ' + key;
 		}
 		
-		return this._localConfig[key];
+		return this.properties.get(key);
 	},
 	
 	/**
@@ -299,13 +110,13 @@ networkMap.Link = new Class({
 	 */
 	updateLink: function(){
 		if (this.subpath.nodeA){
-			this.subpath.nodeA.each(function(sublink){
+			this.subpath.nodeA.forEach(function(sublink){
 				sublink.updateLink();
 			});
 		}
 
 		if (this.subpath.nodeB){
-			this.subpath.nodeB.each(function(sublink){
+			this.subpath.nodeB.forEach(function(sublink){
 				sublink.updateLink();
 			});
 		}
@@ -373,13 +184,8 @@ networkMap.Link = new Class({
 		return this;
 	},
 	getConfiguration: function(){
-		var configuration = {};
-
-		this.exportedOptions.each(function(option){
-			if (this._localConfig[option]){
-				configuration[option] = this._localConfig[option];
-			}
-		}.bind(this));
+		
+		var configuration = this.properties.extract();
 
 		if (this.path.nodeA){
 			configuration.nodeA = this.path.nodeA.getConfiguration();			
@@ -387,7 +193,7 @@ networkMap.Link = new Class({
 		if (this.subpath.nodeA){
 			configuration.nodeA = configuration.nodeA || {};
 			configuration.nodeA.sublinks = [];
-			this.subpath.nodeA.each(function(subpath){
+			this.subpath.nodeA.forEach(function(subpath){
 				configuration.nodeA.sublinks.push(subpath.getConfiguration());
 			});
 		}
@@ -398,25 +204,119 @@ networkMap.Link = new Class({
 		if (this.subpath.nodeB){
 			configuration.nodeB = configuration.nodeB || {};
 			configuration.nodeB.sublinks = [];
-			this.subpath.nodeB.each(function(subpath){
+			this.subpath.nodeB.forEach(function(subpath){
 				configuration.nodeB.sublinks.push(subpath.getConfiguration());
 			});
 		}
 
-		
 		return configuration;
+		
+
 	},
 	setGraph: function(graph){	
 		// remove the object from the graph
-		this.graph = null;
-		this.draw();
+		if (graph === null){
+			this.graph = null;
+			this.draw();
+		}
 
 		// if a graph is defined draw 
 		if (graph){
 			this.graph = graph;
+			this.properties.setDefaults(this.graph.getDefaults('link'));
+			this.options.datasource = this.options.datasource || this.graph.options.datasource;
+
+			// TODO: Legacy code
+			this.graph.addEvent('redraw', function(e){
+				this.draw();
+			}.bind(this));
+
+			this._setupSVG(this.properties.configuration());
 			this.draw();
 		}
 	},
+
+	_setupSVG: function(options){
+		this.svg = this.graph.getPaintArea().group();
+
+
+		if (!options.nodeA || !options.nodeB){
+			throw "Link(create, missing node in link definition)";
+		}
+
+		this.nodeA = this.graph.getNode(options.nodeA.id);
+		if (!this.nodeA){
+			throw "Link(create, nodeA does not exist (" + this.options.nodeA.id + ")";
+		}
+
+		link = options.nodeA;
+		
+		if (link.sublinks){
+			sublinks = link.sublinks;
+			delete link.sublinks;
+			this.subpath.nodeA = [];
+			sublinks.forEach(function(sublink){
+				this.subpath.nodeA.push(
+					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
+					.addEvent('change', this.redraw.bind(this))
+					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
+				);
+			}.bind(this));
+		}
+		this.path.nodeA = new networkMap.LinkPath(
+			this,
+			networkMap.path(this.svg), 
+			link
+		).addEvent('change', this.redraw.bind(this))
+		.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this));
+		
+		
+		// add a holder for SVG objects
+		if (this.options.nodeA.requestData || this.options.nodeA.sublinks){
+			this.svgEl.nodeA = {};
+
+			if (this.options.nodeA.sublinks){
+				this.svgEl.nodeA.sublinks = [];
+			}
+		}
+
+		this.nodeB = this.graph.getNode(options.nodeB.id);
+		if (!this.nodeB){
+			throw "Link(create, nodeB does not exist (" + this.options.nodeB.id + ")";
+		}
+
+		link = options.nodeB;
+
+		if (link.sublinks){
+			sublinks = link.sublinks;
+			delete link.sublinks;
+			this.subpath.nodeB = [];
+			sublinks.forEach(function(sublink){
+				this.subpath.nodeB.push(
+					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
+					.addEvent('change', this.redraw.bind(this))
+					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
+				);
+			}.bind(this));
+		}
+		this.path.nodeB = new networkMap.LinkPath(
+			this, 
+			networkMap.path(this.svg), 
+			link
+		).addEvent('change', this.redraw.bind(this))
+		.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this));
+		
+		// Add a holder for SVG objects
+		if (this.options.nodeB.requestData || this.options.nodeB.sublinks){
+			this.svgEl.nodeB = {};
+
+			if (this.options.nodeB.sublinks){
+				this.svgEl.nodeB.sublinks = [];
+			}
+
+		}
+	},
+
 	_cleanDebugLayer: function(){
 		if (this.debug){
 			this.debug.clear();
@@ -459,7 +359,7 @@ networkMap.Link = new Class({
 		this.redrawShadowPath().hideShadowPath();
 		this.drawMainPath();
 		this.drawSublinks();
-		this.localUpdate();
+		this.update();
 
 		this.nodeA.addEvent('drag', function(delta, event){
 			this._cleanDebugLayer();
@@ -495,74 +395,238 @@ networkMap.Link = new Class({
 		}.bind(this));
 
 	},
-	redrawShadowPath: function(){
-		// truncate array
-		this.pathPoints.length = 0;
 
-		var Point = networkMap.Point;
+	vec2add: function(a, b, out){
+		out = out || [0, 0];
 
-		var bboxA = this.nodeA.bbox();
-		var bboxB = this.nodeB.bbox();
+		out[0] = a[0] + b[0];
+		out[1] = a[1] + b[1];
 
-		var angle = SVG.math.angle(bboxA, bboxB);
-		angle = SVG.math.snapToAngle(angle, [0, Math.PI/2, Math.PI, Math.PI*3/2]);// + 1.5 * Math.PI;
+		return out;
+	},
 
-		// set the start possition of the shaddow path
-		// INDEX: 0
-		if (this.options.inset){
-			this.pathPoints.push(new SVG.math.Point(
-				-this.options.inset * Math.cos(angle) + bboxA.cx + Math.cos(angle) * bboxA.width / 2,
-				//this.options.inset * Math.cos(angle) + bboxA.cx - Math.cos(angle) * bboxA.width / 2,
-				-this.options.inset * Math.sin(angle) + bboxA.cy + Math.sin(angle) * bboxA.height / 2
-			));			
+	vec2sub: function(a, b, out){
+		out = out || [0, 0];
+
+		out[0] = a[0] - b[0];
+		out[1] = a[1] - b[1];
+
+		return out;
+	},
+
+	vec2distance: function(a, b){
+		var x = b[0] - a[0],
+		y = b[1] - a[1];
+		return Math.sqrt(x*x + y*y);
+	},
+
+	vec2len: function(a){
+		var x = a[0],
+		y = a[1];
+		return Math.sqrt(x*x + y*y);
+	},
+
+	vec2normalize: function(a, out) {
+		out = out || [0, 0];
+		var x = a[0],
+			y = a[1];
+		var len = x*x + y*y;
+		if (len > 0) {
+			len = 1 / Math.sqrt(len);
+			out[0] = a[0] * len;
+			out[1] = a[1] * len;
+		}
+		return out;
+	},
+
+	vec2maxDir: function(a, out){
+		out = out || [0, 0];
+		var al0 = Math.abs(a[0]);
+		var al1 = Math.abs(a[1]);
+
+		if (al0 > al1){
+			out[0] = a[0]/al0;
+			out[1] = 0;
 		}
 		else{
-			this.pathPoints.push(new SVG.math.Point(bboxA.cx, bboxA.cy));
+			out[0] = 0;
+			out[1] = a[1]/al1;
 		}
+		return out;
+	},
 
-		this.pathPoints.push(new SVG.math.Point(
-			this.options.connectionDistance * Math.cos(angle) + bboxA.cx + Math.cos(angle) * bboxA.width / 2,
-			//-this.options.connectionDistance * Math.cos(angle) + bboxA.cx - Math.cos(angle) * bboxA.width / 2,
-			this.options.connectionDistance * Math.sin(angle) + bboxA.cy + Math.sin(angle) * bboxA.height / 2
-		));
+	vec2scale: function(a, b, out){
+		out = out || [0, 0];
+
+		out[0] = a[0] * b;
+		out[1] = a[1] * b;		
+
+		return out;
+	},
+
+	vec2mul: function(a, b, out){
+		out = out || [0, 0];
+
+		out[0] = a[0] * b[0];
+		out[1] = a[1] * b[1];		
+
+		return out;
+	},
+
+	vec2confine: function(a, b, out){
+		out = out || [0, 0];
+
+		out[0] = (Math.abs(a[0]) < Math.abs(b[0])) ? a[0] : a[0]/Math.abs(a[0])*b[0];
+		out[1] = (Math.abs(a[1]) < Math.abs(b[1])) ? a[1] : a[1]/Math.abs(a[1])*b[1];
+
+		return out;
+	},
+
+	vec2clone: function(a, out){
+		out = out || [0, 0];
+		out[0] = a[0];
+		out[1] = a[1];
+
+		return out;	
+	},
+
+	edgePoints: function(){
+		var bboxA = this.nodeA.bbox();
+		var bboxB = this.nodeB.bbox();
+		var confinmentA = [bboxA.width/2, bboxA.height/2];
+		var confinmentB = [bboxB.width/2, bboxB.height/2];
+
+		var path = [];
+		var inset = this.properties.get('inset') || 1;
+		var connectionDistance = this.properties.get('connectionDistance') || 1;
+		var staticConnectionDistance = this.properties.get('staticConnectionDistance') || 1;
+
+		var a = [bboxA.cx, bboxA.cy];
+		var b = [bboxB.cx, bboxB.cy];
+
+		var ab = this.vec2sub(b,a);
+
+		var dirA = this.vec2maxDir(ab);
+
+		var edgePointA = [0, 0];
+		this.vec2mul(dirA, confinmentA, edgePointA);
+		this.vec2sub(edgePointA, this.vec2scale(dirA, inset), edgePointA);
+		var baseA = this.vec2clone(edgePointA);
+		this.vec2add(a, edgePointA, edgePointA);
+
+		//var edgeNodeA = this.vec2add(a, this.vec2confine(this.vec2scale(dirA, inset), confinmentA));
+		path.push(edgePointA);
+		path.push(this.vec2add(a, this.vec2add(baseA, this.vec2scale(dirA, connectionDistance))));
+		this.vec2add(baseA, this.vec2scale(dirA, connectionDistance), baseA);
+		path.push(this.vec2add(a, this.vec2add(baseA, this.vec2scale(dirA, staticConnectionDistance))));
+
+		var ba = [ab[0]*-1, ab[1]*-1];
+		var dirB = this.vec2maxDir(ba);
+
+		var edgePointB = [0, 0];
+		this.vec2mul(dirB, confinmentB, edgePointB);
+		this.vec2sub(edgePointB, this.vec2scale(dirB, inset), edgePointB);
+		var baseB = this.vec2clone(edgePointB);
+		this.vec2add(b, edgePointB, edgePointB);
+
+		//var edgeNodeB = this.vec2add(b, this.vec2confine(this.vec2scale(dirB, inset), confinmentB));
+		baseBB = [0, 0];
+		this.vec2add(baseB, this.vec2scale(dirB, connectionDistance), baseBB);
+		path.push(this.vec2add(b, this.vec2add(baseBB, this.vec2scale(dirB, staticConnectionDistance))));
+		path.push(this.vec2add(b, this.vec2add(baseB, this.vec2scale(dirB, connectionDistance))));
+		path.push(edgePointB);
 		
+		this.$edgePoints = {
+			nodeA: {
+				point: new SVG.math.Point(edgePointA[0], edgePointA[1]),
+				direction: dirA
+			},
+			nodeB: {
+				point: new SVG.math.Point(edgePointB[0], edgePointB[1]),
+				direction: dirB
+			},
+			path: path
+		};
 
-		this.pathPoints.push(new SVG.math.Point(
-			this.options.staticConnectionDistance * Math.cos(angle) + bboxA.cx + Math.cos(angle) * bboxA.width / 2,
-			//-this.options.staticConnectionDistance * Math.cos(angle) + bboxA.cx - Math.cos(angle) * bboxA.width / 2,
-			this.options.staticConnectionDistance * Math.sin(angle) + bboxA.cy + Math.sin(angle) * bboxA.height / 2
-		));
+		return this.$edgePoints;
+	},
 
-		this.pathPoints.push(new SVG.math.Point(
-			-this.options.staticConnectionDistance * Math.cos(-angle) + bboxB.cx - Math.cos(-angle) * bboxB.width / 2,
-			//this.options.staticConnectionDistance * Math.cos(-angle) + bboxB.cx + Math.cos(-angle) * bboxB.width / 2,
-			this.options.staticConnectionDistance * Math.sin(-angle) + bboxB.cy + Math.sin(-angle) * bboxB.height / 2
-		));
+	drawEdgeHandle: function(edge){
+		var svg = edge.svg = edge.svg || this.graph.getPaintArea().group();
+		var vec = [0,0];
+		this.vec2scale(edge.direction, 30, vec);
+		this.vec2add([edge.point.x, edge.point.y], vec, vec);
+		var path = svg.path()
+			.M(edge.point)
+			.L(vec[0], vec[1])
+			.stroke({
+				fill: 'none',
+				color: '#000',
+				dasharray: '3 3',
+				width: 1,
 
-		this.pathPoints.push(new SVG.math.Point(
-			-this.options.connectionDistance * Math.cos(-angle) + bboxB.cx - Math.cos(-angle) * bboxB.width / 2,
-			//this.options.connectionDistance * Math.cos(-angle) + bboxB.cx + Math.cos(-angle) * bboxB.width / 2,
-			this.options.connectionDistance * Math.sin(-angle) + bboxB.cy + Math.sin(-angle) * bboxB.height / 2
-		));
+			});
 
-		if (this.options.inset){
-			this.pathPoints.push(new SVG.math.Point(
-				//-this.options.inset * Math.cos(-angle) + bboxB.cx + Math.cos(-angle) * bboxB.width / 2,
-				this.options.inset * Math.cos(-angle) + bboxB.cx - Math.cos(-angle) * bboxB.width / 2,
-				-this.options.inset * Math.sin(-angle) + bboxB.cy + Math.sin(-angle) * bboxB.height / 2
-			));
-		}
-		else {
-			this.pathPoints.push(new SVG.math.Point(bboxB.cx, bboxB.cy));
-		}
+		var handle = svg.circle(10)
+			.center(vec[0], vec[1])
+			.fill('#fff')
+			.stroke({
+				color: '#000',
+			})
+			.draggable({fn: function(p){
+				var vec2 = [p.x, p.y];
+				var edge2 = [edge.point.x, edge.point.y];
+				var res = this.vec2add(
+					this.vec2scale(
+						this.vec2normalize(this.vec2sub(vec2, edge2)),
+						30
+					),
+					edge2
+				);
+				return {x: res[0], y: res[1]};
+			}.bind(this)});
 
+		var bbox = this.nodeA.bbox();
+		var edgeHandle = handle
+			.clone()
+			.addTo(svg)
+			.center(edge.point.x, edge.point.y)
+			.draggable({
+				minX: bbox.x, 
+				maxX: bbox.x + bbox.width,
+				minY: bbox.y,
+				maxY: bbox.y + bbox.height
+			});
+
+		edgeHandle.dragmove = function(delta, e){
+			var vec = [0,0];
+			this.vec2scale(edge.direction, 30, vec);
+			handle.center(e.target.instance.cx() + vec[0], e.target.instance.cy() + vec[1]);
+			console.log(e.target.instance.cx() + vec[0], e.target.instance.cy() + vec[1]);
+		}.bind(this);
+
+		svg.front();
+
+		return this;
+	},
+
+	redrawShadowPath: function(){
+
+		var edgePoints = this.edgePoints();
+
+		this.pathPoints.length = 0;
+		edgePoints.path.forEach(function(point){
+			this.pathPoints.push(new SVG.math.Point(point[0], point[1]));
+		}.bind(this));
 
 		this.shadowPath
 			.clear()
-			.M(this.pathPoints[0])
-			.L(this.pathPoints[2])
-			.L(this.pathPoints[3])
-			.L(this.pathPoints[5]);
+			.M.apply(this.shadowPath, edgePoints.path[0])
+			.L.apply(this.shadowPath, edgePoints.path[2])
+			.L.apply(this.shadowPath, edgePoints.path[3])
+			.L.apply(this.shadowPath, edgePoints.path[5]);
+
+
 
 		return this;
 	},
@@ -578,7 +642,7 @@ networkMap.Link = new Class({
 			this.path.nodeA.svg.hide();
 		}
 		if (this.subpath.nodeA){
-			this.subpath.nodeA.each(function(subpath){
+			this.subpath.nodeA.forEach(function(subpath){
 					subpath.svg.hide();
 			});
 		}
@@ -586,7 +650,7 @@ networkMap.Link = new Class({
 			this.path.nodeB.svg.hide();
 		}
 		if (this.subpath.nodeB){
-			this.subpath.nodeB.each(function(subpath){
+			this.subpath.nodeB.forEach(function(subpath){
 					subpath.svg.hide();
 			});
 		}
@@ -598,7 +662,7 @@ networkMap.Link = new Class({
 			this.path.nodeA.svg.show();
 		}
 		if (this.subpath.nodeA){
-			this.subpath.nodeA.each(function(subpath){
+			this.subpath.nodeA.forEach(function(subpath){
 					subpath.svg.show();
 			});
 		}
@@ -606,7 +670,7 @@ networkMap.Link = new Class({
 			this.path.nodeB.svg.show();
 		}
 		if (this.subpath.nodeB){
-			this.subpath.nodeB.each(function(subpath){
+			this.subpath.nodeB.forEach(function(subpath){
 					subpath.svg.show();
 			});
 		}
@@ -621,8 +685,20 @@ networkMap.Link = new Class({
 		this.shadowPath.hide();
 		return this;
 	},
+
+
 	drawMainPath: function(){
 		var maxLinkCount = 1;
+
+		/* TODO: debug code */
+		/*
+		this.debug = this.debug || this.graph.getPaintArea().group();
+		this.debug.clear();
+		var edgePoints = this.edgePoints();
+		edgePoints.nodeA.draw(this.debug);
+		edgePoints.nodeB.draw(this.debug);
+		this.debug.front();
+		*/
 		
 		var drawNormalPath = function(sublink, pathPoints, options){
 			var width = sublink.getProperty('width');
@@ -787,13 +863,13 @@ networkMap.Link = new Class({
 
 			var updateColor = function(self, path){
 				return function(response){
-					this.updateBgColor(path, this.options.colormap.translate(response.value));
+					this.updateBgColor(path, this.colormap.translate(response.value));
 				}.bind(self);
 			};
 			
 			while (offset >= -maxLinkCount / 2){
 				var opts = {
-					width: width,
+					width: +width,
 					linkCount: maxLinkCount
 				};
 
@@ -892,12 +968,15 @@ networkMap.Link = new Class({
 	},
 	
 	setInterval: function(){
+		console.log('Seting link update interval');
 		this.intervalId = setInterval(function(){
-			this.localUpdate();
+			this.update();
 		}.bind(this), this.options.refreshInterval);
 	},
 	
+
 	clearInterval: function(){
+		console.log('removing link update interval');
 		if (this.intervalId){
 			clearInterval(this.intervalId);
 			delete this.intervalId;
@@ -930,17 +1009,21 @@ networkMap.Link = new Class({
 			return this.update();
 	}, 
 
-	update: function(){
-		Object.each(this.updateQ, function(urls, datasource){
+	update: function(force){
+		if (this.properties.get('globalRefresh') || force !== true)
+			return this;
+
+		if (!this.graph.options.batchUpdate)
+		networkMap.each(this.updateQ, function(urls, datasource){
 			if (!networkMap.datasource[datasource]){
 				throw 'Unknown datasource (' + datasource + ')';
 			}
-			Object.each(urls, function(requests, url){
+			networkMap.each(urls, function(requests, url){
 				if (this.options.batchUpdate){
 					networkMap.datasource[datasource](url, requests);
 				}
 				else{
-					requests.each(function(request){
+					requests.forEach(function(request){
 						networkMap.datasource[datasource](url, request);
 					});
 				}
@@ -950,61 +1033,6 @@ networkMap.Link = new Class({
 		return this;
 	},
 
-	/**
-	* Function that updates the color of the paths
-	* This is a draft function that does not work
-	* with the current version. Use localUpdate
-	* instead.
-	*/
-	/* removed this should not be used !?!??!?
-	update: function(){
-		if (this.svgEl.nodeA.mainPath){
-			this.datasource(
-				this.options.nodeA.requestUrl, 
-				this.options.nodeA.requestData, 
-				function(response){
-					this.updateBgColor(this.svgEl.nodeA.mainPath, this.options.colormap.translate(response.value));
-				}.bind(this)
-			);			
-		}
-
-		if (this.svgEl.nodeA.mainPath){
-			this.datasource(
-				this.options.nodeB.requestUrl, 
-				this.options.nodeB.requestData, 
-				function(response){
-					this.updateBgColor(this.svgEl.nodeB.mainPath, this.options.colormap.translate(response.value));
-				}.bind(this)
-			);
-		}
-
-		if (this.options.nodeA.sublinks){
-			this.options.nodeA.sublinks.each(function(sublink, index){
-				this.datasource(
-					this.options.nodeA.sublinks[index].requestUrl, 
-					this.options.nodeA.sublinks[index].requestData, 
-					function(response){
-						this.updateBgColor(this.svgEl.nodeA.sublinks[index], this.options.colormap.translate(response.value));
-					}.bind(this)
-				);
-			}.bind(this));
-		}
-
-		if (this.options.nodeB.sublinks){
-			this.options.nodeB.sublinks.each(function(sublink, index){
-				this.datasource(
-					this.options.nodeB.sublinks[index].requestUrl, 
-					this.options.nodeB.sublinks[index].requestData, 
-					function(response){
-						this.updateBgColor(this.svgEl.nodeB.sublinks[index], this.options.colormap.translate(response.value));
-					}.bind(this)
-				);
-			}.bind(this));
-		}
-
-		return this;
-	},
-	*/
 	updateBgColor: function(path, color){
 		if (!color){
 			path.svg.fill(this.options.background);
@@ -1055,12 +1083,17 @@ networkMap.Link.defaultTemplate = {
  * @param {function} A function that returns a URL or null
  */
 networkMap.Link.registerLinkGenerator = function(f){
-	networkMap.Link._linkGenerator = function(sublink){
-		if (sublink.options.href){
-			if (networkMap.isFunction(sublink.options.href))
-				sublink.setLink(sublink.options.href());
+	networkMap.Link._linkGenerator = networkMap.Link.createLinkGenerator(f);
+};
+
+networkMap.Link.createLinkGenerator = function(f){
+	return function(sublink){
+		var href = sublink.properties.get('href');
+		if (href){
+			if (networkMap.isFunction(href))
+				sublink.setLink(href());
 			else
-				sublink.setLink(sublink.options.href);
+				sublink.setLink(href);
 			return;
 		}
 		
@@ -1070,3 +1103,19 @@ networkMap.Link.registerLinkGenerator = function(f){
 
 /** Register a default link generator which will not create a link */
 networkMap.Link.registerLinkGenerator(function(sublink){return null;});
+
+/** Register defaults properties for networkMap.Node */
+networkMap.Link.defaults = new networkMap.Properties({
+	inset: 10,
+	connectionDistance: 10,
+	staticConnectionDistance: 30,
+	arrowHeadLength: 10,
+	width: 10,
+	debug: false,
+	background: '#777',
+	globalRefresh: true,
+	refreshInterval: 300000,
+	datasource: 'simulate',
+	batchUpdate: true,
+	colormap: 'flat5'
+});

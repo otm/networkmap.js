@@ -1,61 +1,82 @@
 networkMap.widget = networkMap.widget || {};
 
-networkMap.widget.Select = new Class ({
-	Implements: [Options, Events],
-	options: {
+networkMap.widget.Select = function(label, values, options){
+	this.options = {
 		class: 'nm-input-select'
-	},
-	wrapper: null,
-	label: null,
-	input: null,
-	initialize: function(label, values, options){
-		this.setOptions(options);
-		this.wrapper = new Element('div', {
-			class: this.options.class
-		});
-		this.label = new Element('span', {
-			text: label
-		});
-		
-		this.input = new Element('select')
-		.addEvent('change', function(e){
-			this.fireEvent('select', [e, this]);
-		}.bind(this)); 
+	};
+	this.setOptions(options);
+
+	this.$destroy = [];
+
+	this.createElements(label);
+	this.addOptions(values);
+};
+
+networkMap.extend(networkMap.widget.Select, networkMap.Observable);
+networkMap.extend(networkMap.widget.Select, networkMap.Options);
+networkMap.extend(networkMap.widget.Select, {
 	
-		if (this.options.disabled === true){
-			this.input.disabled = true;
-		}
-		
-		this.addOptions(values);
-		this.wrapper.grab(this.label).grab(this.input);
+	createElements: function(label){
+		var wrapper = this.wrapper = document.createElement('div');
+		wrapper.classList.add(this.options.class);
+
+		var lbl = this.label = document.createElement('span');
+		lbl.textContent = label;
+
+		var input = this.input = document.createElement('select');
+		var inputHandler = function(e){
+			this.fireEvent('select', [e, this]);
+		}.bind(this);
+		this.$destroy.push({
+			el: input,
+			type: 'change',
+			fn: inputHandler
+		});
+		input.addEventListener('change', inputHandler, false);
+
+		wrapper.apppendChild(lbl);
+		wrapper.apppendChild(input);
 	},
+
 	addOptions: function(values){
-		values.each(function(value){
+		values.forEach(function(value){
 			this.addOption(value);
 		}.bind(this));
 	},
+
 	addOption: function(text, options){
 		options = options || {};
 		
-		var el = new Element('option', {
-			value: (options.value) ? options.value : text,
-			text: text,
-			selected: options.selected
-		});
-		this.input.grab(el);
+		var el = document.createElement('option');
+		el.settAttribute('value', (options.value) ? options.value : text);
+		el.textContent = text;
+		el.selected = options.selected;
+
+		this.input.apppendChild(el);
+
 		return el;
 	},
-	getSelected: function(){
-		return this.input.getSelected()[0].value;
+
+	value: function(){
+		return this.getSelected();
 	},
+
+	getSelected: function(){
+		return (this.input.selectedIndex !== -1) ? this.input.options[this.input.selectedIndex].value : null; 
+	},
+
 	clearOptions: function(){
-		this.input.empty();
+		while (this.input.firstChild) {
+			this.input.removeChild(this.input.firstChild);
+		}
 		return this;
 	},
+
 	toElement: function(){
 		return this.wrapper;
 	},
+
 	toString: function(){
-		return this.getSelected();	
+		return (this.input.selectedIndex !== -1) ? this.input.options[this.input.selectedIndex] : null;
 	}
 });

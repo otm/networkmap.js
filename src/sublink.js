@@ -1,26 +1,33 @@
-networkMap.LinkPath = new Class ({
-	Implements: [Options, Events],
-	options: {},
-	svg: null,
-	initialize: function(link, svg, options){
-		this.setOptions(options);
-		this.link = link;
-		this.svg = svg;
-		
-		// Check if we should setup an update event
-		if (this.options.requestUrl) {
-			this.link.registerUpdateEvent(
-				link.options.datasource,
-				this.options.requestUrl,
-				this,
-				function(response){
-					this.link.updateBgColor(this, this.link.options.colormap.translate(response.value));
-				}.bind(this)
-			);
-		}
-		
-		this.setupEvents();
-	},
+
+networkMap.LinkPath = function(link, svg, options){
+	// this.options = {};
+	// this.setOptions(options);
+	this.properties = new networkMap.Properties(options, link.properties);
+	this.properties.addEvent('change', function(change){
+		this.fireEvent('change', change);
+	}.bind(this));
+
+	this.link = link;
+	this.svg = svg;
+	
+	// Check if we should setup an update event
+	if (this.properties.get('requestUrl')) {
+		this.link.registerUpdateEvent(
+			this.properties.get('datasource'),
+			this.properties.get('requestUrl'),
+			this,
+			function(response){
+				this.link.updateBgColor(this, this.link.colormap.translate(response.value));
+			}.bind(this)
+		);
+	}
+	
+	this.setupEvents();
+};
+
+networkMap.extend(networkMap.LinkPath, networkMap.Options);
+networkMap.extend(networkMap.LinkPath, networkMap.Observable);
+networkMap.extend(networkMap.LinkPath, {	
 	remove: function(){
 		this.svg.remove();
 	},
@@ -35,6 +42,7 @@ networkMap.LinkPath = new Class ({
 		return editables;		
 	},
 
+
 	/**
 	 * This will create/update a link tag for the
 	 * link. Order of presence is:
@@ -45,7 +53,7 @@ networkMap.LinkPath = new Class ({
 	 * @return {networkMap.Link} self
 	 */
 	updateLink: function(){
-		var href = this.options.href;
+		var href = this.properties.get('href');
 		if (href){
 			if (networkMap.isFunction(href))
 				this.setLink(href(this));
@@ -99,6 +107,8 @@ networkMap.LinkPath = new Class ({
 		return this.getLink().getSettingsWidget();
 	},
 	getProperty: function(key){
+		return this.properties.get(key);
+		/* TODO: Remove
 		if (key == 'width'){
 			var link = this.getMainPath();
 			if (link != this){
@@ -114,6 +124,7 @@ networkMap.LinkPath = new Class ({
 		}
 		
 		return this.options[key];
+		*/
 	},
 	setProperty: function(key, value){
 		if (key == 'width'){
@@ -123,18 +134,20 @@ networkMap.LinkPath = new Class ({
 			}
 		}
 				
-		this.options[key] = value;
+		this.properties.set(key, value);
+		//TODO: Remove
+		//this.options[key] = value;
 		this.fireEvent('change', [key]);
 		return this;
 	},
 	getConfiguration: function(){
-		return this.options;
+		return this.properties.extract();
 	},
 	getMainPath: function(){
 		var link;
 		
 		if (this.link.subpath.nodeA){
-			this.link.subpath.nodeA.each(function(sublink){
+			this.link.subpath.nodeA.forEach(function(sublink){
 				if (this == sublink){
 					link = this.link.path.nodeA;
 				}
@@ -146,7 +159,7 @@ networkMap.LinkPath = new Class ({
 		}
 		
 		if (this.link.subpath.nodeB){
-			this.link.subpath.nodeB.each(function(sublink){
+			this.link.subpath.nodeB.forEach(function(sublink){
 				if (this == sublink){
 					link = this.link.path.nodeB;
 				}
@@ -163,24 +176,25 @@ networkMap.LinkPath = new Class ({
 	setupEvents: function(){
 		this.svg.on('click', this._clickHandler.bind(this));
 		
-		if (this.options.events){
-			if (this.options.events.click){
+		if (this.properties.get('events')){
+			if (this.properties.get('events.click')){
 				this.svg.attr('cursor', 'pointer');
 			}
 
-			if (this.options.events.hover){
+			if (this.properties.get('events.hover')){
 				this.svg.on('mouseover', this._hoverHandler.bind(this));
 				this.svg.on('mouseout', this._hoverHandler.bind(this));
 			}
 		}
 	},
 	_clickHandler: function(e){
-		if (this.link.mode() === 'normal' && this.options.events && this.options.events.click){
+		if (this.link.mode() === 'normal' && this.properties.get('events.click')){
 			networkMap.events.click(e, this);
 		}
 		else if (this.link.mode() === 'edit'){
 			e.preventDefault();
-			this.link.graph.settings.edit(this);	
+
+			this.link.graph.publish('edit', [this.link.configurationWidget.toElement(this.link, this.link.properties)]);
 		}
 	},
 	_hoverHandler: function(e){

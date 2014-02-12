@@ -21,7 +21,8 @@ module.exports = function(grunt) {
 			dist: {
 				// the files to concatenate
 				src: [
-					'src/networkMap.js', 
+					'lib/classList.js',
+					'src/networkMap.js',
 					'src/widgets/integerinput.js',
 					'src/widgets/textinput.js',
 					'src/widgets/colorinput.js',
@@ -31,6 +32,7 @@ module.exports = function(grunt) {
 					'src/widgets/modal.js',
 					'src/widgets/checkbox.js',
 					'src/widgets/gridinput.js',
+					'src/properties.js',
 					'src/datasource.js',
 					'src/events.js', 
 					'src/colormap.js', 
@@ -38,9 +40,11 @@ module.exports = function(grunt) {
 					'src/settingsmanager.js', 
 					'src/graph.js', 
 					'src/node.js',
+					'src/node.module.settings.js',
 					'src/node.events.js',
 					'src/sublink.js',
 					'src/link.js',
+					'src/link.module.settings.js'
 				],
 				// the location of the resulting JS file
 				dest: 'dist/<%= pkg.name %>.js'

@@ -1,40 +1,43 @@
-networkMap.Node = new Class({
-	Implements: [Options, Events],
+networkMap.Node = function(options){
+
+	this.graph = options.graph;
+	delete options.graph;
+
+	this.properties = new networkMap.Properties(options, networkMap.Node.defaults);
+
+	this.configurationWidget = new networkMap.Node.Module.Settings();
+
+	/** TODO: Replace inline function with this.refresh */
+	this.properties.addEvent('change', function(change){
+		this.options = this.properties.configuration();
+
+		// TODO: Remove hack for stoping redraw of node when dragged
+		// TODO: Prevent click event after drag.
+		if (change.length >= 1 && (change[0].key === 'x' || change[0].key === 'y'))
+			return;
+
+		this.draw();
+	}.bind(this));
+
+	this.options = this.properties.configuration();
+
+	if (!this.options.id){
+		throw "Node(create, no id given)";
+	}
 	
-	/** These are sane defaults */
-	options:{
-		graph: null,
-		id: null,
-		name: null,
-		comment: null,
-		x: null,
-		y: null,
-		lat: null,
-		lng: null,
-		weight: null,
-		fontFamily: 'Helvetica',
-		fontSize: 16,
-		bgColor: '#dddddd',
-		strokeColor: '#000000',
-		strokeWidth: 2,
-		information: {
-		},
-		data:{
-		},
-		label: {
-			position: 'internal',
-			visable: true
-			//renderer: 
-		},
-		renderer: 'rect', //rect, circle, image(url), svg(ulr)
-		padding: 10,
-		href: null,
-		style: null,
-		debug: false,
-		draggable: false,
-		events: null
-		//onMove
-	},
+	this.options.x = parseFloat(this.options.x);
+	this.options.y = parseFloat(this.options.y);
+	this.options.padding = parseFloat(this.options.padding); 
+
+	this.setGraph(this.graph);
+
+};
+
+networkMap.extend(networkMap.Node, networkMap.Options);
+networkMap.extend(networkMap.Node, networkMap.Observable);
+networkMap.extend(networkMap.Node, {
+	
+	
 	_mode: 'normal',
 	exportedOptions: [
 		'id',
@@ -58,67 +61,9 @@ networkMap.Node = new Class({
 		'strokeColor',
 		'strokeWidth' 
 	],
-	editTemplate: {
-		id: {
-			label: 'ID',
-			type: 'text',
-			disabled: true
-		},
-		name: {
-			label: 'Name',
-			type: 'text'
-		},
-		comment: {
-			label: 'Comment',
-			type: 'text'
-		},
-		padding: {
-			label: 'Padding',
-			type: 'number',
-			min: 0
-		},
-		fontSize: {
-			label: 'Font size',
-			type: 'number',
-			min: 1
-		},
-		bgColor: {
-			label: 'Color',
-			type: 'color'
-		},
-		strokeColor: {
-			label: 'Stroke color',
-			type: 'color'
-		},
-		strokeWidth: {
-			label: 'Stroke width',
-			type: 'number',
-			min: 0
-		}
-		
-	},
-	initialize: function(options){
-		this.graph = options.graph;
-		delete options.graph;
+	
 
-		this._localConfig = options;
-
-		if (this.graph){
-			this.setOptions(this.graph.getDefaults('node'));
-		}
-		
-		this.setOptions(options);
-
-		if (!this.options.id){
-			throw "Node(create, no id given)";
-		}
-		
-		this.options.x = parseFloat(this.options.x);
-		this.options.y = parseFloat(this.options.y);
-		this.options.padding = parseFloat(this.options.padding); 
-
-		this.setGraph(this.graph);
-	},
+	
 
 	/**
 	 * Update an option
@@ -133,11 +78,9 @@ networkMap.Node = new Class({
 			throw 'Unknow id: ' + key;
 		}
 		
-		this.options[key] = value;
-		this._localConfig[key] = value;
-		
-		this.draw();
-		
+		this.properties.set(key, value);
+		this.options = this.properties.configuration();
+				
 		return this;
 	},
 
@@ -149,11 +92,9 @@ networkMap.Node = new Class({
 	 * @return {mixed} The property value
 	 */
 	getProperty: function(key){
-		if (!this.editTemplate[key]){
-			throw 'Unknown id: ' + key;
-		}
 		
-		return this._localConfig[key];
+		return this.properties.get(key, true).value;
+		//return this._localConfig[key];
 	},
 
 	/**
@@ -163,48 +104,9 @@ networkMap.Node = new Class({
 	 * @return {Object} The node configuration
 	 */
 	getConfiguration: function(){
-		var configuration = {};
-
-		this.exportedOptions.each(function(option){
-			if (this._localConfig[option]){
-				configuration[option] = this._localConfig[option];
-			}
-		}.bind(this));
-		
-		return configuration;
+		return this.properties.extract();
 	},
 
-	/**
-	 * Generates HTML that is used for configuration
-	 *
-	 * @this {networkMap.Node}
-	 * @return {Element} A HTML Element that contains the UI
-	 */
-	getSettingsWidget: function(){
-		var container = new networkMap.widget.Accordion();
-		var accordionGroup;
-
-		var changeHandler = function(key, obj){
-			return function(e){
-				obj.setProperty(key, e.target.value);	
-			};
-		};
-	
-		accordionGroup = container.add('Globals');		
-		Object.each(this.editTemplate, function(option, key){
-			if (option.type === 'number'){
-				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
-			}
-			else if(option.type === 'text'){
-				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
-			}
-			else if (option.type === 'color'){
-				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));	
-			}
-		}.bind(this));
-		
-		return container;
-	},
 	
 	/**
 	 * Enable an event on the node
@@ -264,6 +166,7 @@ networkMap.Node = new Class({
 		// add graph object if it exists
 		if (graph){
 			this.graph = graph;
+			this.properties.setDefaults(graph.getDefaults('node'));
 			this.graph.addEvent('redraw', this._redraw.bind(this));
 			this.draw();
 		}
@@ -271,11 +174,8 @@ networkMap.Node = new Class({
 		return this;
 	},
 	
+	/* TODO: Depricate function */
 	_redraw: function(){
-		if (e.defaultsUpdated === true){
-			this.setOptions(this.graph.getDefaults('node'));
-			this.setOptions(this._localConfig);
-		}
 		this.draw();
 	},
 
@@ -315,12 +215,17 @@ networkMap.Node = new Class({
 	 * @return {undefined}
 	 */
 	_clickhandler: function(e){
+		if (e.target.instance.data('dragged')){
+			return;
+		}
+		
 		if (this._mode === 'normal' && this.options.events && this.options.events.click){
 			networkMap.events.click(e, this);
 		}
 		else if (this._mode === 'edit'){
 			e.preventDefault();
-			this.graph.settings.edit(this);	
+
+			this.graph.publish('edit', [this.configurationWidget.toElement(this.properties)]);
 		}
 	},	
 
@@ -525,6 +430,7 @@ networkMap.Node = new Class({
 
 		
 		svg.on('click', this._clickhandler.bind(this));
+		
 		if (this.options.events){
 			svg.link = this.options.events;
 			
@@ -547,17 +453,18 @@ networkMap.Node = new Class({
 			this.draggable();
 		}
 		
-		svg.dragmove = function(delta, event){
-			this.fireEvent('drag', [delta, event]);
-		}.bind(this);
 		svg.dragstart = function(){
 			this.fireEvent('dragstart');
 		}.bind(this);
+		svg.dragmove = function(delta, event){
+			this.fireEvent('drag', [delta, event]);
+		}.bind(this);
 		svg.dragend = function(){
-			this.options.x = this.x();
-			this.options.y = this.y();
-			this._localConfig.x = this.x();
-			this._localConfig.y = this.y();
+			console.log('dragend');
+			this.properties.set({
+				x: this.x(),
+				y: this.y()
+			});
 			this.fireEvent('dragend');
 		}.bind(this);
 		
@@ -611,12 +518,17 @@ networkMap.Node.defaultTemplate = {
  * @param {function} A function that returns an URL or null
  */
 networkMap.Node.registerLinkGenerator = function(f){
-	networkMap.Node._linkGenerator = function(node){
-		if (node.options.href){
-			if (networkMap.isFunction(node.options.href))
-				node.setLink(node.options.href());
+	networkMap.Node._linkGenerator = networkMap.Node.createLinkGenerator(f);
+};
+
+networkMap.Node.createLinkGenerator = function(f){
+	return function(node){
+		var href = node.properties.get('href');
+		if (href){
+			if (networkMap.isFunction(href))
+				node.setLink(href());
 			else
-				node.setLink(node.options.href);
+				node.setLink(href);
 			return;
 		}
 		
@@ -624,21 +536,42 @@ networkMap.Node.registerLinkGenerator = function(f){
 	};
 };
 
+
 /** Register a default link generator which will not create a link */
 networkMap.Node.registerLinkGenerator(function(node){return null;});
 
 
-/** Removed as we are going to change the implementation, kept for reference at the moment
+/** Register defaults properties for networkMap.Node */
+networkMap.Node.defaults = new networkMap.Properties({
+	name: null,
+	comment: null,
+	x: 10,
+	y: 10,
+	lat: null,
+	lng: null,
+	weight: null,
+	fontFamily: 'Helvetica',
+	fontSize: 16,
+	bgColor: '#dddddd',
+	strokeColor: '#000000',
+	strokeWidth: 2,
+	information: {
 
-networkMap.Node.renderer = networkMap.Node.renderer || {};
+	},
+	data:{
+		value: null,
+		realValue: null
+	},
+	label: {
+		position: 'internal',
+		visable: true
+	},
+	renderer: 'rect', //rect, circle, image(url), svg(ulr)
+	padding: 10,
+	href: null,
+	style: null,
+	debug: false,
+	draggable: false
+});
 
-networkMap.registerNodeRenderer = function(name, renderer){
-	networkMap.Node.renderer[name] = renderer;
-};
-networkMap.Node.renderer.rect = function(){};
 
-
-networkMap.Node.label = networkMap.Node.label || {};
-networkMap.Node.label.rederer = networkMap.Node.label.rederer || {};
-networkMap.Node.label.rederer.normal = function(){};
-*/

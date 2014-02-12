@@ -1,37 +1,52 @@
 networkMap.widget = networkMap.widget || {};
 
-networkMap.widget.ColorInput = new Class ({
-	Implements: [Options, Events],
-	options: {
+networkMap.widget.ColorInput = function(label, value, options){
+	this.options = {
 		class: 'nm-input-color'
-	},
-	wrapper: null,
-	label: null,
-	input: null,
-	initialize: function(label, value, options){
-		this.setOptions(options);
-		this.wrapper = new Element('div', {
-			class: this.options.class
-		});
-		this.label = new Element('span', {
-			text: label
-		});
+	};
 
-		this.div = new Element('div');		
-		
-		this.input = new Element('input', {
-			type: 'color',
-			value: value
-		}).addEvent('change', function(e){
-			this.fireEvent('change', [e]);
-		}.bind(this)); 
+	this.setOptions(options);
+
+	this.createElements(label, value);
+};
+
+networkMap.extend(networkMap.widget.ColorInput, networkMap.Observable);
+networkMap.extend(networkMap.widget.ColorInput, networkMap.Options);
+networkMap.extend(networkMap.widget.ColorInput, {
+
+	createElements: function(label, value){
+		this.wrapper = document.createElement('div');
+		this.wrapper.classList.add(this.options.class);
+
+		this.label = document.createElement('span');
+		this.label.textContent = label;
+
+		this.div = document.createElement('div');
+
+		this.input = document.createElement('input');
+		this.input.setAttribute('type', 'color');
+		this.input.setAttribute('value', value);
+		this.input.addEventListener('change', function(e){
+			this.fireEvent('change', [e, this]);
+		}.bind(this));
 		
 		if (this.options.disabled === true){
 			this.input.disabled = true;
 		}
-		
-		this.wrapper.grab(this.label).grab(this.div.grab(this.input));
+
+		this.div.appendChild(this.input);
+		this.wrapper.appendChild(this.label);
+		this.wrapper.appendChild(this.div);
 	},
+
+	/**
+	 * Get the current value of the widget
+	 * @return {string} The color encoded as a string
+	 */
+	value: function(){
+		return this.input.value;
+	},
+
 	toElement: function(){
 		return this.wrapper;
 	}

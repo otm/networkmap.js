@@ -8,7 +8,7 @@ networkMap.datasource = networkMap.datasource || {};
  */
 networkMap.registerDatasource = function(name, f){
 	networkMap.datasource[name] = function(url, requests){
-		if (typeOf(requests) !== 'array'){
+		if (Object.prototype.toString.call(requests) !== '[object Array]'){
 			requests = [requests];
 		}
 		f(url, requests);
@@ -30,7 +30,7 @@ networkMap.registerDatasource = function(name, f){
  * @return null.
  */
 networkMap.registerDatasource('simulate', function(url, requests){
-	requests.each(function(request){
+	requests.forEach(function(request){
 		var dataPoint = Math.random();
 
 		// Example on how to get the node to get node specific data

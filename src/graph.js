@@ -1,9 +1,14 @@
-
-networkMap.Graph = new Class({
-	Implements: [Options, Events],
-
+/**
+ * Creates an instance of networkMap.Graph.
+ *
+ * @constructor
+ * @this {networkMap.Graph}
+ * @param {string|element} A string or Element to attach to network graph to
+ * @param {Object} A options object.
+ */
+networkMap.Graph = function(target, options){
 	/** The default options*/
-	options:{
+	this.options = {
 		/** The with of the graph */
 		width: 10,
 		
@@ -11,16 +16,16 @@ networkMap.Graph = new Class({
 		height: 10,
 		
 		/** The name of the datasoruce to use */
-		datasource: 'simulate',
+		datasource: undefined,
 		
 		/** The name of the colormap to use */
-		colormap: 'hsl15',
+		colormap: undefined,
 		
 		/** Controls of the settings manager is created */
 		enableEditor: true,
 		
 		/** Controls if the nodes are draggable */
-		allowDraggableNodes: false,
+		allowDraggableNodes: undefined,
 		
 		/** Controlls how often the links refresh the data */
 		refreshInterval: 300,
@@ -41,90 +46,82 @@ networkMap.Graph = new Class({
 		link: {
 			linkGenerator: null
 		}
-	},
-
+	};
 	/** The default configuration */
-	defaults: {
-		node: {
-			padding: 10,
-			fontSize: 16,
-			bgColor: '#dddddd',
-			strokeColor: '#000000',
-			strokeWidth: 2
-		},
-		link: {
-			width: 10,
-			inset: 10,
-			connectionDistance: 10,
-			staticConnectionDistance: 30,
-			arrowHeadLength: 10
-		}
-	},
+	this.defaults = {};
+	
 
 	/** This array controls what is exported in getConfiguration*/
-	exportedOptions: [
+	this.exportedOptions = [
 		//'width',
 		//'height'
-	],
+	];
 
 	/** An internal array of nodes, do not use directly */
-	nodes: [],
+	this.nodes = [];
 
 	/** An internal array of links, do not use directly */
-	links: [],
+	this.links = [];
 
 	/** An internal reference to onSave configuration */
-	saveData: {},
+	this.saveData = {};
 
 	/** An internal reference to check keep track of the mode */
-	_mode: 'normal',
+	this._mode = 'normal';
 
-	/**
-	 * Creates an instance of networkMap.Graph.
-	 *
-	 * @constructor
-	 * @this {networkMap.Graph}
-	 * @param {string|element} A string or Element to attach to network graph to
-	 * @param {Object} A options object.
-	 */
-	initialize: function(target, options){
-		this.setOptions(options);
+	this.options = networkMap.defaults(options, this.options);
 
-		if (!this.options.node.linkGenerator){
-			this.options.node.linkGenerator = networkMap.Node._linkGenerator;		
-		}
-		
-		if (!this.options.link.linkGenerator){
-			this.options.link.linkGenerator = networkMap.Link._linkGenerator;		
-		}
-		
-		this.element = document.id(target);
-		this.container = new Element('div', {'class': 'nm-container'});
-		this.element.grab(this.container);
+	if (this.options.node.linkGenerator){
+		this.options.node.linkGenerator = networkMap.Node.createLinkGenerator(this.options.node.linkGenerator);
+	} else{
+		this.options.node.linkGenerator = networkMap.Node._linkGenerator;		
+	}
+	
+	if (this.options.link.linkGenerator){
+		this.options.link.linkGenerator = networkMap.Link.createLinkGenerator(this.options.link.linkGenerator);
+	} else{
+		this.options.link.linkGenerator = networkMap.Link._linkGenerator;		
+	}
+	
+	this.defaults.node = new networkMap.Properties({}, networkMap.Node.defaults);
+	this.defaults.link = new networkMap.Properties({}, networkMap.Link.defaults);
+	this.defaults.link.set('colormap', this.options.colormap);
+	this.defaults.link.set('datasource', this.options.datasource);
 
-		this.svg = SVG(this.container);
-		this.graph = this.svg.group();
-		
-		this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this, target: this.container});
+	this.element = (typeof target == 'string' || target instanceof String) ? document.getElementById(target) : target;
+	this.container = document.createElement('div');
+	this.container.classList.add('nm-container');
+	this.element.appendChild(this.container);
 
-		if (this.options.enableEditor){
-			this.settings = new networkMap.SettingsManager(this.container);
-			this.settings.addEvent('defaultView', function(){
-				this.settings.edit(this);
-			}.bind(this));
-			this.settings.addEvent('active', this.enableEditor.bind(this));
-			this.settings.addEvent('deactive', this.disableEditor.bind(this));
-			this.settings.addEvent('save', this.save.bind(this));
-		}
-			
-		this.addEvent('resize', this.rescale.bind(this));
+	this.svg = SVG(this.container);
+	this.graph = this.svg.group();
+	
+	this.legend = new networkMap.ColorLegend(this.defaults.link.get('colormap'), {graph: this, target: this.container});
+
+	if (this.options.enableEditor){
+		this.settings = new networkMap.SettingsManager(this.container, this);
+		this.settings.addEvent('defaultView', function(){
+			this.settings.edit(this);
+		}.bind(this));
+		this.settings.addEvent('active', this.enableEditor.bind(this));
+		this.settings.addEvent('deactive', this.disableEditor.bind(this));
+		this.settings.addEvent('save', this.save.bind(this));
+	}
 		
-		this.setRefreshInterval(this.options.refreshInterval);
-		
-		this.svg.on('click', this._clickHandler.bind(this));
-		
-		this.addEvent('load', this.update.bind(this));
-	},
+	this.addEvent('resize', this.rescale.bind(this));
+	
+	this.setRefreshInterval(this.options.refreshInterval);
+	
+	this.svg.on('click', this._clickHandler.bind(this));
+	
+	this.addEvent('load', this.update.bind(this));
+};
+
+networkMap.extend(networkMap.Graph, networkMap.Observable);
+networkMap.extend(networkMap.Graph, networkMap.Mediator);
+networkMap.extend(networkMap.Graph, networkMap.Options);
+
+networkMap.extend(networkMap.Graph, {
 	
 	/**
 	 * Set the default options for the graph. The defaults will be 
@@ -135,13 +132,14 @@ networkMap.Graph = new Class({
 	 * @param defaults {object} An object with key value pairs of options
 	 * @return {networkMap.Graph} self
 	 */
-	setDefaults: function(element, defaults){
+	setDefaults: function(element, properties){
 		if (!this.defaults[element]){
 			throw "Illigal element";
 		}
 		
-		Object.merge(this.defaults[element], defaults);
+		this.defaults[element].load(properties);
 		
+		// TODO: rework
 		this.fireEvent('redraw', [{defaultsUpdated: true}]);
 		
 		return this;
@@ -190,7 +188,6 @@ networkMap.Graph = new Class({
 	 * @param object {object} The object to trigger the event on
 	 * 
 	 * @return {networkMap.Graph} self
-	 * @todo Move to a statical function
 	 */
 	triggerEvent: function(event, object){
 		object.fireEvent(event, object);
@@ -205,7 +202,10 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	rescale: function(){
-		var docSize = this.element.getSize();	
+		var docSize = {
+			x: this.element.offsetWidth,
+			y: this.element.offsetHeight
+		};	
 		
 		this.svg.size(
 			docSize.x, 
@@ -268,14 +268,15 @@ networkMap.Graph = new Class({
 		var accordionGroup;
 
 		var changeHandler = function(defaults, key){
-			return function(e){
-				defaults[key] = e.target.value;
-				this.fireEvent('redraw', [{defaultsUpdated: true}]);
+			return function(e, widget){
+				defaults.set(key, widget.value());
+				//defaults[key] = e.target.value;
+				//this.fireEvent('redraw', [{defaultsUpdated: true}]);
 			}.bind(this);
 		}.bind(this);
 	
 		accordionGroup = container.add('Globals');
-		accordionGroup.grab(new networkMap.widget.GridInput('Grid', {
+		accordionGroup.appendChild(new networkMap.widget.GridInput('Grid', {
 			enabled: this.options.gridEnabled,
 			grid: this.options.grid
 		}).addEvent('change', function(e){
@@ -287,28 +288,52 @@ networkMap.Graph = new Class({
 				
 	
 		accordionGroup = container.add('Node Defaults');		
-		Object.each(networkMap.Node.defaultTemplate, function(option, key){
+		networkMap.each(networkMap.Node.defaultTemplate, function(option, key){
 			if (option.type === 'number'){
-				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.IntegerInput(option.label, this.defaults.node.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.node, key)
+					)
+				);
 			}
 			else if(option.type === 'text'){
-				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.TextInput(option.label, this.defaults.node.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.node, key)
+					)
+				);
 			}
 			else if (option.type === 'color'){
-				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.ColorInput(option.label, this.defaults.node.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.node, key)
+					)
+				);
 			}
 		}.bind(this));
 		
 		accordionGroup = container.add('Link Defaults');		
-		Object.each(networkMap.Link.defaultTemplate, function(option, key){
+		networkMap.each(networkMap.Link.defaultTemplate, function(option, key){
 			if (option.type === 'number'){
-				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.IntegerInput(option.label, this.defaults.link.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.link, key)
+					)
+				);
 			}
 			else if(option.type === 'text'){
-				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.TextInput(option.label, this.defaults.link.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.link, key)
+					)
+				);
 			}
 			else if (option.type === 'color'){
-				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.ColorInput(option.label, this.defaults.link.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.link, key)
+					)
+				);
 			}
 		}.bind(this));
 				
@@ -327,15 +352,18 @@ networkMap.Graph = new Class({
 			this.options.gridEnabled = false;	
 		}		
 		
-		if (!grid){
+		if (grid === undefined){
 			if (!this.options.gridEnabled)
 				return false;
 				
 			return this.options.grid;
 		}
 		
-		this.options.gridEnabled = true;			
-		this.options.grid = grid;
+		if (typeof grid === 'object'){
+			this.options.gridEnabled = true;			
+			this.options.grid = grid;
+		}
+
 		this.disableDraggableNodes();
 		this.enableDraggableNodes();
 		return this;
@@ -350,14 +378,14 @@ networkMap.Graph = new Class({
 	 * @throws "TypeError"
 	 */
 	load: function(obj){
-		if (typeOf(obj) === 'string'){
+		if (typeof obj == 'string' || obj instanceof String){
 			return this.loadUrl(obj);
 		}
-		else if (typeOf(obj) === 'object'){
+		else if (obj !== null && typeof obj === 'object'){
 			return this.loadObject(obj);
 		}
 		else{
-			throw new TypeError('Unknown type ' + typeOf(obj));
+			throw new TypeError('Unknown type ' + Object.prototype.toString.call(obj));
 		}
 		return this;
 	},
@@ -370,21 +398,23 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	loadUrl: function(url){
-		new Request.JSON({
-			url: url,
-			onSuccess: function(responce){
-				this.loadObject(responce);
-			}.bind(this),
-			onFailure: function(){
-				
-			},
-			onComplete: function(){
-				
-			},
-			onError: function(text, error){
-				
+		var request = new XMLHttpRequest();
+		request.open('GET', url, true);
+
+		request.onload = function() {
+			if (request.status >= 200 && request.status < 400){
+				// Success!
+				this.loadObject(JSON.parse(request.responseText));
+			} else {
+				new networkMap.widget.Modal().alert('There was an error when loading the weathermap (' + request.status + ')', {title: 'Error'});
 			}
-		}).get({});
+		}.bind(this);
+
+		request.onerror = function() {
+			new networkMap.widget.Modal().alert('An error occurred when trying to load the resource', {title: 'Error'});
+		};
+
+		request.send();
 
 		return this;
 	},
@@ -399,18 +429,20 @@ networkMap.Graph = new Class({
 		this.setOnSave(mapStruct.onSave);
 		
 		if (mapStruct.defaults){
-			this.setDefaults('node', mapStruct.defaults.node || this.defaults.node);
-			this.setDefaults('link', mapStruct.defaults.link || this.defaults.link);
+			this.setDefaults('node', mapStruct.defaults.node || {});
+				//this.defaults.node);
+			this.setDefaults('link', mapStruct.defaults.link || {});
+				//this.defaults.link);
 		}
 		
-		mapStruct.nodes.each(function(node){
+		mapStruct.nodes.forEach(function(node){
 			node.graph = this;
 			node.draggable = this.options.allowDraggableNodes;
 			
 			this.addNode(new networkMap.Node(node), false);
 		}.bind(this));
 
-		mapStruct.links.each(function(link){
+		mapStruct.links.forEach(function(link){
 			link.graph = this;
 			this.addLink(new networkMap.Link(link), false);
 		}.bind(this));
@@ -499,36 +531,42 @@ networkMap.Graph = new Class({
 			
 		var data = this.getConfiguration();
 
-		var html = this.settings.btnSave.get('html');
-		this.settings.btnSave.set('text', '.....');
-		 
-		new Request.JSON({
-			url: this.saveData.url,
-			method: this.saveData.method,
-			'data': data,
-			onSuccess: function(response){
-				this.settings.btnSave.set('html', html);
-				if (response.status === 'ok'){
+		var html = this.settings.btnSave.innerHTML;
+		this.settings.btnSave.textContent = '.....';
+
+		var params = networkMap.toQueryString(data);		 
+		var request = new XMLHttpRequest();
+
+		request.open(this.saveData.method, this.saveData.url, true);
+		request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+		request.onload = function() {
+			this.settings.btnSave.innerHTML = html;
+			if (request.status >= 200 && request.status < 400){
+				data = JSON.parse(request.responseText);
+				if (data.status === 'ok'){
 					new networkMap.widget.Modal().alert('Weathermap saved');
 				}
-				if (response.status === 'nok'){
-					new networkMap.widget.Modal().alert(response.error, {title: 'Error'});
+				if (data.status === 'nok'){
+					new networkMap.widget.Modal().alert(data.error, {title: 'Error'});
 				}
-				if (response.status == 'deleted'){
+				if (data.status == 'deleted'){
 					new networkMap.widget.Modal().alert('The networkmap is deleted', {title: 'Error'});
 				}
-			}.bind(this),
-			onFailure: function(){
-				
-			},
-			onComplete: function(){
-				
-			},
-			onError: function(text, error){
-				
+			} else {
+				new networkMap.widget.Modal()
+					.alert('There was an error while saving the weathermap (' + request.status + ')', {title: 'Error'});
 			}
-		}).send();
-		
+		}.bind(this);
+
+		request.onerror = function() {
+			this.settings.btnSave.innerHTML = html;
+			new networkMap.widget.Modal()
+				.alert('There was an error while saving the weathermap', {title: 'Error'});
+		};
+
+		request.send(params);
+	
 		return true;
 	},
 
@@ -540,11 +578,11 @@ networkMap.Graph = new Class({
 	 */
 	enableEditor: function(){
 		this.enableDraggableNodes();
-		this.nodes.each(function(node){
+		this.nodes.forEach(function(node){
 			node.mode('edit');
 		});
 
-		this.links.each(function(link){
+		this.links.forEach(function(link){
 			link.mode('edit');
 		});
 		
@@ -560,10 +598,10 @@ networkMap.Graph = new Class({
 	disableEditor: function(){
 		this.disableDraggableNodes();
 		
-		this.nodes.each(function(node){
+		this.nodes.forEach(function(node){
 			node.mode('normal');
 		});
-		this.links.each(function(link){
+		this.links.forEach(function(link){
 			link.mode('normal');
 		});
 
@@ -588,7 +626,7 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	enableDraggableNodes: function(){
-		this.nodes.each(function(node){
+		this.nodes.forEach(function(node){
 			node.draggable();
 		});
 
@@ -601,7 +639,7 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	disableDraggableNodes: function(){
-		this.nodes.each(function(node){
+		this.nodes.forEach(function(node){
 			node.fixed();	
 		});
 
@@ -615,25 +653,28 @@ networkMap.Graph = new Class({
 	 */
 	getConfiguration: function(){
 		var configuration = {
-			defaults: this.defaults,
+			defaults: {
+				node: this.defaults.node.extract(),
+				link: this.defaults.link.extract()
+			},
 			nodes: [],
 			links: [],
 			onSave: this.saveData
 		};
 
 		// self
-		this.exportedOptions.each(function(option){
+		this.exportedOptions.forEach(function(option){
 			configuration[option] = this.options[option];
 		}.bind(this));
 		configuration.onSave = this.saveData;
 
 		// nodes
-		this.nodes.each(function(node){
+		this.nodes.forEach(function(node){
 			configuration.nodes.push(node.getConfiguration());
 		});
 
 		// links
-		this.links.each(function(link){
+		this.links.forEach(function(link){
 			configuration.links.push(link.getConfiguration());
 		});
 
@@ -676,7 +717,7 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Node} The node or undefined
 	 */
 	getNode: function(id){
-		return this.nodes.find(function(node){
+		return networkMap.find(this.nodes, function(node){	
 			if (node.options.id === id){
 				return true;
 			}
@@ -695,7 +736,7 @@ networkMap.Graph = new Class({
 		this.nodes.erase(node);
 		node.setGraph(null);
 
-		this.getLinks(node).each(function(link){
+		this.getLinks(node).forEach(function(link){
 			this.removeLink(link);
 		}.bind(this));		
 		
@@ -731,7 +772,7 @@ networkMap.Graph = new Class({
 	
 
 	getLink: function(nodeIdA, nodeIdB){
-		return this.links.find(function(link){
+		return networkMap.find(this.links, function(link){
 			if (link.nodeA.options.id === nodeIdA && link.nodeB.options.id === nodeIdB){
 				return true;
 			}
@@ -745,7 +786,7 @@ networkMap.Graph = new Class({
 	getLinks: function(node, secondaryNode){
 		var links = [];		
 		
-		this.links.each(function(link){
+		this.links.forEach(function(link){
 			if (link.connectedTo(node, secondaryNode)){
 				links.push(link);
 			}
@@ -792,14 +833,12 @@ networkMap.Graph = new Class({
 	/**
 	 * Refresh links in batch mode. This method does not work
 	 * at the moment.
-	 * 
-	 * @todo remove or refactor the method
 	 */
 	update: function(){
 		if (this.options.batchUpdate)
 			return this.batchUpdate();		
 		
-		this.links.each(function(link){
+		this.links.forEach(function(link){
 			link.localUpdate();
 		});
 
@@ -807,12 +846,12 @@ networkMap.Graph = new Class({
 	},
 	
 	batchUpdate: function(){
-		Object.each(this.$updateQ, function(urls, datasource){
+		networkMap.each(this.$updateQ, function(urls, datasource){
 			if (!networkMap.datasource[datasource]){
 				throw 'Unknown datasource (' + datasource + ')';
 			}
 			
-			Object.each(urls, function(requests, url){
+			networkMap.each(urls, function(requests, url){
 				networkMap.datasource[datasource](url, requests);
 			}.bind(this));
 		}.bind(this));

@@ -1,4 +1,180 @@
-var networkMap = networkMap || {};
+/*
+ * classList.js: Cross-browser full element.classList implementation.
+ * 2014-01-31
+ *
+ * By Eli Grey, http://eligrey.com
+ * Public Domain.
+ * NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
+ */
+
+/*global self, document, DOMException */
+
+/*! @source http://purl.eligrey.com/github/classList.js/blob/master/classList.js*/
+
+if ("document" in self && !("classList" in document.createElement("_"))) {
+
+(function (view) {
+
+"use strict";
+
+if (!('Element' in view)) return;
+
+var
+	  classListProp = "classList"
+	, protoProp = "prototype"
+	, elemCtrProto = view.Element[protoProp]
+	, objCtr = Object
+	, strTrim = String[protoProp].trim || function () {
+		return this.replace(/^\s+|\s+$/g, "");
+	}
+	, arrIndexOf = Array[protoProp].indexOf || function (item) {
+		var
+			  i = 0
+			, len = this.length
+		;
+		for (; i < len; i++) {
+			if (i in this && this[i] === item) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	// Vendors: please allow content code to instantiate DOMExceptions
+	, DOMEx = function (type, message) {
+		this.name = type;
+		this.code = DOMException[type];
+		this.message = message;
+	}
+	, checkTokenAndGetIndex = function (classList, token) {
+		if (token === "") {
+			throw new DOMEx(
+				  "SYNTAX_ERR"
+				, "An invalid or illegal string was specified"
+			);
+		}
+		if (/\s/.test(token)) {
+			throw new DOMEx(
+				  "INVALID_CHARACTER_ERR"
+				, "String contains an invalid character"
+			);
+		}
+		return arrIndexOf.call(classList, token);
+	}
+	, ClassList = function (elem) {
+		var
+			  trimmedClasses = strTrim.call(elem.getAttribute("class") || "")
+			, classes = trimmedClasses ? trimmedClasses.split(/\s+/) : []
+			, i = 0
+			, len = classes.length
+		;
+		for (; i < len; i++) {
+			this.push(classes[i]);
+		}
+		this._updateClassName = function () {
+			elem.setAttribute("class", this.toString());
+		};
+	}
+	, classListProto = ClassList[protoProp] = []
+	, classListGetter = function () {
+		return new ClassList(this);
+	}
+;
+// Most DOMException implementations don't allow calling DOMException's toString()
+// on non-DOMExceptions. Error's toString() is sufficient here.
+DOMEx[protoProp] = Error[protoProp];
+classListProto.item = function (i) {
+	return this[i] || null;
+};
+classListProto.contains = function (token) {
+	token += "";
+	return checkTokenAndGetIndex(this, token) !== -1;
+};
+classListProto.add = function () {
+	var
+		  tokens = arguments
+		, i = 0
+		, l = tokens.length
+		, token
+		, updated = false
+	;
+	do {
+		token = tokens[i] + "";
+		if (checkTokenAndGetIndex(this, token) === -1) {
+			this.push(token);
+			updated = true;
+		}
+	}
+	while (++i < l);
+
+	if (updated) {
+		this._updateClassName();
+	}
+};
+classListProto.remove = function () {
+	var
+		  tokens = arguments
+		, i = 0
+		, l = tokens.length
+		, token
+		, updated = false
+	;
+	do {
+		token = tokens[i] + "";
+		var index = checkTokenAndGetIndex(this, token);
+		if (index !== -1) {
+			this.splice(index, 1);
+			updated = true;
+		}
+	}
+	while (++i < l);
+
+	if (updated) {
+		this._updateClassName();
+	}
+};
+classListProto.toggle = function (token, force) {
+	token += "";
+
+	var
+		  result = this.contains(token)
+		, method = result ?
+			force !== true && "remove"
+		:
+			force !== false && "add"
+	;
+
+	if (method) {
+		this[method](token);
+	}
+
+	return !result;
+};
+classListProto.toString = function () {
+	return this.join(" ");
+};
+
+if (objCtr.defineProperty) {
+	var classListPropDesc = {
+		  get: classListGetter
+		, enumerable: true
+		, configurable: true
+	};
+	try {
+		objCtr.defineProperty(elemCtrProto, classListProp, classListPropDesc);
+	} catch (ex) { // IE 8 doesn't support enumerable:true
+		if (ex.number === -0x7FF5EC54) {
+			classListPropDesc.enumerable = false;
+			objCtr.defineProperty(elemCtrProto, classListProp, classListPropDesc);
+		}
+	}
+} else if (objCtr[protoProp].__defineGetter__) {
+	elemCtrProto.__defineGetter__(classListProp, classListGetter);
+}
+
+}(self));
+
+}
+;var networkMap = networkMap || {};
 
 networkMap.path = function(svg){
 	return svg.path().attr({ 
@@ -7,190 +183,470 @@ networkMap.path = function(svg){
 	});
 };
 
-/* Extending Mootools functionality */
-
-Array.implement('find', function(fn){
-	for (var i = 0; i < this.length; i++){
-		if (fn.call(this, this[i], i, this)) 
-			return this[i];
+networkMap.find = function(arr, fn){	
+	for (var i = 0, len = arr.length; i < len; i++){
+		if (fn.call(arr, arr[i], i, arr)){
+			return arr[i];
+		}
 	}
-});
+};
 
 networkMap.isFunction = function(f){
 	var getType = {};
 	return f && getType.toString.call(f) === '[object Function]';
-};;networkMap.widget = networkMap.widget || {};
+};
 
-networkMap.widget.IntegerInput = new Class ({
-	Implements: [Options, Events],
-	options: {
-		class: 'nm-input-integer'
+networkMap.extend = function () {
+	var modules, methods, key, i;
+	
+	/* get list of modules */
+	modules = [].slice.call(arguments);
+	
+	/* get object with extensions */
+	methods = modules.pop();
+	
+	for (i = modules.length - 1; i >= 0; i--)
+		if (modules[i])
+			for (key in methods)
+				modules[i].prototype[key] = methods[key];
+};
+
+networkMap.Observable = (function(){
+	function removeOn(string){
+		return string.replace(/^on([A-Z])/, function(full, first){
+			return first.toLowerCase();
+		});
+	}
+
+	return {
+		addEvent: function(type, fn) {
+			this.$events = this.$events || {};
+
+			if (!networkMap.isFunction(fn)){
+				return this;
+			}
+
+			type = removeOn(type);
+
+			(this.$events[type] = this.$events[type] || []).push(fn);
+
+			return this;
+		},
+
+		addEvents: function(events){
+			for (var type in events) this.addEvent(type, events[type]);
+			return this;
+		},
+
+		fireEvent: function(type, args, delay) {
+			this.$events = this.$events || {};
+			type = removeOn(type);
+			var events = this.$events[type];
+
+			if (!events) return this;
+			
+			args = (args instanceof Array) ? args : [args];
+
+			events.forEach(function(fn){
+				if (delay) setTimeout(function() { fn.apply(this, args); }, delay);
+				else fn.apply(this, args);
+			}, this); 
+
+			return this;
+		},	
+		
+		removeEvent: function(type, fn) {
+			type = removeOn(type);
+
+			var events = this.$events[type] || [];
+			var index = events.indexOf(fn);
+			if (index !== -1) events.splice(index, 1);
+
+			return this;
+		},
+
+		removeEvents: function(events){
+			var type;
+			if (typeof(events) == 'object'){
+				for (type in events) this.removeEvent(type, events[type]);
+				return this;
+			}
+
+			if (events) events = removeOn(events);
+			for (type in this.$events){
+				if (events && events != type) continue;
+				var fns = this.$events[type];
+				for (var i = fns.length; i--;) if (i in fns){
+					this.removeEvent(type, fns[i]);
+				}
+			}
+			return this;
+		}
+
+	};
+
+})();
+
+networkMap.keys = function(obj) {
+	var keys = [], key;
+
+	if (obj !== Object(obj)) return keys;
+	if (Object.keys) return Object.keys(obj);	
+	for (key in obj) if (hasOwnProperty.call(obj, key)) keys.push(key);
+	return keys;
+};
+
+
+networkMap.each = function(obj, iterator, context) {
+	var i, length;
+	if (obj === null) return obj;
+	if (Array.prototype.forEach && obj.forEach === Array.prototype.forEach) {
+		obj.forEach(iterator, context);
+	} else if (obj.length === +obj.length) {
+		for (i = 0, length = obj.length; i < length; i++) {
+			iterator.call(context, obj[i], i, obj);
+		}
+	} else {
+		var keys = networkMap.keys(obj);
+		for (i = 0, length = keys.length; i < length; i++) {
+			iterator.call(context, obj[keys[i]], keys[i], obj);
+		}
+	}
+	return obj;
+};
+
+
+/**
+ * Extend an object with defaults
+ * @param  {Object} obj The object to extend with defaults
+ * @param {...Object} var_args Objects with default configuration
+ * @return {Object}     The extended object
+ */
+networkMap.defaults = function(obj) {
+	obj = obj || {};
+	networkMap.each(Array.prototype.slice.call(arguments, 1), function(source) {
+		if (source) {
+			for (var prop in source) {
+				if (obj[prop] === void 0) obj[prop] = source[prop];
+			}
+		}
+	});
+	return obj;
+};
+
+networkMap.Options = {
+	setOptions: function(options){
+		this.options = networkMap.defaults(options, this.options);
+		return this;
+	}
+};
+
+networkMap.Mediator = {
+	
+	subscribe: function(topic, fn){
+		if (!networkMap.isFunction(fn)){
+			return this;
+		}
+
+		this.$topics = this.$topics || {};
+		(this.$topics[topic] = this.$topics[topic] || []).push(fn);
+
+		return this;  
 	},
-	wrapper: null,
-	label: null,
-	input: null,
-	initialize: function(label, value, options){
-		this.setOptions(options);
-		this.wrapper = new Element('div', {
-			class: this.options.class
-		});
-		this.label = new Element('span', {
-			text: label
-		});
-		this.input = new Element('input', {
-			type: 'number',
-			value: value
-		}).addEvent('change', function(e){
-			this.fireEvent('change', [e]);
-		}.bind(this)); 
+
+	publish: function(topic, args, delay){
+		this.$topics = this.$topics || {};
+		var events = this.$topics[topic];
+
+		if (!events) return this;
 		
+		args = (args instanceof Array) ? args : [args];
+
+		events.forEach(function(fn){
+			if (delay) setTimeout(function() { fn.apply(this, args); }, delay);
+			else fn.apply(this, args);
+		}, this); 
+
+		return this;
+	},
+
+	unsubscribe: function(topic, fn){
+		var events = this.$topics[topic];
+		var index = events.indexOf(fn);
+		if (index !== -1) events.splice(index, 1);
+
+		return this;
+	}
+};
+
+
+networkMap.toQueryString = function(object, base){
+	var queryString = [];
+
+	networkMap.each(object, function(value, key){
+		if (base) key = base + '[' + key + ']';
+		var result;
+		switch (typeof value){
+			case 'object': 
+					result = networkMap.toQueryString(value, key); 
+			break;
+			case 'array':
+				var qs = {};
+				value.forEach(function(val, i){
+					qs[i] = val;
+				});
+				result = networkMap.toQueryString(qs, key);
+			break;
+			default: result = key + '=' + encodeURIComponent(value);
+		}
+		/* jshint ignore:start */
+		if (value != null) queryString.push(result);
+		/* jshint ignore:end */
+	});
+
+	return queryString.join('&');
+};
+;networkMap.widget = networkMap.widget || {};
+
+networkMap.widget.IntegerInput = function(label, value, options){
+	this.options = {
+		class: 'nm-input-integer'
+	};
+	this.setOptions(options);
+	this.createElements(label, value);	
+};
+
+
+networkMap.extend(networkMap.widget.IntegerInput, networkMap.Observable);
+networkMap.extend(networkMap.widget.IntegerInput, networkMap.Options);
+networkMap.extend(networkMap.widget.IntegerInput, {
+	createElements: function(label, value){
+		this.wrapper = document.createElement('div');
+		this.wrapper.classList.add(this.options.class);
+
+		this.label = document.createElement('span');
+		this.label.textContent = label;
+
+		this.input = document.createElement('input');
+		this.input.setAttribute('type', 'number');
+		this.input.setAttribute('value', (value.value) ? value.value : value);
+		if (value.inherited) this.input.setAttribute('placeholder', value.inherited);
+		this.input.addEventListener('change', function(e){
+			this.fireEvent('change', [e, this]);
+		}.bind(this));
+
 		if (this.options.min !== undefined){
-			this.input.set('min', this.options.min);	
-		}		
-		
+			this.input.setAttribute('min', this.options.min);	
+		}
+
 		if (this.options.disabled === true){
 			this.input.disabled = true;
 		}
-		
-		this.wrapper.grab(this.label).grab(this.input);
+
+		this.wrapper.appendChild(this.label);
+		this.wrapper.appendChild(this.input);
+
+		return this;
 	},
+
 	toElement: function(){
 		return this.wrapper;
+	},
+
+	value: function(){
+		return (this.input.value !== '') ? this.input.value : undefined;
 	}
 });;networkMap.widget = networkMap.widget || {};
 
-networkMap.widget.TextInput = new Class ({
-	Implements: [Options, Events],
-	options: {
+networkMap.widget.TextInput = function(label, value, options){
+	this.options = {
 		class: 'nm-input-text',
 		type: 'text'
+	};
+	this.setOptions(options);
+
+	this.$destroy = [];
+
+	this.createElements(label, value);
+};
+
+networkMap.extend(networkMap.widget.TextInput, networkMap.Observable);
+networkMap.extend(networkMap.widget.TextInput, networkMap.Options);
+networkMap.extend(networkMap.widget.TextInput, {	
+	createElements: function(label, value){
+		var wrapper = this.wrapper = document.createElement('div');
+		wrapper.classList.add(this.options.class);
+
+		var lbl = this.label = document.createElement('span');
+		lbl.textContent = label;
+
+		var input = this.input = document.createElement('input');
+		var inputHandler = function(e){
+			this.fireEvent('change', [e, this]);
+		}.bind(this);
+		input.setAttribute('type', this.options.type);
+		input.setAttribute('value', (value) ? value : '');
+		this.$destroy.push({
+			el: input,
+			type: 'change',
+			fn: inputHandler
+		});
+		input.addEventListener('change', inputHandler, false);
+
+		if (this.options.disabled === true){
+			this.input.disabled = true;
+		}
+		
+		wrapper.appendChild(lbl);
+		wrapper.appendChild(input);
+
+		return this;
 	},
-	wrapper: null,
-	label: null,
-	input: null,
-	initialize: function(label, value, options){
-		this.setOptions(options);
-		this.wrapper = new Element('div', {
-			class: this.options.class
-		});
-		this.label = new Element('span', {
-			text: label
-		});
-		this.input = new Element('input', {
-			type: this.options.type,
-			value: value
-		}).addEvent('change', function(e){
-			this.fireEvent('change', [e]);
-		}.bind(this)); 
 	
-		if (this.options.disabled === true){
-			this.input.disabled = true;
-		}
-		
-		this.wrapper.grab(this.label).grab(this.input);
+	value: function(){
+		return (this.input.value !== '') ? this.input.value : undefined;
 	},
+
 	toElement: function(){
 		return this.wrapper;
 	}
 });;networkMap.widget = networkMap.widget || {};
 
-networkMap.widget.ColorInput = new Class ({
-	Implements: [Options, Events],
-	options: {
+networkMap.widget.ColorInput = function(label, value, options){
+	this.options = {
 		class: 'nm-input-color'
-	},
-	wrapper: null,
-	label: null,
-	input: null,
-	initialize: function(label, value, options){
-		this.setOptions(options);
-		this.wrapper = new Element('div', {
-			class: this.options.class
-		});
-		this.label = new Element('span', {
-			text: label
-		});
+	};
 
-		this.div = new Element('div');		
-		
-		this.input = new Element('input', {
-			type: 'color',
-			value: value
-		}).addEvent('change', function(e){
-			this.fireEvent('change', [e]);
-		}.bind(this)); 
+	this.setOptions(options);
+
+	this.createElements(label, value);
+};
+
+networkMap.extend(networkMap.widget.ColorInput, networkMap.Observable);
+networkMap.extend(networkMap.widget.ColorInput, networkMap.Options);
+networkMap.extend(networkMap.widget.ColorInput, {
+
+	createElements: function(label, value){
+		this.wrapper = document.createElement('div');
+		this.wrapper.classList.add(this.options.class);
+
+		this.label = document.createElement('span');
+		this.label.textContent = label;
+
+		this.div = document.createElement('div');
+
+		this.input = document.createElement('input');
+		this.input.setAttribute('type', 'color');
+		this.input.setAttribute('value', value);
+		this.input.addEventListener('change', function(e){
+			this.fireEvent('change', [e, this]);
+		}.bind(this));
 		
 		if (this.options.disabled === true){
 			this.input.disabled = true;
 		}
-		
-		this.wrapper.grab(this.label).grab(this.div.grab(this.input));
+
+		this.div.appendChild(this.input);
+		this.wrapper.appendChild(this.label);
+		this.wrapper.appendChild(this.div);
 	},
+
+	/**
+	 * Get the current value of the widget
+	 * @return {string} The color encoded as a string
+	 */
+	value: function(){
+		return this.input.value;
+	},
+
 	toElement: function(){
 		return this.wrapper;
 	}
 });;networkMap.widget = networkMap.widget || {};
 
-networkMap.widget.Accordion = new Class ({
-	Implements: [Options, Events],
-	options: {
+networkMap.widget.Accordion = function(options){
+	this.options = {
 		class: 'nm-accordion'
-	},
-	wrapper: null,
-	items: [],
-	initialize: function(options){
-		this.setOptions(options);
-		this.wrapper = new Element('div', {
-			class: this.options.class
-		});
-	},
+	};
+
+	this.setOptions(options);
+
+	this.items = [];
+	this.wrapper = document.createElement('div');
+	this.wrapper.classList.add(this.options.class);
+};
+
+networkMap.extend(networkMap.widget.Accordion, networkMap.Observable);
+networkMap.extend(networkMap.widget.Accordion, networkMap.Options);
+networkMap.extend(networkMap.widget.Accordion, {	
 	toElement: function(){
 		return this.wrapper;
 	},
 	add: function(label, options){
-		var item = new Element ('div', {
-			class: 'nm-accordion-group nm-accordion-open'	
-		});
+		var item = document.createElement('div');
+		item.classList.add('nm-accordion-group', 'nm-accordion-open');
+
 		
+		var trigger = document.createElement('div');
+		trigger.classList.add('nm-accordion-trigger', 'unselectable');
+		trigger.textContent = label;
+
+		var list = new networkMap.widget.Accordion.Group(options);
 		
-		var trigger = new Element('div', {
-			class: 'nm-accordion-trigger unselectable',
-			text: label
-		});
-		
-		var list = new Element('ul', {
-			class: 'nm-accordion-inner'	
-		});
-		if (options && options.id){
-			list.set('id', options.id);		
-		}
-		item.grab(trigger);
-		item.grab(list);
+		item.appendChild(trigger);
+		item.appendChild(list.toElement());
+
 		this.items.push(item);
-		this.wrapper.grab(item);	
-		
-		trigger.addEvent('click', this.clickHandler.bind(this));	
+		this.wrapper.appendChild(item);
+		trigger.addEventListener('click', this.clickHandler.bind(this));
 
 		return list;
 	},
+
 	clickHandler: function(e){
-		e.target.getParent().toggleClass('nm-accordion-open');
+		e.target.parentNode.classList.toggle('nm-accordion-open');
+	}
+});
+
+networkMap.widget.Accordion.Group = function(options){
+	var list = this.list = document.createElement('ul');
+	list.classList.add('nm-accordion-inner');
+
+	if (options && options.id){
+		list.setAttribute('id', options.id);		
+	}
+};
+
+networkMap.extend(networkMap.widget.Accordion.Group, {
+
+	appendChild: function(node){
+		if (node.toElement)
+			this.list.appendChild(node.toElement());
+		else
+			this.list.appendChild(node);
+
+		return this;
+	},
+
+	toElement: function(){
+		return this.list;
 	}
 });;networkMap.widget = networkMap.widget || {};
 
-networkMap.widget.List = new Class ({
-	Implements: [Options, Events],
-	options: {
+networkMap.widget.List = function(options){
+	this.options = {
 		class: 'nm-list'
-	},
-	list: null,
-	listItems: [],
-	initialize: function(options){
-		this.setOptions(options);
-		this.list = new Element('ul', {
-			class: this.options.class
-		});
-	},
+	};
+	this.listItems = [];
+	this.setOptions(options);
+
+	this.list = document.createElement('ul');
+	this.list.classList.add(this.options.class);
+};
+
+networkMap.extend(networkMap.widget.List, networkMap.Observable);
+networkMap.extend(networkMap.widget.List, networkMap.Options);
+networkMap.extend(networkMap.widget.List, {
 	toElement: function(){
 		return this.list;
 	},
@@ -198,47 +654,50 @@ networkMap.widget.List = new Class ({
 		var listItem = new networkMap.widget.ListItem(element, options);
 		listItem.addEvent('remove', this.remove.bind(this));
 		this.listItems.push(listItem);
-		this.list.grab(listItem);
+		this.list.appendChild(listItem.toElement());
 		
 		return listItem;
 	},
 	remove: function(listItem){
-		this.listItems = this.listItems.erase(listItem);
-		
+		var index = this.listItems.indexOf(listItem);
+		this.listItems.splice(index, 1);
+				
 		return this;
 	}
 });
 
-networkMap.widget.ListItem = new Class ({
-	Implements: [Options, Events],
-	options: {
+networkMap.widget.ListItem = function(element, options){
+	this.options = {
 		class: 'nm-list-item',
 		enableDelete: false
-	},
-	initialize: function(element, options){
-		this.setOptions(options);
-		this.listItem = new Element('li', {
-			class: this.options.class
-		});
-		
-		if (typeof element == 'string'){
-			this.listItem.set('text', element);	
-		}
-		else {
-			this.listItem.grab(element);	
-		}
-		if (this.options.enableDelete){
-			this.listItem.grab(new Element('span', {
-				text: 'x',
-				class: 'nm-list-item-delete pull-right',
-				events: {
-					click: this.remove.bind(this)
-				}
-			}));	
-		}
-	},
+	};
+	this.setOptions(options);
+
+	this.listItem = document.createElement('li');
+	this.listItem.classList.add(this.options.class);
+
+	if (typeof element === 'string'){
+		this.listItem.textContent = element;
+	}
+	else{
+		this.listItem.appechChild(element);
+	}
+
+	if (this.options.enableDelete){
+		var del = document.createElement('span');
+		del.textContent = 'x';
+		del.classList.add('nm-list-item-delet', 'pull-right');
+		this.$remove = this.remove.bind(this);
+		del.addEventListener('click', this.$remove);
+	}
+};
+
+networkMap.extend(networkMap.widget.ListItem, networkMap.Observable);
+networkMap.extend(networkMap.widget.ListItem, networkMap.Options);
+networkMap.extend(networkMap.widget.ListItem, {
 	remove: function(){
-		this.listItem.destroy();
+		this.listItem.parentNode.removeChild(this.listItem);
+		this.listItem.removeEventListener('click', this.$remove);
 		delete this.listItem;
 		this.fireEvent('remove', [this]);
 		
@@ -251,142 +710,217 @@ networkMap.widget.ListItem = new Class ({
 
 ;networkMap.widget = networkMap.widget || {};
 
-networkMap.widget.Select = new Class ({
-	Implements: [Options, Events],
-	options: {
+networkMap.widget.Select = function(label, values, options){
+	this.options = {
 		class: 'nm-input-select'
-	},
-	wrapper: null,
-	label: null,
-	input: null,
-	initialize: function(label, values, options){
-		this.setOptions(options);
-		this.wrapper = new Element('div', {
-			class: this.options.class
-		});
-		this.label = new Element('span', {
-			text: label
-		});
-		
-		this.input = new Element('select')
-		.addEvent('change', function(e){
-			this.fireEvent('select', [e, this]);
-		}.bind(this)); 
+	};
+	this.setOptions(options);
+
+	this.$destroy = [];
+
+	this.createElements(label);
+	this.addOptions(values);
+};
+
+networkMap.extend(networkMap.widget.Select, networkMap.Observable);
+networkMap.extend(networkMap.widget.Select, networkMap.Options);
+networkMap.extend(networkMap.widget.Select, {
 	
-		if (this.options.disabled === true){
-			this.input.disabled = true;
-		}
-		
-		this.addOptions(values);
-		this.wrapper.grab(this.label).grab(this.input);
+	createElements: function(label){
+		var wrapper = this.wrapper = document.createElement('div');
+		wrapper.classList.add(this.options.class);
+
+		var lbl = this.label = document.createElement('span');
+		lbl.textContent = label;
+
+		var input = this.input = document.createElement('select');
+		var inputHandler = function(e){
+			this.fireEvent('select', [e, this]);
+		}.bind(this);
+		this.$destroy.push({
+			el: input,
+			type: 'change',
+			fn: inputHandler
+		});
+		input.addEventListener('change', inputHandler, false);
+
+		wrapper.apppendChild(lbl);
+		wrapper.apppendChild(input);
 	},
+
 	addOptions: function(values){
-		values.each(function(value){
+		values.forEach(function(value){
 			this.addOption(value);
 		}.bind(this));
 	},
+
 	addOption: function(text, options){
 		options = options || {};
 		
-		var el = new Element('option', {
-			value: (options.value) ? options.value : text,
-			text: text,
-			selected: options.selected
-		});
-		this.input.grab(el);
+		var el = document.createElement('option');
+		el.settAttribute('value', (options.value) ? options.value : text);
+		el.textContent = text;
+		el.selected = options.selected;
+
+		this.input.apppendChild(el);
+
 		return el;
 	},
-	getSelected: function(){
-		return this.input.getSelected()[0].value;
+
+	value: function(){
+		return this.getSelected();
 	},
+
+	getSelected: function(){
+		return (this.input.selectedIndex !== -1) ? this.input.options[this.input.selectedIndex].value : null; 
+	},
+
 	clearOptions: function(){
-		this.input.empty();
+		while (this.input.firstChild) {
+			this.input.removeChild(this.input.firstChild);
+		}
 		return this;
 	},
+
 	toElement: function(){
 		return this.wrapper;
 	},
+
 	toString: function(){
-		return this.getSelected();	
+		return (this.input.selectedIndex !== -1) ? this.input.options[this.input.selectedIndex] : null;
 	}
 });;networkMap.widget = networkMap.widget || {};
 
-networkMap.widget.Modal = new Class ({
-	Implements: [Options, Events],
-	options: {
+networkMap.widget.Modal = function(options){
+	this.options = {
 		class: 'modal',
 		title: '',
 		content: '',
 		footer: '',
 		type: 'alert'
-	},
-	initialize: function(options){
-		this.setOptions(options);
-		
-		this.buildUI();	
-	},
-	buildUI: function(){
-		var modal = this.modal = new Element('div', {class: 'modal hide fade in', styles: {zIndex: 1000000}});
-		
-		var header = this.header = new Element('div', {class: 'modal-header'});
-		var closeButton = this.closeButton = new Element('button', {
-			class: 'close', 
-			html: '&times;'
-		}).addEvent('click', this._close.bind(this)).inject(header);
-		var title = this.title = new Element('h3', {html: this.options.title}).inject(header);
-		
-		var body = this.body = new Element('div', {class: 'modal-body', html: this.options.content});
+	};
+	this.setOptions(options);
+	
+	// containing elements to destroy
+	this.$destroy = [];
 
-		var footer = this.footer = new Element('div', {class: 'modal-footer', html: this.options.footer});		
+	this.buildUI();	
+};
+
+networkMap.extend(networkMap.widget.Modal, networkMap.Observable);
+networkMap.extend(networkMap.widget.Modal, networkMap.Options);
+networkMap.extend(networkMap.widget.Modal, {
+	buildUI: function(){
 		
-		modal.grab(header).grab(body).grab(footer);
+
+		var modal = this.modal = document.createElement('div');
+		modal.classList.add('modal', 'hide', 'fade', 'in');
+		modal.style.zIndex = 1000000;
+
+		var header = this.header = document.createElement('div');
+		header.classList.add('modal-header');
+
+		var closeButton = this.closeButton = document.createElement('button');
+		var closeHandler = this._close.bind(this);
+		closeButton.classList.add('close');
+		closeButton.innerHTML = '&times;';
+		this.$destroy.push({
+			el: closeButton,
+			type: 'click',
+			fn: closeHandler
+		});
+		closeButton.addEventListener('click', closeHandler, false);
+		header.appendChild(closeButton);
+
+		var title = this.title = document.createElement('h3');
+		title.innerHTML = this.options.title;
+		header.appendChild(title);
+
+		var body = this.body = document.createElement('div');
+		body.classList.add('modal-body');
+		body.innerHTML = this.options.content;
+
+		var footer = this.footer = document.createElement('div');
+		footer.classList.add('modal-footer');
+		footer.innerHTML = this.options.footer;
+
+		modal.appendChild(header);
+		modal.appendChild(body);
+		modal.appendChild(footer);
 		
 		return this;
 	},
 	alert: function(html, options){
 		options = options || {};
 		
-		this.body.set('html', html);
-		this.title.set('html', (options.title) ? options.title : 'Alert');		
+		this.body.innerHTML =  html;
+		this.title.innerHTML = (options.title) ? options.title : 'Alert';		
 		
-		new Element('a', {
-			href: '#', 
-			class: 'btn', 
-			text: (options.button) ? options.button : 'Ok'
-		}).addEvent('click', this.destroy.bind(this)).inject(this.footer);
+		
+		var btn = this.btn = document.createElement('a');
+		var btnHandler = this.destroy.bind(this);
+		btn.setAttribute('href', '#');
+		btn.classList.add('btn');
+		btn.textContent = (options.button) ? options.button : 'Ok';
+		this.$destroy.push({
+			el: btn,
+			type: 'click',
+			fn: btnHandler
+		});
+		btn.addEventListener('click', btnHandler, false);
+		this.footer.appendChild(btn);
 
-		document.body.grab(this.modal);		
-
+		document.body.appendChild(this.modal);
+	
 		return this.show();				
 	},
 	confirm: function(html, options){
 		options = options || {};
 		
-		this.body.set('html', html);
-		this.title.set('html', (options.title) ? options.title : 'Alert');		
+		this.body.innerHTML = html;
+		this.title.innerHTML = (options.title) ? options.title : 'Alert';		
 		
-		new Element('a', {
-			href: '#', 
-			class: 'btn', 
-			text: (options.button) ? options.cancelButton : 'Cancel'
-		}).addEvent('click', this._cancel.bind(this)).inject(this.footer);
-		
-		new Element('a', {
-			href: '#', 
-			class: 'btn', 
-			text: (options.button) ? options.okButton : 'Ok'
-		}).addEvent('click', this._ok.bind(this)).inject(this.footer);
+		var cancelBtn = document.createElement('a');
+		var cancelHandler = this._cancel.bind(this);
+		cancelBtn.setAttribute('href', '#');
+		cancelBtn.classList.add('btn');
+		cancelBtn.textContent = (options.button) ? options.button : 'Ok';
+		this.$destroy.push({
+			el: cancelBtn,
+			type: 'click',
+			fn: cancelHandler
+		});
+		cancelBtn.addEventListener('click', cancelHandler, false);
+		this.footer.appendChild(cancelBtn);
 
-		document.body.grab(this.modal);		
+		var okBtn = document.createElement('a');
+		var okHandler = this._cancel.bind(this);
+		okBtn.setAttribute('href', '#');
+		okBtn.classList.add('btn');
+		okBtn.textContent = (options.button) ? options.button : 'Ok';
+		this.$destroy.push({
+			el: okBtn,
+			type: 'click',
+			fn: okHandler
+		});
+		okBtn.addEventListener('click', okHandler, false);
+		this.footer.appendChild(okBtn);
 
+		document.body.appendChild(this.modal);
+	
 		return this.show();				
 	},
 	show: function(){
-		this.modal.setStyle('display', 'block');
+		this.modal.style.display = 'block';
 		return this;
 	},
 	destroy: function(){
-		this.modal.destroy();
+		this.modal.parentNode.removeChild(this.modal);
+
+		this.$destroy.forEach(function(ref){
+			ref.el.removeEventListener(ref.type, ref.fn, false);
+		});
+		this.$destroy.length = 0;
 		return this;
 	},
 	
@@ -404,47 +938,233 @@ networkMap.widget.Modal = new Class ({
 	}
 });;networkMap.widget = networkMap.widget || {};
 
-networkMap.widget.Checkbox = new Class ({
-	Implements: [Options, Events],
-	options: {
+networkMap.widget.Checkbox = function(label, value, options){
+	this.options = {
 		class: 'nm-checkbox',
 		type: 'checkbox'
-	},
-	wrapper: null,
-	label: null,
-	input: null,
-	
-	initialize: function(label, value, options){
-		this.setOptions(options);
-		
-		this.wrapper = new Element('div', {
-			class: this.options.class
-		});
-		this.label = new Element('span', {
-			text: label
-		});
-		this.input = new Element('input', {
-			type: this.options.type,
-			checked: value
-		}).addEvent('change', function(e){
-			this.fireEvent('change', [e]);
-		}.bind(this)); 
-	
+	};
+
+	this.setOptions(options);
+	this.createElements(label, value);
+};
+
+networkMap.extend(networkMap.widget.Checkbox, networkMap.Observable);
+networkMap.extend(networkMap.widget.Checkbox, networkMap.Options);
+networkMap.extend(networkMap.widget.Checkbox, {
+
+	createElements: function(label, value){
+		this.wrapper = document.createElement('div');
+		this.wrapper.classList.add(this.options.class);
+
+		this.label = document.createElement('span');
+		this.label.textContent = label;
+
+		this.input = document.createElement('input');
+		this.input.setAttribute('type', this.options.type);
+		this.input.checked = value;
+		this.input.addEventListener('change', function(e){
+			this.fireEvent('change', [e, this]);
+		}.bind(this));
+
+
 		if (this.options.disabled === true){
 			this.input.disabled = true;
 		}
 		
-		this.wrapper.grab(this.label).grab(this.input);
+		this.wrapper.appendChild(this.label);
+		this.wrapper.appendChild(this.input);
+
+		return this;
 	},
 	
 	toElement: function(){
 		return this.wrapper;
 	},
+
+	value: function(){
+		return this.input.value;
+	},
 	
 	isChecked: function(){
 		return this.input.checked;
 	}
-});;networkMap.datasource = networkMap.datasource || {};
+});;networkMap.widget = networkMap.widget || {};
+
+networkMap.widget.GridInput = function(label, value, options){
+	this.options = {
+		class: 'nm-input-snap',
+		type: 'snap'
+	};
+	
+	this.setOptions(options);
+	this.createElements(label, value);
+};
+
+networkMap.extend(networkMap.widget.GridInput, networkMap.Observable);
+networkMap.extend(networkMap.widget.GridInput, networkMap.Options);
+networkMap.extend(networkMap.widget.GridInput, {
+	createElements: function(label, value){
+		this.wrapper = document.createElement('div');
+		this.wrapper.classList.add(this.options.class);
+
+		this.label = document.createElement('span');
+		this.label.textContent = label;
+
+		this.check = document.createElement('input');
+		this.check.setAttribute('type', 'checkbox');
+		this.check.checked = value.enabled;
+		this.check.addEventListener('change', function(e){
+			this.x.input.disabled = !this.check.checked;
+			this.y.input.disabled = !this.check.checked;
+			e.value = this.value();
+			this.fireEvent('change', [e]);
+		}.bind(this));
+
+		this.x = this.$createInputs('x', value.grid.x, value.enabled);
+		this.y = this.$createInputs('y', value.grid.y, value.enabled);
+
+		this.wrapper.appendChild(this.label);
+		this.wrapper.appendChild(this.check);
+		this.wrapper.appendChild(this.x.label);
+		this.wrapper.appendChild(this.x.input);
+		this.wrapper.appendChild(this.y.label);
+		this.wrapper.appendChild(this.y.input);
+	},
+
+	$createInputs: function(label, value, enabled){
+		var els = {};
+		els.label = document.createElement('span');
+		els.label.textContent = label;
+
+		els.input = document.createElement('input');
+		els.input.setAttribute('type', 'number');
+		els.input.setAttribute('value', (value) ? value : 1);
+		els.input.setAttribute('min', 1);
+		els.input.setAttribute('max', 50);
+		els.input.disabled = !enabled;
+		els.input.addEventListener('change', function(e){
+			e.value = this.value();
+			this.fireEvent('change', [e, this]);
+		}.bind(this));
+		return els;
+	},
+
+	value: function(){
+		return {
+			enabled: this.check.checked,
+			grid: {
+				x: parseInt(this.x.input.value, 10),
+				y: parseInt(this.y.input.value, 10)
+			}
+		};
+	},
+
+	toElement: function(){
+		return this.wrapper;
+	}
+});;networkMap.Properties = function(properties, defaults){
+	this.properties = properties || {};
+	this.$change = [];
+	this.setDefaults(defaults);
+};
+
+networkMap.extend(networkMap.Properties, networkMap.Observable);
+
+networkMap.extend(networkMap.Properties, {
+	get: function(k, inherited){
+		var v = this.properties;
+		
+		for(var i = 0,path = k.split('.'),len = path.length; i < len; i++){
+			if(!v || typeof v !== 'object') break;
+			v = v[path[i]];
+		}
+
+		if (inherited === true){
+			return {
+				value: v,
+				inherited: (this.defaults) ? this.defaults.get(k) : void 0
+			};
+		}
+
+		if (v === void 0 && this.defaults !== void 0)
+			v = this.defaults.get(k);
+
+		return v;
+	},
+
+	set: function(k, v){
+		
+		this.$change.length = 0;
+		if (arguments.length === 1 && arguments[0].constructor ===  Object){
+			networkMap.each(arguments[0], this.$set, this);
+		}
+		else{
+			this.$set(v, k);
+		}
+		this.fireEvent('change', [this.$change]);
+		return this;
+	},
+
+	$set: function(v, k){
+		var change = {
+			key: k,
+			value: v,
+			oldValue: this.properties[k]
+		};
+		this.properties[k] = v;
+		this.$change.push(change);
+		return change;
+	},
+
+	unset: function(k){
+		var oldValue = this.properties[k];
+		delete this.properties[k];
+		this.fireEvent('change', [k, v, oldValue]);
+		return this;
+	},
+
+	load: function(properties){
+		var change = [];
+		var oldProperties = this.properties;
+		networkMap.each(properties, function(k, v){
+			change.push({
+				key: k, 
+				value: v,
+				oldValue: oldProperties[k]
+			});
+		});
+
+		this.properties = properties;
+		this.$change = change;
+
+		this.fireEvent('change', [change]);
+		return this;
+	},
+
+	extract: function(){
+		return this.properties;
+	},
+
+	setDefaults: function(defaults){
+		this.defaults = defaults || void 0;
+
+		// propagate change events
+		if (this.defaults){
+			this.defaults.addEvent('change', function(change){
+				this.fireEvent('change', [change]);
+			}.bind(this));
+		}
+	},
+
+	configuration: function(properties){
+		properties = properties || {};
+		if (this.defaults === void 0)
+			return networkMap.defaults(properties, this.properties);
+
+		return networkMap.defaults(properties, this.properties, this.defaults.configuration());
+	}
+});
+;networkMap.datasource = networkMap.datasource || {};
 
 /**
  * Register a datasource
@@ -454,7 +1174,7 @@ networkMap.widget.Checkbox = new Class ({
  */
 networkMap.registerDatasource = function(name, f){
 	networkMap.datasource[name] = function(url, requests){
-		if (typeOf(requests) !== 'array'){
+		if (Object.prototype.toString.call(requests) !== '[object Array]'){
 			requests = [requests];
 		}
 		f(url, requests);
@@ -476,7 +1196,7 @@ networkMap.registerDatasource = function(name, f){
  * @return null.
  */
 networkMap.registerDatasource('simulate', function(url, requests){
-	requests.each(function(request){
+	requests.forEach(function(request){
 		var dataPoint = Math.random();
 
 		// Example on how to get the node to get node specific data
@@ -516,7 +1236,7 @@ networkMap.registerEvent = function(name, f){
 	}
 	else if (name === 'hover'){	
 		networkMap.events.mouseover = function(e, link){
-			var el = document.id('nm-active-hover');
+			var el = document.getElementById('nm-active-hover');
 			var id = e.target.instance.attr('id');
 			
 			if (el){
@@ -802,52 +1522,55 @@ networkMap.colormap.hsl15 = {
 		1		//#f05
 	],
 	nodata: '#ecf0f1'
-};;networkMap.ColorLegend = new Class({
-	Implements: [Options],
-	options: {
+};;/**
+ * Creates an instance of networkMap.ColorLegend.
+ *
+ * @constructor
+ * @this {networkMap.ColorLegend}
+ * @param {string} The name of the colormap
+ * @param {Object} A options object.
+ */
+networkMap.ColorLegend = function(colormap, options){
+	this.options = {
 		/** The size of the the color square */
 		boxSize: 25,
 		/** margin */
 		margin: 10,
 		/** target */
 		target: null
-	},
+	};
+	this.graph = options.graph;
+	delete options.graph;
+
+	this.setOptions(options);
+	this.colormap = networkMap.colormap[colormap];
+
+	if (!this.colormap){
+		throw 'Colormap "' + colormap + '" is not registerd';
+	}
+
+	this.draw();
+	
+	// Fix for FF 
+	// A timing issue seems to cause the bbox to
+	// return an incorrect value
+	setTimeout(function(){
+		var bbox = this.svg.bbox();
+		if (bbox.x === 0 && bbox.y === 0){
+			return this;
+		}
+		this._move();
+	}.bind(this), 0);
+};
+
+networkMap.extend(networkMap.ColorLegend, networkMap.Options);
+
+networkMap.extend(networkMap.ColorLegend, {
+
+	
 
 	/** The graph object to attach to */
 	graph: null,
-	
-	/**
-	 * Creates an instance of networkMap.ColorLegend.
-	 *
-	 * @constructor
-	 * @this {networkMap.ColorLegend}
-	 * @param {string} The name of the colormap
-	 * @param {Object} A options object.
-	 */
-	initialize: function(colormap, options){
-		this.graph = options.graph;
-		delete options.graph;
-
-		this.setOptions(options);
-		this.colormap = networkMap.colormap[colormap];
-
-		if (!this.colormap){
-			throw 'Colormap "' + colormap + '" is not registerd';
-		}
-
-		this.draw();
-		
-		// Fix for FF 
-		// A timing issue seems to cause the bbox to
-		// return an incorrect value
-		(function(){
-			var bbox = this.svg.bbox();
-			if (bbox.x === 0 && bbox.y === 0){
-				return this;
-			}
-			this._move();
-		}.bind(this)).delay(0);
-	},
 
 	/**
 	 * Draw/redraw the legend in the graph
@@ -858,12 +1581,16 @@ networkMap.colormap.hsl15 = {
 	draw: function(){
 		var colormap = this.colormap.map;
 
-		var container = this.container = new Element('div', {class: 'nm-colormap'}).inject(this.options.target);
-		var svg = this.svg = SVG(container).group();
+		var container = this.container = this.wrapper = document.createElement('div');
+		this.wrapper.classList.add('nm-colormap');
+		this.options.target.appendChild(container);
+
+		var svg = this.svg = this.svg || SVG(container).group();
+		this.svg.clear();	
 
 		
 
-		colormap.each(function(color, index){
+		colormap.forEach(function(color, index){
 			svg.rect(this.options.boxSize, this.options.boxSize).attr({
 				fill: color,
 				'stroke-width': 1
@@ -925,42 +1652,38 @@ networkMap.colormap.hsl15 = {
 	_move: function(){
 		var bbox = this.svg.bbox();
 		
-		this.container.setStyles({
-			width: bbox.width,
-			height: bbox.height	
-		});
+		this.container.style.width = Math.ceil(bbox.width) + 'px';
+		this.container.style.height = Math.ceil(bbox.height) + 'px';
+		
 		this.svg.move(Math.abs(bbox.x), Math.abs(bbox.y));
 
 		return this;
 	}
 
 });
-;networkMap.SettingsManager = new Class ({
-	Implements: [Options, Events],
-	
-	options: {
-		//onActive
-		//onDeactive
-		//onSave
-	},
-	
-	container: null,
-	editing: false,
+;/**
+ * Creates an instance of networkMap.SettingsManager.
+ *
+ * @constructor
+ * @this {networkMap.SettingsManager}
+ * @param {Element} The html element to inject into
+ * @param {networkMap.Mediator} An instance of networkMap.Mediator
+ */
+networkMap.SettingsManager = function(container, mediator){
+	this.container = container;
+	this.mediator = mediator;
+	this.editing = false;
+	this.nav = this.createMenu();
+	container.appendChild(this.nav);
 
-	/**
-	 * Creates an instance of networkMap.SettingsManager.
-	 *
-	 * @constructor
-	 * @this {networkMap.SettingsManager}
-	 * @param {Element} The html element to inject into
-	 * @param {Object} A options object.
-	 */
-	initialize: function(container, options){
-		this.setOptions(options);
-		this.container = container;
-		this.nav = this.createMenu();
-		container.grab(this.nav);
-	},
+	if (this.mediator){
+		this.mediator.subscribe('edit', this.edit.bind(this));
+	}
+};
+
+networkMap.extend(networkMap.SettingsManager, networkMap.Observable);
+
+networkMap.extend(networkMap.SettingsManager, {
 	
 	/**
 	 * Create the HTML for the settings manager
@@ -969,42 +1692,35 @@ networkMap.colormap.hsl15 = {
 	 * @return {Element} The HTML for the settingsmanager.
 	 */
 	createMenu: function(){
-		var nav = new Element('nav', {
-			'class': 'nm-menu'
-		});
-		
-		var trigger = new Element('div', {
-			'class': 'nm-trigger',
-			html: '<span class="nm-icon nm-icon-menu"></span><a class="nm-label">Settings</a>',
-			events: {
-				click: this.toggle.bind(this)
-			}
-		});
-		
-		var menu = this.menu = new Element('ul');
-		
-		menu.grab(new Element('ul', {
-			'class': 'nm-object-properties',
-			id: 'nm-edit-content'	
-		}));
-		
-		var menuButtons = this.menuButtons = new Element('li', {
-			class: 'clearfix nm-menu-buttons', 
-		});
+		var nav = document.createElement('nav');
+		nav.classList.add('nm-menu');
 
-		var saveButton = this.btnSave = new Element('button', {
-			text: 'Save',
-			class: 'btn btn-primary pull-right',
-			events: {
-				click: this.save.bind(this)
-			}
-		});
-		
-		menu.grab(menuButtons.grab(saveButton));
+		var trigger = document.createElement('div');
+		trigger.classList.add('nm-trigger');
+		trigger.innerHTML = '<span class="nm-icon nm-icon-menu"></span><a class="nm-label">Settings</a>';
+		trigger.addEventListener('click', this.toggle.bind(this));
 
-		nav.grab(trigger);
-		nav.grab(menu);
-		
+		var menu = this.menu = document.createElement('ul');
+
+		var editContent = document.createElement('ul');
+		editContent.classList.add('nm-object-properties');
+		editContent.setAttribute('id', 'nm-edit-content');
+
+		menu.appendChild(editContent);
+
+		var menuButtons = this.menuButtons = document.createElement('li');
+		menuButtons.classList.add('clearfix', 'nm-menu-buttons');
+
+		var saveButton = this.btnSave = document.createElement('button');
+		saveButton.textContent = 'Save';
+		saveButton.classList.add('btn', 'btn-primary', 'pull-right');
+		saveButton.addEventListener('click', this.save.bind(this));
+
+		menu.appendChild(menuButtons);
+		menuButtons.appendChild(saveButton);
+		nav.appendChild(trigger);
+		nav.appendChild(menu);
+
 		return nav;
 	},
 
@@ -1016,7 +1732,8 @@ networkMap.colormap.hsl15 = {
 	 * @return {Element} The content conainer
 	 */
 	getContentContainer: function(){
-		return this.nav.getElement('#nm-edit-content');
+		return this.nav.querySelector('#nm-edit-content');
+		//return this.nav.getElement('#nm-edit-content');
 	},
 
 	/**
@@ -1027,8 +1744,8 @@ networkMap.colormap.hsl15 = {
 	 * @this {networkMap.SettingsManager}
 	 * @return {networkMap.SettingsManager} self
 	 */
-	edit: function(obj){
-		this.editing = obj;
+	edit: function(configWidget){
+		this.editing = configWidget;
 		var editables;
 		var link = {};		
 		
@@ -1038,9 +1755,14 @@ networkMap.colormap.hsl15 = {
 		this.displayButtons();
 		
 		// This is for other types of nodes.
-		content.grab(obj.getSettingsWidget());		
-		
-		this.fireEvent('edit', [obj]);
+		// TODO: Clean up when all is using the mediator
+		if (configWidget.toElement)
+			content.appendChild(configWidget.toElement());
+		else
+			content.appendChild(configWidget.getSettingsWidget().toElement());
+
+		// TODO: Remove when all are using the mediator
+		this.fireEvent('edit', [configWidget]);
 		
 		return this;
 	},
@@ -1052,7 +1774,10 @@ networkMap.colormap.hsl15 = {
 	 * @return {networkMap.SettingsManager} self
 	 */
 	clear: function(){
-		this.getContentContainer().empty();
+		var container = this.getContentContainer();
+		while (container.firstChild){
+			container.removeChild(container.firstChild);
+		}
 
 		return this;
 	},
@@ -1089,7 +1814,7 @@ networkMap.colormap.hsl15 = {
 		this.showButtonsCallback();
 		delete this.showButtonsCallback;
 		
-		this.menuButtons.setStyle('display', 'block');
+		this.menuButtons.style.display = 'block';
 		
 		return this;
 	},
@@ -1106,7 +1831,7 @@ networkMap.colormap.hsl15 = {
 	 * @return {networkMap.SettingsManager} self
 	 */
 	toggle: function(){
-		if (this.nav.hasClass('nm-menu-open')){
+		if (this.nav.classList.contains('nm-menu-open')){
 			return this.disable();
 		}
 		else {
@@ -1122,7 +1847,7 @@ networkMap.colormap.hsl15 = {
 	 * @return {networkMap.SettingsManager} self
 	 */
 	enable: function(){
-		this.nav.addClass('nm-menu-open');	
+		this.nav.classList.add('nm-menu-open');	
 		this.fireEvent('active');
 		this.fireEvent('defaultView', [this]);
 
@@ -1137,8 +1862,11 @@ networkMap.colormap.hsl15 = {
 	 * @return {networkMap.SettingsManager} self
 	 */
 	disable: function(){
-		this.nav.removeClass('nm-menu-open');
-		this.nav.getElement('#nm-edit-content').empty();
+		this.nav.classList.remove('nm-menu-open');
+		var content = this.nav.querySelector('#nm-edit-content');
+		while (content.firstChild) {
+			content.removeChild(content.firstChild);
+		}
 		this.fireEvent('deactive');
 
 		return this;
@@ -1158,12 +1886,17 @@ networkMap.colormap.hsl15 = {
 	}
 
 });
-;
-networkMap.Graph = new Class({
-	Implements: [Options, Events],
-
+;/**
+ * Creates an instance of networkMap.Graph.
+ *
+ * @constructor
+ * @this {networkMap.Graph}
+ * @param {string|element} A string or Element to attach to network graph to
+ * @param {Object} A options object.
+ */
+networkMap.Graph = function(target, options){
 	/** The default options*/
-	options:{
+	this.options = {
 		/** The with of the graph */
 		width: 10,
 		
@@ -1171,16 +1904,16 @@ networkMap.Graph = new Class({
 		height: 10,
 		
 		/** The name of the datasoruce to use */
-		datasource: 'simulate',
+		datasource: undefined,
 		
 		/** The name of the colormap to use */
-		colormap: 'hsl15',
+		colormap: undefined,
 		
 		/** Controls of the settings manager is created */
 		enableEditor: true,
 		
 		/** Controls if the nodes are draggable */
-		allowDraggableNodes: false,
+		allowDraggableNodes: undefined,
 		
 		/** Controlls how often the links refresh the data */
 		refreshInterval: 300,
@@ -1188,6 +1921,12 @@ networkMap.Graph = new Class({
 		/** Controls if the link update should be controlled 
 		 * by the graph or the link */ 
 		batchUpdate: true,
+
+		/** Controls if the grid is enabled */
+		gridEnabled: true,		
+		
+		/** A grid size for objects to snap to */
+		grid: {x:10, y:10},
 		
 		node: {
 			linkGenerator: null
@@ -1195,90 +1934,82 @@ networkMap.Graph = new Class({
 		link: {
 			linkGenerator: null
 		}
-	},
-
+	};
 	/** The default configuration */
-	defaults: {
-		node: {
-			padding: 10,
-			fontSize: 16,
-			bgColor: '#dddddd',
-			strokeColor: '#000000',
-			strokeWidth: 2
-		},
-		link: {
-			width: 10,
-			inset: 10,
-			connectionDistance: 10,
-			staticConnectionDistance: 30,
-			arrowHeadLength: 10
-		}
-	},
+	this.defaults = {};
+	
 
 	/** This array controls what is exported in getConfiguration*/
-	exportedOptions: [
+	this.exportedOptions = [
 		//'width',
 		//'height'
-	],
+	];
 
 	/** An internal array of nodes, do not use directly */
-	nodes: [],
+	this.nodes = [];
 
 	/** An internal array of links, do not use directly */
-	links: [],
+	this.links = [];
 
 	/** An internal reference to onSave configuration */
-	saveData: {},
+	this.saveData = {};
 
 	/** An internal reference to check keep track of the mode */
-	_mode: 'normal',
+	this._mode = 'normal';
 
-	/**
-	 * Creates an instance of networkMap.Graph.
-	 *
-	 * @constructor
-	 * @this {networkMap.Graph}
-	 * @param {string|element} A string or Element to attach to network graph to
-	 * @param {Object} A options object.
-	 */
-	initialize: function(target, options){
-		this.setOptions(options);
+	this.options = networkMap.defaults(options, this.options);
 
-		if (!this.options.node.linkGenerator){
-			this.options.node.linkGenerator = networkMap.Node._linkGenerator;		
-		}
-		
-		if (!this.options.link.linkGenerator){
-			this.options.link.linkGenerator = networkMap.Link._linkGenerator;		
-		}
-		
-		this.element = document.id(target);
-		this.container = new Element('div', {'class': 'nm-container'});
-		this.element.grab(this.container);
+	if (this.options.node.linkGenerator){
+		this.options.node.linkGenerator = networkMap.Node.createLinkGenerator(this.options.node.linkGenerator);
+	} else{
+		this.options.node.linkGenerator = networkMap.Node._linkGenerator;		
+	}
+	
+	if (this.options.link.linkGenerator){
+		this.options.link.linkGenerator = networkMap.Link.createLinkGenerator(this.options.link.linkGenerator);
+	} else{
+		this.options.link.linkGenerator = networkMap.Link._linkGenerator;		
+	}
+	
+	this.defaults.node = new networkMap.Properties({}, networkMap.Node.defaults);
+	this.defaults.link = new networkMap.Properties({}, networkMap.Link.defaults);
+	this.defaults.link.set('colormap', this.options.colormap);
+	this.defaults.link.set('datasource', this.options.datasource);
 
-		this.svg = SVG(this.container);
-		this.graph = this.svg.group();
-		
-		this.legend = new networkMap.ColorLegend(this.options.colormap, {graph: this, target: this.container});
+	this.element = (typeof target == 'string' || target instanceof String) ? document.getElementById(target) : target;
+	this.container = document.createElement('div');
+	this.container.classList.add('nm-container');
+	this.element.appendChild(this.container);
 
-		if (this.options.enableEditor){
-			this.settings = new networkMap.SettingsManager(this.container);
-			this.settings.addEvent('defaultView', function(){
-				this.settings.edit(this);
-			}.bind(this));
-			this.settings.addEvent('active', this.enableEditor.bind(this));
-			this.settings.addEvent('deactive', this.disableEditor.bind(this));
-			this.settings.addEvent('save', this.save.bind(this));
-		}
-			
-		this.addEvent('resize', this.rescale.bind(this));
+	this.svg = SVG(this.container);
+	this.graph = this.svg.group();
+	
+	this.legend = new networkMap.ColorLegend(this.defaults.link.get('colormap'), {graph: this, target: this.container});
+
+	if (this.options.enableEditor){
+		this.settings = new networkMap.SettingsManager(this.container, this);
+		this.settings.addEvent('defaultView', function(){
+			this.settings.edit(this);
+		}.bind(this));
+		this.settings.addEvent('active', this.enableEditor.bind(this));
+		this.settings.addEvent('deactive', this.disableEditor.bind(this));
+		this.settings.addEvent('save', this.save.bind(this));
+	}
 		
-		this.setRefreshInterval(this.options.refreshInterval);
-		
-		this.svg.on('click', this._clickHandler.bind(this));
-		
-		this.addEvent('load', this.update.bind(this));
-	},
+	this.addEvent('resize', this.rescale.bind(this));
+	
+	this.setRefreshInterval(this.options.refreshInterval);
+	
+	this.svg.on('click', this._clickHandler.bind(this));
+	
+	this.addEvent('load', this.update.bind(this));
+};
+
+networkMap.extend(networkMap.Graph, networkMap.Observable);
+networkMap.extend(networkMap.Graph, networkMap.Mediator);
+networkMap.extend(networkMap.Graph, networkMap.Options);
+
+networkMap.extend(networkMap.Graph, {
 	
 	/**
 	 * Set the default options for the graph. The defaults will be 
@@ -1289,13 +2020,14 @@ networkMap.Graph = new Class({
 	 * @param defaults {object} An object with key value pairs of options
 	 * @return {networkMap.Graph} self
 	 */
-	setDefaults: function(element, defaults){
+	setDefaults: function(element, properties){
 		if (!this.defaults[element]){
 			throw "Illigal element";
 		}
 		
-		Object.merge(this.defaults[element], defaults);
+		this.defaults[element].load(properties);
 		
+		// TODO: rework
 		this.fireEvent('redraw', [{defaultsUpdated: true}]);
 		
 		return this;
@@ -1344,7 +2076,6 @@ networkMap.Graph = new Class({
 	 * @param object {object} The object to trigger the event on
 	 * 
 	 * @return {networkMap.Graph} self
-	 * @todo Move to a statical function
 	 */
 	triggerEvent: function(event, object){
 		object.fireEvent(event, object);
@@ -1359,7 +2090,10 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	rescale: function(){
-		var docSize = this.element.getSize();	
+		var docSize = {
+			x: this.element.offsetWidth,
+			y: this.element.offsetHeight
+		};	
 		
 		this.svg.size(
 			docSize.x, 
@@ -1422,41 +2156,105 @@ networkMap.Graph = new Class({
 		var accordionGroup;
 
 		var changeHandler = function(defaults, key){
-			return function(e){
-				defaults[key] = e.target.value;
-				this.fireEvent('redraw', [{defaultsUpdated: true}]);
+			return function(e, widget){
+				defaults.set(key, widget.value());
+				//defaults[key] = e.target.value;
+				//this.fireEvent('redraw', [{defaultsUpdated: true}]);
 			}.bind(this);
 		}.bind(this);
-			
+	
+		accordionGroup = container.add('Globals');
+		accordionGroup.appendChild(new networkMap.widget.GridInput('Grid', {
+			enabled: this.options.gridEnabled,
+			grid: this.options.grid
+		}).addEvent('change', function(e){
+			if (e.value.enabled)
+				this.grid(e.value.grid);
+			else
+				this.grid(false);
+		}.bind(this)));
+				
 	
 		accordionGroup = container.add('Node Defaults');		
-		Object.each(networkMap.Node.defaultTemplate, function(option, key){
+		networkMap.each(networkMap.Node.defaultTemplate, function(option, key){
 			if (option.type === 'number'){
-				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.IntegerInput(option.label, this.defaults.node.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.node, key)
+					)
+				);
 			}
 			else if(option.type === 'text'){
-				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.TextInput(option.label, this.defaults.node.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.node, key)
+					)
+				);
 			}
 			else if (option.type === 'color'){
-				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.defaults.node[key], option).addEvent('change', changeHandler(this.defaults.node, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.ColorInput(option.label, this.defaults.node.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.node, key)
+					)
+				);
 			}
 		}.bind(this));
 		
 		accordionGroup = container.add('Link Defaults');		
-		Object.each(networkMap.Link.defaultTemplate, function(option, key){
+		networkMap.each(networkMap.Link.defaultTemplate, function(option, key){
 			if (option.type === 'number'){
-				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.IntegerInput(option.label, this.defaults.link.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.link, key)
+					)
+				);
 			}
 			else if(option.type === 'text'){
-				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.TextInput(option.label, this.defaults.link.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.link, key)
+					)
+				);
 			}
 			else if (option.type === 'color'){
-				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.defaults.link[key], option).addEvent('change', changeHandler(this.defaults.link, key)));
+				accordionGroup.appendChild(
+					new networkMap.widget.ColorInput(option.label, this.defaults.link.get(key, true), option)
+						.addEvent('change', changeHandler(this.defaults.link, key)
+					)
+				);
 			}
 		}.bind(this));
 				
 		
 		return container;
+	},
+
+	grid: function(grid){
+		if (grid === true){
+			this.options.gridEnabled = true;
+			
+			return this;
+		}
+		
+		if (grid === false){
+			this.options.gridEnabled = false;	
+		}		
+		
+		if (grid === undefined){
+			if (!this.options.gridEnabled)
+				return false;
+				
+			return this.options.grid;
+		}
+		
+		if (typeof grid === 'object'){
+			this.options.gridEnabled = true;			
+			this.options.grid = grid;
+		}
+
+		this.disableDraggableNodes();
+		this.enableDraggableNodes();
+		return this;
 	},
 
 	/**
@@ -1468,14 +2266,14 @@ networkMap.Graph = new Class({
 	 * @throws "TypeError"
 	 */
 	load: function(obj){
-		if (typeOf(obj) === 'string'){
+		if (typeof obj == 'string' || obj instanceof String){
 			return this.loadUrl(obj);
 		}
-		else if (typeOf(obj) === 'object'){
+		else if (obj !== null && typeof obj === 'object'){
 			return this.loadObject(obj);
 		}
 		else{
-			throw new TypeError('Unknown type ' + typeOf(obj));
+			throw new TypeError('Unknown type ' + Object.prototype.toString.call(obj));
 		}
 		return this;
 	},
@@ -1488,21 +2286,23 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	loadUrl: function(url){
-		new Request.JSON({
-			url: url,
-			onSuccess: function(responce){
-				this.loadObject(responce);
-			}.bind(this),
-			onFailure: function(){
-				
-			},
-			onComplete: function(){
-				
-			},
-			onError: function(text, error){
-				
+		var request = new XMLHttpRequest();
+		request.open('GET', url, true);
+
+		request.onload = function() {
+			if (request.status >= 200 && request.status < 400){
+				// Success!
+				this.loadObject(JSON.parse(request.responseText));
+			} else {
+				new networkMap.widget.Modal().alert('There was an error when loading the weathermap (' + request.status + ')', {title: 'Error'});
 			}
-		}).get({});
+		}.bind(this);
+
+		request.onerror = function() {
+			new networkMap.widget.Modal().alert('An error occurred when trying to load the resource', {title: 'Error'});
+		};
+
+		request.send();
 
 		return this;
 	},
@@ -1517,18 +2317,20 @@ networkMap.Graph = new Class({
 		this.setOnSave(mapStruct.onSave);
 		
 		if (mapStruct.defaults){
-			this.setDefaults('node', mapStruct.defaults.node || this.defaults.node);
-			this.setDefaults('link', mapStruct.defaults.link || this.defaults.link);
+			this.setDefaults('node', mapStruct.defaults.node || {});
+				//this.defaults.node);
+			this.setDefaults('link', mapStruct.defaults.link || {});
+				//this.defaults.link);
 		}
 		
-		mapStruct.nodes.each(function(node){
+		mapStruct.nodes.forEach(function(node){
 			node.graph = this;
 			node.draggable = this.options.allowDraggableNodes;
 			
 			this.addNode(new networkMap.Node(node), false);
 		}.bind(this));
 
-		mapStruct.links.each(function(link){
+		mapStruct.links.forEach(function(link){
 			link.graph = this;
 			this.addLink(new networkMap.Link(link), false);
 		}.bind(this));
@@ -1617,36 +2419,42 @@ networkMap.Graph = new Class({
 			
 		var data = this.getConfiguration();
 
-		var html = this.settings.btnSave.get('html');
-		this.settings.btnSave.set('text', '.....');
-		 
-		new Request.JSON({
-			url: this.saveData.url,
-			method: this.saveData.method,
-			'data': data,
-			onSuccess: function(response){
-				this.settings.btnSave.set('html', html);
-				if (response.status === 'ok'){
+		var html = this.settings.btnSave.innerHTML;
+		this.settings.btnSave.textContent = '.....';
+
+		var params = networkMap.toQueryString(data);		 
+		var request = new XMLHttpRequest();
+
+		request.open(this.saveData.method, this.saveData.url, true);
+		request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+		request.onload = function() {
+			this.settings.btnSave.innerHTML = html;
+			if (request.status >= 200 && request.status < 400){
+				data = JSON.parse(request.responseText);
+				if (data.status === 'ok'){
 					new networkMap.widget.Modal().alert('Weathermap saved');
 				}
-				if (response.status === 'nok'){
-					new networkMap.widget.Modal().alert(response.error, {title: 'Error'});
+				if (data.status === 'nok'){
+					new networkMap.widget.Modal().alert(data.error, {title: 'Error'});
 				}
-				if (response.status == 'deleted'){
+				if (data.status == 'deleted'){
 					new networkMap.widget.Modal().alert('The networkmap is deleted', {title: 'Error'});
 				}
-			}.bind(this),
-			onFailure: function(){
-				
-			},
-			onComplete: function(){
-				
-			},
-			onError: function(text, error){
-				
+			} else {
+				new networkMap.widget.Modal()
+					.alert('There was an error while saving the weathermap (' + request.status + ')', {title: 'Error'});
 			}
-		}).send();
-		
+		}.bind(this);
+
+		request.onerror = function() {
+			this.settings.btnSave.innerHTML = html;
+			new networkMap.widget.Modal()
+				.alert('There was an error while saving the weathermap', {title: 'Error'});
+		};
+
+		request.send(params);
+	
 		return true;
 	},
 
@@ -1658,11 +2466,11 @@ networkMap.Graph = new Class({
 	 */
 	enableEditor: function(){
 		this.enableDraggableNodes();
-		this.nodes.each(function(node){
+		this.nodes.forEach(function(node){
 			node.mode('edit');
 		});
 
-		this.links.each(function(link){
+		this.links.forEach(function(link){
 			link.mode('edit');
 		});
 		
@@ -1678,10 +2486,10 @@ networkMap.Graph = new Class({
 	disableEditor: function(){
 		this.disableDraggableNodes();
 		
-		this.nodes.each(function(node){
+		this.nodes.forEach(function(node){
 			node.mode('normal');
 		});
-		this.links.each(function(link){
+		this.links.forEach(function(link){
 			link.mode('normal');
 		});
 
@@ -1706,7 +2514,7 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	enableDraggableNodes: function(){
-		this.nodes.each(function(node){
+		this.nodes.forEach(function(node){
 			node.draggable();
 		});
 
@@ -1719,7 +2527,7 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Graph} self
 	 */
 	disableDraggableNodes: function(){
-		this.nodes.each(function(node){
+		this.nodes.forEach(function(node){
 			node.fixed();	
 		});
 
@@ -1733,25 +2541,28 @@ networkMap.Graph = new Class({
 	 */
 	getConfiguration: function(){
 		var configuration = {
-			defaults: this.defaults,
+			defaults: {
+				node: this.defaults.node.extract(),
+				link: this.defaults.link.extract()
+			},
 			nodes: [],
 			links: [],
 			onSave: this.saveData
 		};
 
 		// self
-		this.exportedOptions.each(function(option){
+		this.exportedOptions.forEach(function(option){
 			configuration[option] = this.options[option];
 		}.bind(this));
 		configuration.onSave = this.saveData;
 
 		// nodes
-		this.nodes.each(function(node){
+		this.nodes.forEach(function(node){
 			configuration.nodes.push(node.getConfiguration());
 		});
 
 		// links
-		this.links.each(function(link){
+		this.links.forEach(function(link){
 			configuration.links.push(link.getConfiguration());
 		});
 
@@ -1794,7 +2605,7 @@ networkMap.Graph = new Class({
 	 * @ retrun {networkMap.Node} The node or undefined
 	 */
 	getNode: function(id){
-		return this.nodes.find(function(node){
+		return networkMap.find(this.nodes, function(node){	
 			if (node.options.id === id){
 				return true;
 			}
@@ -1813,7 +2624,7 @@ networkMap.Graph = new Class({
 		this.nodes.erase(node);
 		node.setGraph(null);
 
-		this.getLinks(node).each(function(link){
+		this.getLinks(node).forEach(function(link){
 			this.removeLink(link);
 		}.bind(this));		
 		
@@ -1849,7 +2660,7 @@ networkMap.Graph = new Class({
 	
 
 	getLink: function(nodeIdA, nodeIdB){
-		return this.links.find(function(link){
+		return networkMap.find(this.links, function(link){
 			if (link.nodeA.options.id === nodeIdA && link.nodeB.options.id === nodeIdB){
 				return true;
 			}
@@ -1863,7 +2674,7 @@ networkMap.Graph = new Class({
 	getLinks: function(node, secondaryNode){
 		var links = [];		
 		
-		this.links.each(function(link){
+		this.links.forEach(function(link){
 			if (link.connectedTo(node, secondaryNode)){
 				links.push(link);
 			}
@@ -1910,14 +2721,12 @@ networkMap.Graph = new Class({
 	/**
 	 * Refresh links in batch mode. This method does not work
 	 * at the moment.
-	 * 
-	 * @todo remove or refactor the method
 	 */
 	update: function(){
 		if (this.options.batchUpdate)
 			return this.batchUpdate();		
 		
-		this.links.each(function(link){
+		this.links.forEach(function(link){
 			link.localUpdate();
 		});
 
@@ -1925,12 +2734,12 @@ networkMap.Graph = new Class({
 	},
 	
 	batchUpdate: function(){
-		Object.each(this.$updateQ, function(urls, datasource){
+		networkMap.each(this.$updateQ, function(urls, datasource){
 			if (!networkMap.datasource[datasource]){
 				throw 'Unknown datasource (' + datasource + ')';
 			}
 			
-			Object.each(urls, function(requests, url){
+			networkMap.each(urls, function(requests, url){
 				networkMap.datasource[datasource](url, requests);
 			}.bind(this));
 		}.bind(this));
@@ -1941,43 +2750,46 @@ networkMap.Graph = new Class({
 	
 
 
-});;networkMap.Node = new Class({
-	Implements: [Options, Events],
+});;networkMap.Node = function(options){
+
+	this.graph = options.graph;
+	delete options.graph;
+
+	this.properties = new networkMap.Properties(options, networkMap.Node.defaults);
+
+	this.configurationWidget = new networkMap.Node.Module.Settings();
+
+	/** TODO: Replace inline function with this.refresh */
+	this.properties.addEvent('change', function(change){
+		this.options = this.properties.configuration();
+
+		// TODO: Remove hack for stoping redraw of node when dragged
+		// TODO: Prevent click event after drag.
+		if (change.length >= 1 && (change[0].key === 'x' || change[0].key === 'y'))
+			return;
+
+		this.draw();
+	}.bind(this));
+
+	this.options = this.properties.configuration();
+
+	if (!this.options.id){
+		throw "Node(create, no id given)";
+	}
 	
-	/** These are sane defaults */
-	options:{
-		graph: null,
-		id: null,
-		name: null,
-		comment: null,
-		x: null,
-		y: null,
-		lat: null,
-		lng: null,
-		weight: null,
-		fontFamily: 'Helvetica',
-		fontSize: 16,
-		bgColor: '#dddddd',
-		strokeColor: '#000000',
-		strokeWidth: 2,
-		information: {
-		},
-		data:{
-		},
-		label: {
-			position: 'internal',
-			visable: true
-			//renderer: 
-		},
-		renderer: 'rect', //rect, circle, image(url), svg(ulr)
-		padding: 10,
-		href: null,
-		style: null,
-		debug: false,
-		draggable: false,
-		events: null
-		//onMove
-	},
+	this.options.x = parseFloat(this.options.x);
+	this.options.y = parseFloat(this.options.y);
+	this.options.padding = parseFloat(this.options.padding); 
+
+	this.setGraph(this.graph);
+
+};
+
+networkMap.extend(networkMap.Node, networkMap.Options);
+networkMap.extend(networkMap.Node, networkMap.Observable);
+networkMap.extend(networkMap.Node, {
+	
+	
 	_mode: 'normal',
 	exportedOptions: [
 		'id',
@@ -2001,67 +2813,9 @@ networkMap.Graph = new Class({
 		'strokeColor',
 		'strokeWidth' 
 	],
-	editTemplate: {
-		id: {
-			label: 'ID',
-			type: 'text',
-			disabled: true
-		},
-		name: {
-			label: 'Name',
-			type: 'text'
-		},
-		comment: {
-			label: 'Comment',
-			type: 'text'
-		},
-		padding: {
-			label: 'Padding',
-			type: 'number',
-			min: 0
-		},
-		fontSize: {
-			label: 'Font size',
-			type: 'number',
-			min: 1
-		},
-		bgColor: {
-			label: 'Color',
-			type: 'color'
-		},
-		strokeColor: {
-			label: 'Stroke color',
-			type: 'color'
-		},
-		strokeWidth: {
-			label: 'Stroke width',
-			type: 'number',
-			min: 0
-		}
-		
-	},
-	initialize: function(options){
-		this.graph = options.graph;
-		delete options.graph;
+	
 
-		this._localConfig = options;
-
-		if (this.graph){
-			this.setOptions(this.graph.getDefaults('node'));
-		}
-		
-		this.setOptions(options);
-
-		if (!this.options.id){
-			throw "Node(create, no id given)";
-		}
-		
-		this.options.x = parseFloat(this.options.x);
-		this.options.y = parseFloat(this.options.y);
-		this.options.padding = parseFloat(this.options.padding); 
-
-		this.setGraph(this.graph);
-	},
+	
 
 	/**
 	 * Update an option
@@ -2076,11 +2830,9 @@ networkMap.Graph = new Class({
 			throw 'Unknow id: ' + key;
 		}
 		
-		this.options[key] = value;
-		this._localConfig[key] = value;
-		
-		this.draw();
-		
+		this.properties.set(key, value);
+		this.options = this.properties.configuration();
+				
 		return this;
 	},
 
@@ -2092,11 +2844,9 @@ networkMap.Graph = new Class({
 	 * @return {mixed} The property value
 	 */
 	getProperty: function(key){
-		if (!this.editTemplate[key]){
-			throw 'Unknown id: ' + key;
-		}
 		
-		return this._localConfig[key];
+		return this.properties.get(key, true).value;
+		//return this._localConfig[key];
 	},
 
 	/**
@@ -2106,48 +2856,9 @@ networkMap.Graph = new Class({
 	 * @return {Object} The node configuration
 	 */
 	getConfiguration: function(){
-		var configuration = {};
-
-		this.exportedOptions.each(function(option){
-			if (this._localConfig[option]){
-				configuration[option] = this._localConfig[option];
-			}
-		}.bind(this));
-		
-		return configuration;
+		return this.properties.extract();
 	},
 
-	/**
-	 * Generates HTML that is used for configuration
-	 *
-	 * @this {networkMap.Node}
-	 * @return {Element} A HTML Element that contains the UI
-	 */
-	getSettingsWidget: function(){
-		var container = new networkMap.widget.Accordion();
-		var accordionGroup;
-
-		var changeHandler = function(key, obj){
-			return function(e){
-				obj.setProperty(key, e.target.value);	
-			};
-		};
-	
-		accordionGroup = container.add('Globals');		
-		Object.each(this.editTemplate, function(option, key){
-			if (option.type === 'number'){
-				accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
-			}
-			else if(option.type === 'text'){
-				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
-			}
-			else if (option.type === 'color'){
-				accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));	
-			}
-		}.bind(this));
-		
-		return container;
-	},
 	
 	/**
 	 * Enable an event on the node
@@ -2207,6 +2918,7 @@ networkMap.Graph = new Class({
 		// add graph object if it exists
 		if (graph){
 			this.graph = graph;
+			this.properties.setDefaults(graph.getDefaults('node'));
 			this.graph.addEvent('redraw', this._redraw.bind(this));
 			this.draw();
 		}
@@ -2214,11 +2926,8 @@ networkMap.Graph = new Class({
 		return this;
 	},
 	
+	/* TODO: Depricate function */
 	_redraw: function(){
-		if (e.defaultsUpdated === true){
-			this.setOptions(this.graph.getDefaults('node'));
-			this.setOptions(this._localConfig);
-		}
 		this.draw();
 	},
 
@@ -2258,12 +2967,17 @@ networkMap.Graph = new Class({
 	 * @return {undefined}
 	 */
 	_clickhandler: function(e){
+		if (e.target.instance.data('dragged')){
+			return;
+		}
+		
 		if (this._mode === 'normal' && this.options.events && this.options.events.click){
 			networkMap.events.click(e, this);
 		}
 		else if (this._mode === 'edit'){
 			e.preventDefault();
-			this.graph.settings.edit(this);	
+
+			this.graph.publish('edit', [this.configurationWidget.toElement(this.properties)]);
 		}
 	},	
 
@@ -2295,7 +3009,7 @@ networkMap.Graph = new Class({
 	 */
 	draggable: function(){
 		this._draggable = true;
-		this.svg.draggable();
+		this.svg.draggable({grid: this.graph.grid()});
 		this.svg.remember('cursor', this.svg.style('cursor'));
 		this.svg.style('cursor', 'move');
 		
@@ -2468,6 +3182,7 @@ networkMap.Graph = new Class({
 
 		
 		svg.on('click', this._clickhandler.bind(this));
+		
 		if (this.options.events){
 			svg.link = this.options.events;
 			
@@ -2490,17 +3205,18 @@ networkMap.Graph = new Class({
 			this.draggable();
 		}
 		
-		svg.dragmove = function(delta, event){
-			this.fireEvent('drag', [delta, event]);
-		}.bind(this);
 		svg.dragstart = function(){
 			this.fireEvent('dragstart');
 		}.bind(this);
+		svg.dragmove = function(delta, event){
+			this.fireEvent('drag', [delta, event]);
+		}.bind(this);
 		svg.dragend = function(){
-			this.options.x = this.x();
-			this.options.y = this.y();
-			this._localConfig.x = this.x();
-			this._localConfig.y = this.y();
+			console.log('dragend');
+			this.properties.set({
+				x: this.x(),
+				y: this.y()
+			});
 			this.fireEvent('dragend');
 		}.bind(this);
 		
@@ -2554,12 +3270,17 @@ networkMap.Node.defaultTemplate = {
  * @param {function} A function that returns an URL or null
  */
 networkMap.Node.registerLinkGenerator = function(f){
-	networkMap.Node._linkGenerator = function(node){
-		if (node.options.href){
-			if (networkMap.isFunction(node.options.href))
-				node.setLink(node.options.href());
+	networkMap.Node._linkGenerator = networkMap.Node.createLinkGenerator(f);
+};
+
+networkMap.Node.createLinkGenerator = function(f){
+	return function(node){
+		var href = node.properties.get('href');
+		if (href){
+			if (networkMap.isFunction(href))
+				node.setLink(href());
 			else
-				node.setLink(node.options.href);
+				node.setLink(href);
 			return;
 		}
 		
@@ -2567,164 +3288,165 @@ networkMap.Node.registerLinkGenerator = function(f){
 	};
 };
 
+
 /** Register a default link generator which will not create a link */
 networkMap.Node.registerLinkGenerator(function(node){return null;});
 
 
-/** Removed as we are going to change the implementation, kept for reference at the moment
+/** Register defaults properties for networkMap.Node */
+networkMap.Node.defaults = new networkMap.Properties({
+	name: null,
+	comment: null,
+	x: 10,
+	y: 10,
+	lat: null,
+	lng: null,
+	weight: null,
+	fontFamily: 'Helvetica',
+	fontSize: 16,
+	bgColor: '#dddddd',
+	strokeColor: '#000000',
+	strokeWidth: 2,
+	information: {
 
-networkMap.Node.renderer = networkMap.Node.renderer || {};
-
-networkMap.registerNodeRenderer = function(name, renderer){
-	networkMap.Node.renderer[name] = renderer;
-};
-networkMap.Node.renderer.rect = function(){};
-
-
-networkMap.Node.label = networkMap.Node.label || {};
-networkMap.Node.label.rederer = networkMap.Node.label.rederer || {};
-networkMap.Node.label.rederer.normal = function(){};
-*/;/**
- * Register global event handlers. These can be over ridden on the 
- * networkMap instance and on the node instance.
- *
- * @param {string} The event name (click, mouseover, mouseout, hover)
- * @param {function} The value to set
- * @this {???}
- * @return {???}
- */
-networkMap.Node.registerEvent = function(name, f){
-	if (name === 'hover'){
-		return this.registerHover(f);
-	}
-
-	if (!networkMap._events[name])
-		throw "Invalid event: " + name;
-		
-	networkMap._events[name] = f;
-};
-
-networkMap.Node.registerEvent.registerHover = function(f){
-	
-	/** default mouseover event
-	 * By overriding this function the hover 
-	 * will stop working event 
-	 */
-	var mouseover = function(e, options, hover){
-		var el = document.id('nm-active-hover');
-		var id = e.target.instance.attr('id');
-		
-		if (el){
-			if (el.retrieve('id') === e.target.instance.attr('id')){
-				el.store('keep', true);
-				return;
-			}
-			
-			el.destroy();	
-		}
-		
-		el = new Element('div', {
-			'id': 'nm-active-hover',
-			'class': 'nm-hover',
-			events: {
-				mouseover: function(){
-					el.store('mouseover', true);
-				},
-				mouseout: function(){
-					el.eliminate('mouseover');
-					(function(){
-						if (!el.retrieve('keep'))
-							el.destroy();
-						else
-							el.eliminate('keep');
-					}).delay(10);
-				},
-				click: function(ev){
-					node._clickHandler(e);
-				}
-			}
-		})
-		.store('id', e.target.instance.attr('id'));
-		
-		el.setStyles({
-			top: -1000,
-			left: -1000	
-		});
-				
-		document.id(document.body).grab(el);
-					
-		f(e, node, el);
-		
-		var size = el.getSize();
-		var bboxClient = e.target.getBoundingClientRect();
-		
-		el.setStyles({
-			top: (bboxClient.top + bboxClient.bottom)/2 - size.y/2,
-			left: (bboxClient.left + bboxClient.right)/2 - size.x/2
-		});
-	};
-	
-	/** default mouseout event
-	 * By overriding this function the hover 
-	 * will stop working event 
-	 */
-	var mouseout = function(e, node){
-		var options = e.target.instance.node;
-		(function(){
-			var el = document.id('nm-active-hover');
-			if (el && el.retrieve('id') !== e.target.instance.attr('id')){
-				return;	
-			}
-
-			if (el && !el.retrieve('mouseover')){
-				el.destroy();
-			}
-		}).delay(10);
-	};
-	
-	networkMap.Node.registerEvent('mouseover', mouseover);
-	networkMap.Node.registerEvent('mouseout', mouseout);
-};
-
-
-/** Default implementaion of events */
-networkMap.Node._events = {
-	/** default click event */
-	click: function(e, node){},
-	
-	mouseover: function(e, options, hover){},	
-
-	mouseout: function(e, node){},	
-	
-	/** default hover event */
-	hover: function(e, node, el){
-		el.set('text', node.options.name);
-	}
-};
-
-;networkMap.LinkPath = new Class ({
-	Implements: [Options, Events],
-	options: {},
-	svg: null,
-	initialize: function(link, svg, options){
-		this.setOptions(options);
-		this.link = link;
-		this.svg = svg;
-		
-		// Check if we should setup an update event
-		if (this.options.requestUrl) {
-			this.link.registerUpdateEvent(
-				link.options.datasource,
-				this.options.requestUrl,
-				this,
-				function(response){
-					this.link.updateBgColor(this, this.link.options.colormap.translate(response.value));
-				}.bind(this)
-			);
-		}
-		
-		this.setupEvents();
 	},
+	data:{
+		value: null,
+		realValue: null
+	},
+	label: {
+		position: 'internal',
+		visable: true
+	},
+	renderer: 'rect', //rect, circle, image(url), svg(ulr)
+	padding: 10,
+	href: null,
+	style: null,
+	debug: false,
+	draggable: false
+});
+
+
+;networkMap.Node.Module = networkMap.Node.Module || {};
+
+networkMap.Node.Module.Settings = function(properties){
+	this.properties = properties;
+};
+
+// types: angle, bool, float, int, number, length, list, string, color
+// https://api.tinkercad.com/libraries/1vxKXGNaLtr/0/docs/topic/Shape+Generator+Overview.html
+networkMap.extend(networkMap.Node.Module.Settings, {
+
+	/** Definitions of the parameters */
+	parameters: {
+		id: {
+			label: 'ID',
+			type: 'text',
+			disabled: true,
+			global: false
+		},
+		name: {
+			label: 'Name',
+			type: 'text',
+			global: false
+		},
+		comment: {
+			label: 'Comment',
+			type: 'text',
+			global: false
+		},
+		padding: {
+			label: 'Padding',
+			type: 'number',
+			min: 0,
+			global: true
+		},
+		fontSize: {
+			label: 'Font size',
+			type: 'number',
+			min: 1,
+			global: true
+		},
+		bgColor: {
+			label: 'Color',
+			type: 'color',
+			global: true
+		},
+		strokeColor: {
+			label: 'Stroke color',
+			type: 'color',
+			global: true
+		},
+		strokeWidth: {
+			label: 'Stroke width',
+			type: 'number',
+			min: 0,
+			global: true
+		}
+		
+	},
+
+	/**
+	 * Generates HTML that is used for configuration
+	 *
+	 * @this {networkMap.Node}
+	 * @return {Element} A HTML Element that contains the UI
+	 */
+	toElement: function(properties){
+		var container = new networkMap.widget.Accordion();
+		var accordionGroup;
+
+		var changeHandler = function(key, properties){
+			return function(e, widget){
+				properties.set(key, widget.value());	
+			};
+		};
+	
+		accordionGroup = container.add('Globals');		
+		networkMap.each(this.parameters, function(option, key){
+			if (option.type === 'number'){
+				accordionGroup.appendChild(new networkMap.widget.IntegerInput(option.label, properties.get(key), option).addEvent('change', changeHandler(key, properties)));
+			}
+			else if(option.type === 'text'){
+				accordionGroup.appendChild(new networkMap.widget.TextInput(option.label, properties.get(key), option).addEvent('change', changeHandler(key, properties)));
+			}
+			else if (option.type === 'color'){
+				accordionGroup.appendChild(new networkMap.widget.ColorInput(option.label, properties.get(key), option).addEvent('change', changeHandler(key, properties)));	
+			}
+		}.bind(this));
+		
+		return container;
+	}
+});;
+networkMap.LinkPath = function(link, svg, options){
+	// this.options = {};
+	// this.setOptions(options);
+	this.properties = new networkMap.Properties(options, link.properties);
+	this.properties.addEvent('change', function(change){
+		this.fireEvent('change', change);
+	}.bind(this));
+
+	this.link = link;
+	this.svg = svg;
+	
+	// Check if we should setup an update event
+	if (this.properties.get('requestUrl')) {
+		this.link.registerUpdateEvent(
+			this.properties.get('datasource'),
+			this.properties.get('requestUrl'),
+			this,
+			function(response){
+				this.link.updateBgColor(this, this.link.colormap.translate(response.value));
+			}.bind(this)
+		);
+	}
+	
+	this.setupEvents();
+};
+
+networkMap.extend(networkMap.LinkPath, networkMap.Options);
+networkMap.extend(networkMap.LinkPath, networkMap.Observable);
+networkMap.extend(networkMap.LinkPath, {	
 	remove: function(){
 		this.svg.remove();
 	},
@@ -2739,6 +3461,7 @@ networkMap.Node._events = {
 		return editables;		
 	},
 
+
 	/**
 	 * This will create/update a link tag for the
 	 * link. Order of presence is:
@@ -2749,7 +3472,7 @@ networkMap.Node._events = {
 	 * @return {networkMap.Link} self
 	 */
 	updateLink: function(){
-		var href = this.options.href;
+		var href = this.properties.get('href');
 		if (href){
 			if (networkMap.isFunction(href))
 				this.setLink(href(this));
@@ -2803,6 +3526,8 @@ networkMap.Node._events = {
 		return this.getLink().getSettingsWidget();
 	},
 	getProperty: function(key){
+		return this.properties.get(key);
+		/* TODO: Remove
 		if (key == 'width'){
 			var link = this.getMainPath();
 			if (link != this){
@@ -2818,6 +3543,7 @@ networkMap.Node._events = {
 		}
 		
 		return this.options[key];
+		*/
 	},
 	setProperty: function(key, value){
 		if (key == 'width'){
@@ -2827,18 +3553,20 @@ networkMap.Node._events = {
 			}
 		}
 				
-		this.options[key] = value;
+		this.properties.set(key, value);
+		//TODO: Remove
+		//this.options[key] = value;
 		this.fireEvent('change', [key]);
 		return this;
 	},
 	getConfiguration: function(){
-		return this.options;
+		return this.properties.extract();
 	},
 	getMainPath: function(){
 		var link;
 		
 		if (this.link.subpath.nodeA){
-			this.link.subpath.nodeA.each(function(sublink){
+			this.link.subpath.nodeA.forEach(function(sublink){
 				if (this == sublink){
 					link = this.link.path.nodeA;
 				}
@@ -2850,7 +3578,7 @@ networkMap.Node._events = {
 		}
 		
 		if (this.link.subpath.nodeB){
-			this.link.subpath.nodeB.each(function(sublink){
+			this.link.subpath.nodeB.forEach(function(sublink){
 				if (this == sublink){
 					link = this.link.path.nodeB;
 				}
@@ -2867,24 +3595,25 @@ networkMap.Node._events = {
 	setupEvents: function(){
 		this.svg.on('click', this._clickHandler.bind(this));
 		
-		if (this.options.events){
-			if (this.options.events.click){
+		if (this.properties.get('events')){
+			if (this.properties.get('events.click')){
 				this.svg.attr('cursor', 'pointer');
 			}
 
-			if (this.options.events.hover){
+			if (this.properties.get('events.hover')){
 				this.svg.on('mouseover', this._hoverHandler.bind(this));
 				this.svg.on('mouseout', this._hoverHandler.bind(this));
 			}
 		}
 	},
 	_clickHandler: function(e){
-		if (this.link.mode() === 'normal' && this.options.events && this.options.events.click){
+		if (this.link.mode() === 'normal' && this.properties.get('events.click')){
 			networkMap.events.click(e, this);
 		}
 		else if (this.link.mode() === 'edit'){
 			e.preventDefault();
-			this.link.graph.settings.edit(this);	
+
+			this.link.graph.publish('edit', [this.link.configurationWidget.toElement(this.link, this.link.properties)]);
 		}
 	},
 	_hoverHandler: function(e){
@@ -2900,22 +3629,48 @@ networkMap.Node._events = {
 		}
 	}
 });
-;networkMap.Link = new Class({
-	Implements: [Options, Events],
-	options:{
-		inset: 10,
-		connectionDistance: 10,
-		staticConnectionDistance: 30,
-		arrowHeadLength: 10,
-		width: 10,
-		debug: false,
-		background: '#777',
-		localUpdate: false,
-		refreshInterval: 300000,
-		datasource: null,
-		batchUpdate: true,
-		colormap: null
-	},
+;networkMap.Link = function(options){
+	
+
+	/** internal debug variable, 0 = off, 1 = normal debug */
+	this.$debug = 0;
+	this.pathPoints = [];
+	this.svgEl = {};
+	this.updateQ = {};
+	this._mode = 'normal';
+	this.path = {};
+	this.subpath = {};
+
+	var link, sublink;
+	
+	this.graph = options.graph;
+	delete options.graph;		
+
+	this.properties = new networkMap.Properties(options, networkMap.Link.defaults);
+	this.properties.addEvent('change', function(change){
+		this.options = this.properties.configuration();
+		this.draw();
+	}.bind(this));
+
+	// TODO: Remove this hack
+	this.options = this.properties.configuration();
+
+	this.configurationWidget = new networkMap.Link.Module.Settings();
+
+	this.colormap = networkMap.colormap[this.properties.get('colormap')];
+
+	// setup datasource
+	this.datasource = networkMap.datasource[this.properties.get('datasource')];
+
+
+	this.setGraph(this.graph);
+};
+
+networkMap.extend(networkMap.Link, networkMap.Options);
+networkMap.extend(networkMap.Link, networkMap.Observable);
+
+networkMap.extend(networkMap.Link, {
+
 	exportedOptions: [
 		'inset',
 		'connectionDistance',
@@ -2952,223 +3707,8 @@ networkMap.Node._events = {
 			min: 0
 		}
 	},
-	/** internal debug variable, 0 = off, 1 = normal debug */
-	$debug: 0,
 	
-	pathPoints: [],
-	svgEl: {},
-	updateQ: {},
-	_mode: 'normal',
-	path: {},
-	subpath: {},
-	initialize: function(options){
-		var link, sublink;
-		
-		this.graph = options.graph;
-		delete options.graph;		
-		
-		
-		/* I should call the setGraph function and handle this there */
-		this.options.datasource = this.options.datasource || this.graph.options.datasource;
-		this.svg = this.graph.getPaintArea().group();
 
-
-		if (!options.nodeA || !options.nodeB){
-			throw "Link(create, missing node in link definition)";
-		}
-
-		this.nodeA = this.graph.getNode(options.nodeA.id);
-		if (!this.nodeA){
-			throw "Link(create, nodeA does not exist (" + this.options.nodeA.id + ")";
-		}
-
-		link = options.nodeA;
-		this.options.nodeA = link.id;
-
-		if (link.sublinks){
-			sublinks = link.sublinks;
-			delete link.sublinks;
-			this.subpath.nodeA = [];
-			sublinks.each(function(sublink){
-				this.subpath.nodeA.push(
-					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
-					.addEvent('change', this.redraw.bind(this))
-					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
-				);
-			}.bind(this));
-		}
-		this.path.nodeA = new networkMap.LinkPath(
-			this,
-			networkMap.path(this.svg), 
-			link
-		).addEvent('change', this.redraw.bind(this))
-		.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this));
-		
-		
-		// add a holder for SVG objects
-		if (this.options.nodeA.requestData || this.options.nodeA.sublinks){
-			this.svgEl.nodeA = {};
-
-			if (this.options.nodeA.sublinks){
-				this.svgEl.nodeA.sublinks = [];
-			}
-		}
-
-		this.nodeB = this.graph.getNode(options.nodeB.id);
-		if (!this.nodeB){
-			throw "Link(create, nodeB does not exist (" + this.options.nodeB.id + ")";
-		}
-
-		link = options.nodeB;
-		this.options.nodeB = link.id;
-
-		if (link.sublinks){
-			sublinks = link.sublinks;
-			delete link.sublinks;
-			this.subpath.nodeB = [];
-			sublinks.each(function(sublink){
-				this.subpath.nodeB.push(
-					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
-					.addEvent('change', this.redraw.bind(this))
-					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
-				);
-			}.bind(this));
-		}
-		this.path.nodeB = new networkMap.LinkPath(
-			this, 
-			networkMap.path(this.svg), 
-			link
-		).addEvent('change', this.redraw.bind(this))
-		.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this));
-		
-		// Add a holder for SVG objects
-		if (this.options.nodeB.requestData || this.options.nodeB.sublinks){
-			this.svgEl.nodeB = {};
-
-			if (this.options.nodeB.sublinks){
-				this.svgEl.nodeB.sublinks = [];
-			}
-
-		}
-
-		// Set defaults
-		if (this.graph){
-			this.setOptions(this.graph.getDefaults('link'));
-		}
-		
-		// set local optioins
-		this._localConfig = options;
-		this.setOptions(options);
-
-		if (!this.options.colormap){
-			this.options.colormap = networkMap.colormap[this.graph.options.colormap];
-		}
-
-		// setup datasource
-		this.datasource = networkMap.datasource[this.options.datasource];
-
-
-		if (this.graph){
-			this.draw();
-			
-			this.graph.addEvent('redraw', function(e){
-				if (e.defaultsUpdated === true){
-					this.setOptions(this.graph.getDefaults('link'));
-					this.setOptions(this._localConfig);
-				}
-				//this.redraw();
-			}.bind(this));
-		}
-	},
-	
-	getSettingsWidget: function(){
-		var container = new networkMap.widget.Accordion();
-		var accordionGroup;
-
-		var changeHandler = function(key, obj){
-			return function(e){
-				obj.setProperty(key, e.target.value);	
-			};
-		};
-	
-		accordionGroup = container.add('Globals');		
-		Object.each(this.editTemplate, function(option, key){
-			accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.getProperty(key), option).addEvent('change', changeHandler(key, this)));
-		}.bind(this));		
-		
-		
-		
-		var linkTemplate = {
-			id: {
-				label: 'Node',
-				type: 'text',
-				disabled: true
-			},
-			name: {
-				label: 'Interface',
-				type: 'text',
-				disabled: true
-			}, 
-			width: {
-				label: 'Width',
-				type: 'number',
-				min: 0
-			}
-		};		
-		
-		accordionGroup = container.add('Node A');
-		Object.each(linkTemplate, function(option, key){
-			if (['id'].some(function(item){ return item == key;})){
-				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.nodeA)));
-			}
-			else{
-				if (option.type === 'number'){
-					accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
-				}
-				else if(option.type === 'text'){
-					accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
-				}
-				else if(option.type === 'color'){
-					accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.path.nodeA.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeA)));
-				}
-			}
-		}.bind(this));
-			
-		accordionGroup = container.add('Node B');
-		Object.each(linkTemplate, function(option, key){
-			if (['id'].some(function(item){ return item == key;})){
-				accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.nodeB)));
-			}
-			else{
-				if (option.type === 'number'){
-					accordionGroup.grab(new networkMap.widget.IntegerInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
-				}
-				else if(option.type === 'text'){
-					accordionGroup.grab(new networkMap.widget.TextInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
-				}
-				else if(option.type === 'color'){
-					accordionGroup.grab(new networkMap.widget.ColorInput(option.label, this.path.nodeB.getProperty(key), option).addEvent('change', changeHandler(key, this.path.nodeB)));
-				}
-			}
-		}.bind(this));
-		
-		// Add sublinks
-		// TODO: Add support for asymmetric links
-		if (this.subpath.nodeA) {
-			accordionGroup = container.add('Sublinks');
-			var sublinkList = new networkMap.widget.List();
-			this.subpath.nodeA.each(function(subpath, index){
-				sublinkList.add(subpath.options.name + ' - ' + this.subpath.nodeB[index].options.name, {enableDelete: false});
-			}.bind(this));
-			accordionGroup.grab(sublinkList);
-		}
-		
-		return container;
-		
-		
-		
-	
-	},
 	getEditables: function(){
 		return this.editTemplate;
 	},
@@ -3187,7 +3727,7 @@ networkMap.Node._events = {
 			throw 'Unknow id: ' + key;
 		}
 		
-		return this._localConfig[key];
+		return this.properties.get(key);
 	},
 	
 	/**
@@ -3201,13 +3741,13 @@ networkMap.Node._events = {
 	 */
 	updateLink: function(){
 		if (this.subpath.nodeA){
-			this.subpath.nodeA.each(function(sublink){
+			this.subpath.nodeA.forEach(function(sublink){
 				sublink.updateLink();
 			});
 		}
 
 		if (this.subpath.nodeB){
-			this.subpath.nodeB.each(function(sublink){
+			this.subpath.nodeB.forEach(function(sublink){
 				sublink.updateLink();
 			});
 		}
@@ -3275,13 +3815,8 @@ networkMap.Node._events = {
 		return this;
 	},
 	getConfiguration: function(){
-		var configuration = {};
-
-		this.exportedOptions.each(function(option){
-			if (this._localConfig[option]){
-				configuration[option] = this._localConfig[option];
-			}
-		}.bind(this));
+		
+		var configuration = this.properties.extract();
 
 		if (this.path.nodeA){
 			configuration.nodeA = this.path.nodeA.getConfiguration();			
@@ -3289,7 +3824,7 @@ networkMap.Node._events = {
 		if (this.subpath.nodeA){
 			configuration.nodeA = configuration.nodeA || {};
 			configuration.nodeA.sublinks = [];
-			this.subpath.nodeA.each(function(subpath){
+			this.subpath.nodeA.forEach(function(subpath){
 				configuration.nodeA.sublinks.push(subpath.getConfiguration());
 			});
 		}
@@ -3300,25 +3835,119 @@ networkMap.Node._events = {
 		if (this.subpath.nodeB){
 			configuration.nodeB = configuration.nodeB || {};
 			configuration.nodeB.sublinks = [];
-			this.subpath.nodeB.each(function(subpath){
+			this.subpath.nodeB.forEach(function(subpath){
 				configuration.nodeB.sublinks.push(subpath.getConfiguration());
 			});
 		}
 
-		
 		return configuration;
+		
+
 	},
 	setGraph: function(graph){	
 		// remove the object from the graph
-		this.graph = null;
-		this.draw();
+		if (graph === null){
+			this.graph = null;
+			this.draw();
+		}
 
 		// if a graph is defined draw 
 		if (graph){
 			this.graph = graph;
+			this.properties.setDefaults(this.graph.getDefaults('link'));
+			this.options.datasource = this.options.datasource || this.graph.options.datasource;
+
+			// TODO: Legacy code
+			this.graph.addEvent('redraw', function(e){
+				this.draw();
+			}.bind(this));
+
+			this._setupSVG(this.properties.configuration());
 			this.draw();
 		}
 	},
+
+	_setupSVG: function(options){
+		this.svg = this.graph.getPaintArea().group();
+
+
+		if (!options.nodeA || !options.nodeB){
+			throw "Link(create, missing node in link definition)";
+		}
+
+		this.nodeA = this.graph.getNode(options.nodeA.id);
+		if (!this.nodeA){
+			throw "Link(create, nodeA does not exist (" + this.options.nodeA.id + ")";
+		}
+
+		link = options.nodeA;
+		
+		if (link.sublinks){
+			sublinks = link.sublinks;
+			delete link.sublinks;
+			this.subpath.nodeA = [];
+			sublinks.forEach(function(sublink){
+				this.subpath.nodeA.push(
+					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
+					.addEvent('change', this.redraw.bind(this))
+					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
+				);
+			}.bind(this));
+		}
+		this.path.nodeA = new networkMap.LinkPath(
+			this,
+			networkMap.path(this.svg), 
+			link
+		).addEvent('change', this.redraw.bind(this))
+		.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this));
+		
+		
+		// add a holder for SVG objects
+		if (this.options.nodeA.requestData || this.options.nodeA.sublinks){
+			this.svgEl.nodeA = {};
+
+			if (this.options.nodeA.sublinks){
+				this.svgEl.nodeA.sublinks = [];
+			}
+		}
+
+		this.nodeB = this.graph.getNode(options.nodeB.id);
+		if (!this.nodeB){
+			throw "Link(create, nodeB does not exist (" + this.options.nodeB.id + ")";
+		}
+
+		link = options.nodeB;
+
+		if (link.sublinks){
+			sublinks = link.sublinks;
+			delete link.sublinks;
+			this.subpath.nodeB = [];
+			sublinks.forEach(function(sublink){
+				this.subpath.nodeB.push(
+					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
+					.addEvent('change', this.redraw.bind(this))
+					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
+				);
+			}.bind(this));
+		}
+		this.path.nodeB = new networkMap.LinkPath(
+			this, 
+			networkMap.path(this.svg), 
+			link
+		).addEvent('change', this.redraw.bind(this))
+		.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this));
+		
+		// Add a holder for SVG objects
+		if (this.options.nodeB.requestData || this.options.nodeB.sublinks){
+			this.svgEl.nodeB = {};
+
+			if (this.options.nodeB.sublinks){
+				this.svgEl.nodeB.sublinks = [];
+			}
+
+		}
+	},
+
 	_cleanDebugLayer: function(){
 		if (this.debug){
 			this.debug.clear();
@@ -3361,7 +3990,7 @@ networkMap.Node._events = {
 		this.redrawShadowPath().hideShadowPath();
 		this.drawMainPath();
 		this.drawSublinks();
-		this.localUpdate();
+		this.update();
 
 		this.nodeA.addEvent('drag', function(delta, event){
 			this._cleanDebugLayer();
@@ -3397,74 +4026,238 @@ networkMap.Node._events = {
 		}.bind(this));
 
 	},
-	redrawShadowPath: function(){
-		// truncate array
-		this.pathPoints.length = 0;
 
-		var Point = networkMap.Point;
+	vec2add: function(a, b, out){
+		out = out || [0, 0];
 
-		var bboxA = this.nodeA.bbox();
-		var bboxB = this.nodeB.bbox();
+		out[0] = a[0] + b[0];
+		out[1] = a[1] + b[1];
 
-		var angle = SVG.math.angle(bboxA, bboxB);
-		angle = SVG.math.snapToAngle(angle, [0, Math.PI/2, Math.PI, Math.PI*3/2]);// + 1.5 * Math.PI;
+		return out;
+	},
 
-		// set the start possition of the shaddow path
-		// INDEX: 0
-		if (this.options.inset){
-			this.pathPoints.push(new SVG.math.Point(
-				-this.options.inset * Math.cos(angle) + bboxA.cx + Math.cos(angle) * bboxA.width / 2,
-				//this.options.inset * Math.cos(angle) + bboxA.cx - Math.cos(angle) * bboxA.width / 2,
-				-this.options.inset * Math.sin(angle) + bboxA.cy + Math.sin(angle) * bboxA.height / 2
-			));			
+	vec2sub: function(a, b, out){
+		out = out || [0, 0];
+
+		out[0] = a[0] - b[0];
+		out[1] = a[1] - b[1];
+
+		return out;
+	},
+
+	vec2distance: function(a, b){
+		var x = b[0] - a[0],
+		y = b[1] - a[1];
+		return Math.sqrt(x*x + y*y);
+	},
+
+	vec2len: function(a){
+		var x = a[0],
+		y = a[1];
+		return Math.sqrt(x*x + y*y);
+	},
+
+	vec2normalize: function(a, out) {
+		out = out || [0, 0];
+		var x = a[0],
+			y = a[1];
+		var len = x*x + y*y;
+		if (len > 0) {
+			len = 1 / Math.sqrt(len);
+			out[0] = a[0] * len;
+			out[1] = a[1] * len;
+		}
+		return out;
+	},
+
+	vec2maxDir: function(a, out){
+		out = out || [0, 0];
+		var al0 = Math.abs(a[0]);
+		var al1 = Math.abs(a[1]);
+
+		if (al0 > al1){
+			out[0] = a[0]/al0;
+			out[1] = 0;
 		}
 		else{
-			this.pathPoints.push(new SVG.math.Point(bboxA.cx, bboxA.cy));
+			out[0] = 0;
+			out[1] = a[1]/al1;
 		}
+		return out;
+	},
 
-		this.pathPoints.push(new SVG.math.Point(
-			this.options.connectionDistance * Math.cos(angle) + bboxA.cx + Math.cos(angle) * bboxA.width / 2,
-			//-this.options.connectionDistance * Math.cos(angle) + bboxA.cx - Math.cos(angle) * bboxA.width / 2,
-			this.options.connectionDistance * Math.sin(angle) + bboxA.cy + Math.sin(angle) * bboxA.height / 2
-		));
+	vec2scale: function(a, b, out){
+		out = out || [0, 0];
+
+		out[0] = a[0] * b;
+		out[1] = a[1] * b;		
+
+		return out;
+	},
+
+	vec2mul: function(a, b, out){
+		out = out || [0, 0];
+
+		out[0] = a[0] * b[0];
+		out[1] = a[1] * b[1];		
+
+		return out;
+	},
+
+	vec2confine: function(a, b, out){
+		out = out || [0, 0];
+
+		out[0] = (Math.abs(a[0]) < Math.abs(b[0])) ? a[0] : a[0]/Math.abs(a[0])*b[0];
+		out[1] = (Math.abs(a[1]) < Math.abs(b[1])) ? a[1] : a[1]/Math.abs(a[1])*b[1];
+
+		return out;
+	},
+
+	vec2clone: function(a, out){
+		out = out || [0, 0];
+		out[0] = a[0];
+		out[1] = a[1];
+
+		return out;	
+	},
+
+	edgePoints: function(){
+		var bboxA = this.nodeA.bbox();
+		var bboxB = this.nodeB.bbox();
+		var confinmentA = [bboxA.width/2, bboxA.height/2];
+		var confinmentB = [bboxB.width/2, bboxB.height/2];
+
+		var path = [];
+		var inset = this.properties.get('inset') || 1;
+		var connectionDistance = this.properties.get('connectionDistance') || 1;
+		var staticConnectionDistance = this.properties.get('staticConnectionDistance') || 1;
+
+		var a = [bboxA.cx, bboxA.cy];
+		var b = [bboxB.cx, bboxB.cy];
+
+		var ab = this.vec2sub(b,a);
+
+		var dirA = this.vec2maxDir(ab);
+
+		var edgePointA = [0, 0];
+		this.vec2mul(dirA, confinmentA, edgePointA);
+		this.vec2sub(edgePointA, this.vec2scale(dirA, inset), edgePointA);
+		var baseA = this.vec2clone(edgePointA);
+		this.vec2add(a, edgePointA, edgePointA);
+
+		//var edgeNodeA = this.vec2add(a, this.vec2confine(this.vec2scale(dirA, inset), confinmentA));
+		path.push(edgePointA);
+		path.push(this.vec2add(a, this.vec2add(baseA, this.vec2scale(dirA, connectionDistance))));
+		this.vec2add(baseA, this.vec2scale(dirA, connectionDistance), baseA);
+		path.push(this.vec2add(a, this.vec2add(baseA, this.vec2scale(dirA, staticConnectionDistance))));
+
+		var ba = [ab[0]*-1, ab[1]*-1];
+		var dirB = this.vec2maxDir(ba);
+
+		var edgePointB = [0, 0];
+		this.vec2mul(dirB, confinmentB, edgePointB);
+		this.vec2sub(edgePointB, this.vec2scale(dirB, inset), edgePointB);
+		var baseB = this.vec2clone(edgePointB);
+		this.vec2add(b, edgePointB, edgePointB);
+
+		//var edgeNodeB = this.vec2add(b, this.vec2confine(this.vec2scale(dirB, inset), confinmentB));
+		baseBB = [0, 0];
+		this.vec2add(baseB, this.vec2scale(dirB, connectionDistance), baseBB);
+		path.push(this.vec2add(b, this.vec2add(baseBB, this.vec2scale(dirB, staticConnectionDistance))));
+		path.push(this.vec2add(b, this.vec2add(baseB, this.vec2scale(dirB, connectionDistance))));
+		path.push(edgePointB);
 		
+		this.$edgePoints = {
+			nodeA: {
+				point: new SVG.math.Point(edgePointA[0], edgePointA[1]),
+				direction: dirA
+			},
+			nodeB: {
+				point: new SVG.math.Point(edgePointB[0], edgePointB[1]),
+				direction: dirB
+			},
+			path: path
+		};
 
-		this.pathPoints.push(new SVG.math.Point(
-			this.options.staticConnectionDistance * Math.cos(angle) + bboxA.cx + Math.cos(angle) * bboxA.width / 2,
-			//-this.options.staticConnectionDistance * Math.cos(angle) + bboxA.cx - Math.cos(angle) * bboxA.width / 2,
-			this.options.staticConnectionDistance * Math.sin(angle) + bboxA.cy + Math.sin(angle) * bboxA.height / 2
-		));
+		return this.$edgePoints;
+	},
 
-		this.pathPoints.push(new SVG.math.Point(
-			-this.options.staticConnectionDistance * Math.cos(-angle) + bboxB.cx - Math.cos(-angle) * bboxB.width / 2,
-			//this.options.staticConnectionDistance * Math.cos(-angle) + bboxB.cx + Math.cos(-angle) * bboxB.width / 2,
-			this.options.staticConnectionDistance * Math.sin(-angle) + bboxB.cy + Math.sin(-angle) * bboxB.height / 2
-		));
+	drawEdgeHandle: function(edge){
+		var svg = edge.svg = edge.svg || this.graph.getPaintArea().group();
+		var vec = [0,0];
+		this.vec2scale(edge.direction, 30, vec);
+		this.vec2add([edge.point.x, edge.point.y], vec, vec);
+		var path = svg.path()
+			.M(edge.point)
+			.L(vec[0], vec[1])
+			.stroke({
+				fill: 'none',
+				color: '#000',
+				dasharray: '3 3',
+				width: 1,
 
-		this.pathPoints.push(new SVG.math.Point(
-			-this.options.connectionDistance * Math.cos(-angle) + bboxB.cx - Math.cos(-angle) * bboxB.width / 2,
-			//this.options.connectionDistance * Math.cos(-angle) + bboxB.cx + Math.cos(-angle) * bboxB.width / 2,
-			this.options.connectionDistance * Math.sin(-angle) + bboxB.cy + Math.sin(-angle) * bboxB.height / 2
-		));
+			});
 
-		if (this.options.inset){
-			this.pathPoints.push(new SVG.math.Point(
-				//-this.options.inset * Math.cos(-angle) + bboxB.cx + Math.cos(-angle) * bboxB.width / 2,
-				this.options.inset * Math.cos(-angle) + bboxB.cx - Math.cos(-angle) * bboxB.width / 2,
-				-this.options.inset * Math.sin(-angle) + bboxB.cy + Math.sin(-angle) * bboxB.height / 2
-			));
-		}
-		else {
-			this.pathPoints.push(new SVG.math.Point(bboxB.cx, bboxB.cy));
-		}
+		var handle = svg.circle(10)
+			.center(vec[0], vec[1])
+			.fill('#fff')
+			.stroke({
+				color: '#000',
+			})
+			.draggable({fn: function(p){
+				var vec2 = [p.x, p.y];
+				var edge2 = [edge.point.x, edge.point.y];
+				var res = this.vec2add(
+					this.vec2scale(
+						this.vec2normalize(this.vec2sub(vec2, edge2)),
+						30
+					),
+					edge2
+				);
+				return {x: res[0], y: res[1]};
+			}.bind(this)});
 
+		var bbox = this.nodeA.bbox();
+		var edgeHandle = handle
+			.clone()
+			.addTo(svg)
+			.center(edge.point.x, edge.point.y)
+			.draggable({
+				minX: bbox.x, 
+				maxX: bbox.x + bbox.width,
+				minY: bbox.y,
+				maxY: bbox.y + bbox.height
+			});
+
+		edgeHandle.dragmove = function(delta, e){
+			var vec = [0,0];
+			this.vec2scale(edge.direction, 30, vec);
+			handle.center(e.target.instance.cx() + vec[0], e.target.instance.cy() + vec[1]);
+			console.log(e.target.instance.cx() + vec[0], e.target.instance.cy() + vec[1]);
+		}.bind(this);
+
+		svg.front();
+
+		return this;
+	},
+
+	redrawShadowPath: function(){
+
+		var edgePoints = this.edgePoints();
+
+		this.pathPoints.length = 0;
+		edgePoints.path.forEach(function(point){
+			this.pathPoints.push(new SVG.math.Point(point[0], point[1]));
+		}.bind(this));
 
 		this.shadowPath
 			.clear()
-			.M(this.pathPoints[0])
-			.L(this.pathPoints[2])
-			.L(this.pathPoints[3])
-			.L(this.pathPoints[5]);
+			.M.apply(this.shadowPath, edgePoints.path[0])
+			.L.apply(this.shadowPath, edgePoints.path[2])
+			.L.apply(this.shadowPath, edgePoints.path[3])
+			.L.apply(this.shadowPath, edgePoints.path[5]);
+
+
 
 		return this;
 	},
@@ -3480,7 +4273,7 @@ networkMap.Node._events = {
 			this.path.nodeA.svg.hide();
 		}
 		if (this.subpath.nodeA){
-			this.subpath.nodeA.each(function(subpath){
+			this.subpath.nodeA.forEach(function(subpath){
 					subpath.svg.hide();
 			});
 		}
@@ -3488,7 +4281,7 @@ networkMap.Node._events = {
 			this.path.nodeB.svg.hide();
 		}
 		if (this.subpath.nodeB){
-			this.subpath.nodeB.each(function(subpath){
+			this.subpath.nodeB.forEach(function(subpath){
 					subpath.svg.hide();
 			});
 		}
@@ -3500,7 +4293,7 @@ networkMap.Node._events = {
 			this.path.nodeA.svg.show();
 		}
 		if (this.subpath.nodeA){
-			this.subpath.nodeA.each(function(subpath){
+			this.subpath.nodeA.forEach(function(subpath){
 					subpath.svg.show();
 			});
 		}
@@ -3508,7 +4301,7 @@ networkMap.Node._events = {
 			this.path.nodeB.svg.show();
 		}
 		if (this.subpath.nodeB){
-			this.subpath.nodeB.each(function(subpath){
+			this.subpath.nodeB.forEach(function(subpath){
 					subpath.svg.show();
 			});
 		}
@@ -3523,8 +4316,20 @@ networkMap.Node._events = {
 		this.shadowPath.hide();
 		return this;
 	},
+
+
 	drawMainPath: function(){
 		var maxLinkCount = 1;
+
+		/* TODO: debug code */
+		/*
+		this.debug = this.debug || this.graph.getPaintArea().group();
+		this.debug.clear();
+		var edgePoints = this.edgePoints();
+		edgePoints.nodeA.draw(this.debug);
+		edgePoints.nodeB.draw(this.debug);
+		this.debug.front();
+		*/
 		
 		var drawNormalPath = function(sublink, pathPoints, options){
 			var width = sublink.getProperty('width');
@@ -3689,13 +4494,13 @@ networkMap.Node._events = {
 
 			var updateColor = function(self, path){
 				return function(response){
-					this.updateBgColor(path, this.options.colormap.translate(response.value));
+					this.updateBgColor(path, this.colormap.translate(response.value));
 				}.bind(self);
 			};
 			
 			while (offset >= -maxLinkCount / 2){
 				var opts = {
-					width: width,
+					width: +width,
 					linkCount: maxLinkCount
 				};
 
@@ -3794,12 +4599,15 @@ networkMap.Node._events = {
 	},
 	
 	setInterval: function(){
+		console.log('Seting link update interval');
 		this.intervalId = setInterval(function(){
-			this.localUpdate();
+			this.update();
 		}.bind(this), this.options.refreshInterval);
 	},
 	
+
 	clearInterval: function(){
+		console.log('removing link update interval');
 		if (this.intervalId){
 			clearInterval(this.intervalId);
 			delete this.intervalId;
@@ -3832,17 +4640,21 @@ networkMap.Node._events = {
 			return this.update();
 	}, 
 
-	update: function(){
-		Object.each(this.updateQ, function(urls, datasource){
+	update: function(force){
+		if (this.properties.get('globalRefresh') || force !== true)
+			return this;
+
+		if (!this.graph.options.batchUpdate)
+		networkMap.each(this.updateQ, function(urls, datasource){
 			if (!networkMap.datasource[datasource]){
 				throw 'Unknown datasource (' + datasource + ')';
 			}
-			Object.each(urls, function(requests, url){
+			networkMap.each(urls, function(requests, url){
 				if (this.options.batchUpdate){
 					networkMap.datasource[datasource](url, requests);
 				}
 				else{
-					requests.each(function(request){
+					requests.forEach(function(request){
 						networkMap.datasource[datasource](url, request);
 					});
 				}
@@ -3852,61 +4664,6 @@ networkMap.Node._events = {
 		return this;
 	},
 
-	/**
-	* Function that updates the color of the paths
-	* This is a draft function that does not work
-	* with the current version. Use localUpdate
-	* instead.
-	*/
-	/* removed this should not be used !?!??!?
-	update: function(){
-		if (this.svgEl.nodeA.mainPath){
-			this.datasource(
-				this.options.nodeA.requestUrl, 
-				this.options.nodeA.requestData, 
-				function(response){
-					this.updateBgColor(this.svgEl.nodeA.mainPath, this.options.colormap.translate(response.value));
-				}.bind(this)
-			);			
-		}
-
-		if (this.svgEl.nodeA.mainPath){
-			this.datasource(
-				this.options.nodeB.requestUrl, 
-				this.options.nodeB.requestData, 
-				function(response){
-					this.updateBgColor(this.svgEl.nodeB.mainPath, this.options.colormap.translate(response.value));
-				}.bind(this)
-			);
-		}
-
-		if (this.options.nodeA.sublinks){
-			this.options.nodeA.sublinks.each(function(sublink, index){
-				this.datasource(
-					this.options.nodeA.sublinks[index].requestUrl, 
-					this.options.nodeA.sublinks[index].requestData, 
-					function(response){
-						this.updateBgColor(this.svgEl.nodeA.sublinks[index], this.options.colormap.translate(response.value));
-					}.bind(this)
-				);
-			}.bind(this));
-		}
-
-		if (this.options.nodeB.sublinks){
-			this.options.nodeB.sublinks.each(function(sublink, index){
-				this.datasource(
-					this.options.nodeB.sublinks[index].requestUrl, 
-					this.options.nodeB.sublinks[index].requestData, 
-					function(response){
-						this.updateBgColor(this.svgEl.nodeB.sublinks[index], this.options.colormap.translate(response.value));
-					}.bind(this)
-				);
-			}.bind(this));
-		}
-
-		return this;
-	},
-	*/
 	updateBgColor: function(path, color){
 		if (!color){
 			path.svg.fill(this.options.background);
@@ -3957,12 +4714,17 @@ networkMap.Link.defaultTemplate = {
  * @param {function} A function that returns a URL or null
  */
 networkMap.Link.registerLinkGenerator = function(f){
-	networkMap.Link._linkGenerator = function(sublink){
-		if (sublink.options.href){
-			if (networkMap.isFunction(sublink.options.href))
-				sublink.setLink(sublink.options.href());
+	networkMap.Link._linkGenerator = networkMap.Link.createLinkGenerator(f);
+};
+
+networkMap.Link.createLinkGenerator = function(f){
+	return function(sublink){
+		var href = sublink.properties.get('href');
+		if (href){
+			if (networkMap.isFunction(href))
+				sublink.setLink(href());
 			else
-				sublink.setLink(sublink.options.href);
+				sublink.setLink(href);
 			return;
 		}
 		
@@ -3972,3 +4734,192 @@ networkMap.Link.registerLinkGenerator = function(f){
 
 /** Register a default link generator which will not create a link */
 networkMap.Link.registerLinkGenerator(function(sublink){return null;});
+
+/** Register defaults properties for networkMap.Node */
+networkMap.Link.defaults = new networkMap.Properties({
+	inset: 10,
+	connectionDistance: 10,
+	staticConnectionDistance: 30,
+	arrowHeadLength: 10,
+	width: 10,
+	debug: false,
+	background: '#777',
+	globalRefresh: true,
+	refreshInterval: 300000,
+	datasource: 'simulate',
+	batchUpdate: true,
+	colormap: 'flat5'
+});
+;networkMap.Link.Module = networkMap.Link.Module || {};
+
+networkMap.Link.Module.Settings = function(properties){
+	this.properties = properties;
+};
+
+// types: angle, bool, float, int, number, length, list, string, color
+// https://api.tinkercad.com/libraries/1vxKXGNaLtr/0/docs/topic/Shape+Generator+Overview.html
+networkMap.extend(networkMap.Link.Module.Settings, {
+
+	/** Definitions of the parameters */
+	parameters: {
+		width: {
+			label: 'Width',
+			type: 'number',
+			min: 0,
+			global: true
+		},
+		inset: {
+			label: 'Inset',
+			type: 'number',
+			min: 1,
+			global: true
+		},
+		connectionDistance: {
+			label: 'Chamfer',
+			type: 'number',
+			min: 0,
+			global: true
+		},
+		staticConnectionDistance: {
+			label: 'Offset',
+			type: 'number',
+			min: 1,
+			global: true
+		},
+		arrowHeadLength: {
+			label: 'Arrow Head',
+			type: 'number',
+			min: 0,
+			global: true
+		}
+	},
+
+	/**
+	 * Generates HTML that is used for configuration
+	 * @param  {networkMap.Link} link       The link object
+	 * @param  {networkMap.Properties} properties The properties of the link object
+	 * @return {HTMLElement}            A HTMLElement containing the widget
+	 */	
+	toElement: function(link, properties){
+		var container = new networkMap.widget.Accordion();
+		var accordionGroup;
+
+		var changeHandler = function(key, obj){
+			return function(e, widget){
+				obj.set(key, widget.value());	
+			};
+		};
+	
+		accordionGroup = container.add('Globals');		
+		networkMap.each(this.parameters, function(option, key){
+			accordionGroup.appendChild(new networkMap.widget.IntegerInput(option.label, properties.get(key, true), option)
+				.addEvent('change', changeHandler(key, properties))
+			);
+		}.bind(this));		
+		
+		
+		
+		var linkTemplate = {
+			id: {
+				label: 'Node',
+				type: 'text',
+				disabled: true,
+				global: false
+			},
+			name: {
+				label: 'Interface',
+				type: 'text',
+				disabled: true,
+				global: false
+			}, 
+			width: {
+				label: 'Width',
+				type: 'number',
+				min: 0,
+				global: false
+			}
+		};		
+
+		
+		var sublinkConf = function(label, node){
+			accordionGroup = container.add(label);
+			networkMap.each(linkTemplate, function(option, key){
+				if (['id'].some(function(item){ return item == key;})){
+					accordionGroup.appendChild(new networkMap.widget.TextInput(option.label, properties.get(node + '.' + key), option).addEvent('change', changeHandler(key, link.properties)));
+				}
+				else{
+					if (option.type === 'number'){
+						accordionGroup.appendChild(
+							new networkMap.widget.IntegerInput(
+								option.label, 
+								link.path.nodeA.properties.get(key, true), 
+								option
+							)
+							.addEvent('change', changeHandler(key, link.path[node].properties))
+						);
+					}
+					else if(option.type === 'text'){
+						accordionGroup.appendChild(
+							new networkMap.widget.TextInput(
+								option.label, 
+								link.path.nodeA.properties.get(key), 
+								option
+							)
+							.addEvent('change', changeHandler(key, link.path[node].properties))
+						);
+					}
+					else if(option.type === 'color'){
+						accordionGroup.appendChild(
+							new networkMap.widget.ColorInput(
+								option.label, 
+								link.path.nodeA.properties.get(key), 
+								option
+							)
+							.addEvent('change', changeHandler(key, link.path[node].properties))
+						);
+					}
+				}
+			}.bind(this));
+		}.bind(this);
+		
+		sublinkConf('Node A', 'nodeA');
+		sublinkConf('Node B', 'nodeB');
+		
+
+		
+		// Add sublinks
+		var sublinkList;
+		if (link.subpath.nodeA && link.subpath.nodeB && link.subpath.nodeA.length === link.subpath.nodeB.length) {
+			accordionGroup = container.add('Sublinks');
+			sublinkList = new networkMap.widget.List();
+			link.subpath.nodeA.forEach(function(subpath, index){
+				sublinkList.add(subpath.properties.get('name') + ' - ' + link.subpath.nodeB[index].properties.get('name'), {enableDelete: false});
+			});
+			accordionGroup.appendChild(sublinkList);
+		}
+		else{ // Asymetric link
+			if (link.subpath.nodeA || link.subpath.nodeB){
+				accordionGroup = container.add('Sublinks');
+				sublinkList = new networkMap.widget.List();
+			}
+
+			if (link.subpath.nodeA){
+				link.subpath.nodeA.forEach(function(subpath, index){
+					sublinkList.add(subpath.properties.get('name') + ' - ' + 'N/A', {enableDelete: false});
+				});
+			}
+
+			if (link.subpath.nodeB){
+				link.subpath.nodeB.forEach(function(subpath, index){
+					sublinkList.add('N/A' + ' - ' + subpath.properties.get('name'), {enableDelete: false});
+				});
+			}
+
+			if (link.subpath.nodeA || link.subpath.nodeB){
+				accordionGroup.appendChild(sublinkList);
+			}
+		}
+		
+		return container;
+	}
+});

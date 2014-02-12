@@ -1,49 +1,52 @@
-networkMap.ColorLegend = new Class({
-	Implements: [Options],
-	options: {
+/**
+ * Creates an instance of networkMap.ColorLegend.
+ *
+ * @constructor
+ * @this {networkMap.ColorLegend}
+ * @param {string} The name of the colormap
+ * @param {Object} A options object.
+ */
+networkMap.ColorLegend = function(colormap, options){
+	this.options = {
 		/** The size of the the color square */
 		boxSize: 25,
 		/** margin */
 		margin: 10,
 		/** target */
 		target: null
-	},
+	};
+	this.graph = options.graph;
+	delete options.graph;
+
+	this.setOptions(options);
+	this.colormap = networkMap.colormap[colormap];
+
+	if (!this.colormap){
+		throw 'Colormap "' + colormap + '" is not registerd';
+	}
+
+	this.draw();
+	
+	// Fix for FF 
+	// A timing issue seems to cause the bbox to
+	// return an incorrect value
+	setTimeout(function(){
+		var bbox = this.svg.bbox();
+		if (bbox.x === 0 && bbox.y === 0){
+			return this;
+		}
+		this._move();
+	}.bind(this), 0);
+};
+
+networkMap.extend(networkMap.ColorLegend, networkMap.Options);
+
+networkMap.extend(networkMap.ColorLegend, {
+
+	
 
 	/** The graph object to attach to */
 	graph: null,
-	
-	/**
-	 * Creates an instance of networkMap.ColorLegend.
-	 *
-	 * @constructor
-	 * @this {networkMap.ColorLegend}
-	 * @param {string} The name of the colormap
-	 * @param {Object} A options object.
-	 */
-	initialize: function(colormap, options){
-		this.graph = options.graph;
-		delete options.graph;
-
-		this.setOptions(options);
-		this.colormap = networkMap.colormap[colormap];
-
-		if (!this.colormap){
-			throw 'Colormap "' + colormap + '" is not registerd';
-		}
-
-		this.draw();
-		
-		// Fix for FF 
-		// A timing issue seems to cause the bbox to
-		// return an incorrect value
-		(function(){
-			var bbox = this.svg.bbox();
-			if (bbox.x === 0 && bbox.y === 0){
-				return this;
-			}
-			this._move();
-		}.bind(this)).delay(0);
-	},
 
 	/**
 	 * Draw/redraw the legend in the graph
@@ -54,12 +57,16 @@ networkMap.ColorLegend = new Class({
 	draw: function(){
 		var colormap = this.colormap.map;
 
-		var container = this.container = new Element('div', {class: 'nm-colormap'}).inject(this.options.target);
-		var svg = this.svg = SVG(container).group();
+		var container = this.container = this.wrapper = document.createElement('div');
+		this.wrapper.classList.add('nm-colormap');
+		this.options.target.appendChild(container);
+
+		var svg = this.svg = this.svg || SVG(container).group();
+		this.svg.clear();	
 
 		
 
-		colormap.each(function(color, index){
+		colormap.forEach(function(color, index){
 			svg.rect(this.options.boxSize, this.options.boxSize).attr({
 				fill: color,
 				'stroke-width': 1
@@ -121,10 +128,9 @@ networkMap.ColorLegend = new Class({
 	_move: function(){
 		var bbox = this.svg.bbox();
 		
-		this.container.setStyles({
-			width: bbox.width,
-			height: bbox.height	
-		});
+		this.container.style.width = Math.ceil(bbox.width) + 'px';
+		this.container.style.height = Math.ceil(bbox.height) + 'px';
+		
 		this.svg.move(Math.abs(bbox.x), Math.abs(bbox.y));
 
 		return this;

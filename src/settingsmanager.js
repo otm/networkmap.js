@@ -1,29 +1,26 @@
-networkMap.SettingsManager = new Class ({
-	Implements: [Options, Events],
-	
-	options: {
-		//onActive
-		//onDeactive
-		//onSave
-	},
-	
-	container: null,
-	editing: false,
+/**
+ * Creates an instance of networkMap.SettingsManager.
+ *
+ * @constructor
+ * @this {networkMap.SettingsManager}
+ * @param {Element} The html element to inject into
+ * @param {networkMap.Mediator} An instance of networkMap.Mediator
+ */
+networkMap.SettingsManager = function(container, mediator){
+	this.container = container;
+	this.mediator = mediator;
+	this.editing = false;
+	this.nav = this.createMenu();
+	container.appendChild(this.nav);
 
-	/**
-	 * Creates an instance of networkMap.SettingsManager.
-	 *
-	 * @constructor
-	 * @this {networkMap.SettingsManager}
-	 * @param {Element} The html element to inject into
-	 * @param {Object} A options object.
-	 */
-	initialize: function(container, options){
-		this.setOptions(options);
-		this.container = container;
-		this.nav = this.createMenu();
-		container.grab(this.nav);
-	},
+	if (this.mediator){
+		this.mediator.subscribe('edit', this.edit.bind(this));
+	}
+};
+
+networkMap.extend(networkMap.SettingsManager, networkMap.Observable);
+
+networkMap.extend(networkMap.SettingsManager, {
 	
 	/**
 	 * Create the HTML for the settings manager
@@ -32,42 +29,35 @@ networkMap.SettingsManager = new Class ({
 	 * @return {Element} The HTML for the settingsmanager.
 	 */
 	createMenu: function(){
-		var nav = new Element('nav', {
-			'class': 'nm-menu'
-		});
-		
-		var trigger = new Element('div', {
-			'class': 'nm-trigger',
-			html: '<span class="nm-icon nm-icon-menu"></span><a class="nm-label">Settings</a>',
-			events: {
-				click: this.toggle.bind(this)
-			}
-		});
-		
-		var menu = this.menu = new Element('ul');
-		
-		menu.grab(new Element('ul', {
-			'class': 'nm-object-properties',
-			id: 'nm-edit-content'	
-		}));
-		
-		var menuButtons = this.menuButtons = new Element('li', {
-			class: 'clearfix nm-menu-buttons', 
-		});
+		var nav = document.createElement('nav');
+		nav.classList.add('nm-menu');
 
-		var saveButton = this.btnSave = new Element('button', {
-			text: 'Save',
-			class: 'btn btn-primary pull-right',
-			events: {
-				click: this.save.bind(this)
-			}
-		});
-		
-		menu.grab(menuButtons.grab(saveButton));
+		var trigger = document.createElement('div');
+		trigger.classList.add('nm-trigger');
+		trigger.innerHTML = '<span class="nm-icon nm-icon-menu"></span><a class="nm-label">Settings</a>';
+		trigger.addEventListener('click', this.toggle.bind(this));
 
-		nav.grab(trigger);
-		nav.grab(menu);
-		
+		var menu = this.menu = document.createElement('ul');
+
+		var editContent = document.createElement('ul');
+		editContent.classList.add('nm-object-properties');
+		editContent.setAttribute('id', 'nm-edit-content');
+
+		menu.appendChild(editContent);
+
+		var menuButtons = this.menuButtons = document.createElement('li');
+		menuButtons.classList.add('clearfix', 'nm-menu-buttons');
+
+		var saveButton = this.btnSave = document.createElement('button');
+		saveButton.textContent = 'Save';
+		saveButton.classList.add('btn', 'btn-primary', 'pull-right');
+		saveButton.addEventListener('click', this.save.bind(this));
+
+		menu.appendChild(menuButtons);
+		menuButtons.appendChild(saveButton);
+		nav.appendChild(trigger);
+		nav.appendChild(menu);
+
 		return nav;
 	},
 
@@ -79,7 +69,8 @@ networkMap.SettingsManager = new Class ({
 	 * @return {Element} The content conainer
 	 */
 	getContentContainer: function(){
-		return this.nav.getElement('#nm-edit-content');
+		return this.nav.querySelector('#nm-edit-content');
+		//return this.nav.getElement('#nm-edit-content');
 	},
 
 	/**
@@ -90,8 +81,8 @@ networkMap.SettingsManager = new Class ({
 	 * @this {networkMap.SettingsManager}
 	 * @return {networkMap.SettingsManager} self
 	 */
-	edit: function(obj){
-		this.editing = obj;
+	edit: function(configWidget){
+		this.editing = configWidget;
 		var editables;
 		var link = {};		
 		
@@ -101,9 +92,14 @@ networkMap.SettingsManager = new Class ({
 		this.displayButtons();
 		
 		// This is for other types of nodes.
-		content.grab(obj.getSettingsWidget());		
-		
-		this.fireEvent('edit', [obj]);
+		// TODO: Clean up when all is using the mediator
+		if (configWidget.toElement)
+			content.appendChild(configWidget.toElement());
+		else
+			content.appendChild(configWidget.getSettingsWidget().toElement());
+
+		// TODO: Remove when all are using the mediator
+		this.fireEvent('edit', [configWidget]);
 		
 		return this;
 	},
@@ -115,7 +111,10 @@ networkMap.SettingsManager = new Class ({
 	 * @return {networkMap.SettingsManager} self
 	 */
 	clear: function(){
-		this.getContentContainer().empty();
+		var container = this.getContentContainer();
+		while (container.firstChild){
+			container.removeChild(container.firstChild);
+		}
 
 		return this;
 	},
@@ -152,7 +151,7 @@ networkMap.SettingsManager = new Class ({
 		this.showButtonsCallback();
 		delete this.showButtonsCallback;
 		
-		this.menuButtons.setStyle('display', 'block');
+		this.menuButtons.style.display = 'block';
 		
 		return this;
 	},
@@ -169,7 +168,7 @@ networkMap.SettingsManager = new Class ({
 	 * @return {networkMap.SettingsManager} self
 	 */
 	toggle: function(){
-		if (this.nav.hasClass('nm-menu-open')){
+		if (this.nav.classList.contains('nm-menu-open')){
 			return this.disable();
 		}
 		else {
@@ -185,7 +184,7 @@ networkMap.SettingsManager = new Class ({
 	 * @return {networkMap.SettingsManager} self
 	 */
 	enable: function(){
-		this.nav.addClass('nm-menu-open');	
+		this.nav.classList.add('nm-menu-open');	
 		this.fireEvent('active');
 		this.fireEvent('defaultView', [this]);
 
@@ -200,8 +199,11 @@ networkMap.SettingsManager = new Class ({
 	 * @return {networkMap.SettingsManager} self
 	 */
 	disable: function(){
-		this.nav.removeClass('nm-menu-open');
-		this.nav.getElement('#nm-edit-content').empty();
+		this.nav.classList.remove('nm-menu-open');
+		var content = this.nav.querySelector('#nm-edit-content');
+		while (content.firstChild) {
+			content.removeChild(content.firstChild);
+		}
 		this.fireEvent('deactive');
 
 		return this;

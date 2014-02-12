@@ -1,81 +1,74 @@
 networkMap.widget = networkMap.widget || {};
 
-networkMap.widget.GridInput = new Class ({
-	Implements: [Options, Events],
-	options: {
+networkMap.widget.GridInput = function(label, value, options){
+	this.options = {
 		class: 'nm-input-snap',
 		type: 'snap'
-	},
-	wrapper: null,
-	label: null,
-	check: null,
+	};
 	
-	initialize: function(label, value, options){
-		this.setOptions(options);
-		this.wrapper = new Element('div', {
-			class: this.options.class
-		});
-		this.label = new Element('span', {
-			text: label
-		});
-		this.check = new Element('input', {
-			type: 'checkbox',
-			checked: value.enabled
-		}).addEvent('change', function(e){
-			this.xinput.disabled = !this.check.checked;
-			this.yinput.disabled = !this.check.checked;
-			e.value = this.value();
-			this.fireEvent('change', [e]);
-		}.bind(this)); 
+	this.setOptions(options);
+	this.createElements(label, value);
+};
 
-		this.xlabel = new Element('span', {
-			text: 'x'
-		});
-		this.xinput = new Element('input', {
-			type: 'number',
-			value: (value.grid.x) ? value.grid.x : 1,
-			min: 1,
-			max: 50
-		}).addEvent('change', function(e){
+networkMap.extend(networkMap.widget.GridInput, networkMap.Observable);
+networkMap.extend(networkMap.widget.GridInput, networkMap.Options);
+networkMap.extend(networkMap.widget.GridInput, {
+	createElements: function(label, value){
+		this.wrapper = document.createElement('div');
+		this.wrapper.classList.add(this.options.class);
+
+		this.label = document.createElement('span');
+		this.label.textContent = label;
+
+		this.check = document.createElement('input');
+		this.check.setAttribute('type', 'checkbox');
+		this.check.checked = value.enabled;
+		this.check.addEventListener('change', function(e){
+			this.x.input.disabled = !this.check.checked;
+			this.y.input.disabled = !this.check.checked;
 			e.value = this.value();
 			this.fireEvent('change', [e]);
 		}.bind(this));
 
-		this.ylabel = new Element('span', {
-			text: 'y'
-		});
-		this.yinput = new Element('input', {
-			type: 'number',
-			value: (value.grid.y) ? value.grid.y : 1,
-			min: 1,
-			max: 50
-		}).addEvent('change', function(e){
-			e.value = this.value();
-			this.fireEvent('change', [e]);
-		}.bind(this));
-	
-		if (!value.enabled){
-			this.xinput.disabled = true;
-			this.yinput.disabled = true;
-		}
-		
-		this.wrapper
-		.grab(this.label)
-		.grab(this.check)
-		.grab(this.xlabel)
-		.grab(this.xinput)
-		.grab(this.ylabel)
-		.grab(this.yinput);
+		this.x = this.$createInputs('x', value.grid.x, value.enabled);
+		this.y = this.$createInputs('y', value.grid.y, value.enabled);
+
+		this.wrapper.appendChild(this.label);
+		this.wrapper.appendChild(this.check);
+		this.wrapper.appendChild(this.x.label);
+		this.wrapper.appendChild(this.x.input);
+		this.wrapper.appendChild(this.y.label);
+		this.wrapper.appendChild(this.y.input);
 	},
+
+	$createInputs: function(label, value, enabled){
+		var els = {};
+		els.label = document.createElement('span');
+		els.label.textContent = label;
+
+		els.input = document.createElement('input');
+		els.input.setAttribute('type', 'number');
+		els.input.setAttribute('value', (value) ? value : 1);
+		els.input.setAttribute('min', 1);
+		els.input.setAttribute('max', 50);
+		els.input.disabled = !enabled;
+		els.input.addEventListener('change', function(e){
+			e.value = this.value();
+			this.fireEvent('change', [e, this]);
+		}.bind(this));
+		return els;
+	},
+
 	value: function(){
 		return {
 			enabled: this.check.checked,
 			grid: {
-				x: this.xinput.value,
-				y: this.yinput.value
+				x: parseInt(this.x.input.value, 10),
+				y: parseInt(this.y.input.value, 10)
 			}
 		};
 	},
+
 	toElement: function(){
 		return this.wrapper;
 	}

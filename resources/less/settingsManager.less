@@ -283,3 +283,43 @@
 		top: -3px;
 	}
 }
+
+.nm-input-snap {
+	height: 25px;
+	margin-top: 5px;
+	
+	span {
+		text-transform: uppercase;
+		height: 100%;
+		text-align: center;
+		line-height: 23px;
+		padding-left: 6px;
+
+		&:after{
+			content: ":";
+		}
+		
+		&:first-child{
+			text-transform: none;
+			background-color: lighten(#1e90ff, 10%);
+			width: 35%;
+			float: left;
+		}
+
+		&:first-child:after{
+			content: none;
+		}
+	}
+	
+	input[type="checkbox"] {	
+		margin-left: 3px;
+		width: 24px;
+		height: 24px;
+	}
+
+	input[type="number"] {
+		margin-left: 3px;
+		height: 100%;
+		width: 50px;
+	}
+}

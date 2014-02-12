@@ -7,38 +7,35 @@
 		<script type="text/javascript" src="../lib/svg.draggable.js"></script>
 		<script type="text/javascript" src="../lib/svg.path.js"></script>
 		<script type="text/javascript" src="../lib/svg.math.js"></script>
-		<script type="text/javascript" src="../lib/mootools-core.js"></script>
-		<script type="text/javascript" src="../lib/mootools-more.js"></script>
 		<script type="text/javascript" src="../dist/networkmap.js"></script>
 		<script type="text/javascript" >
 
-		   var map;
-			window.addEvent('load', function(){
-			   var paper = document.id('paper');
-			   
-			   // Set size of target div
-				paper.setStyle('height', document.documentElement.clientHeight-16);
-				
+			var map;
+
+			document.addEventListener('DOMContentLoaded', function(){
+				var paper = document.getElementById('paper');
+			
+				// Set size of target div
+				paper.style.height = document.documentElement.clientHeight-16 + 'px';
+
 				// Initialize map
 				map = new networkMap.Graph('paper').load('weathermap.json');
 				
-				     
 				// Resize div and update networkmap
 				var resizeTimer;
-				window.addEvent('resize', function(){
-				  clearTimeout(resizeTimer);
-				  resizeTimer = (function(){
-				  		// resize target div
-						paper.setStyle('height', document.documentElement.clientHeight-16);
+				window.onresize = function(){
+					clearTimeout(resizeTimer);
+
+					resizeTimer = setTimeout(function(){
+						// resize target div
+						paper.style.height = document.documentElement.clientHeight-16 + 'px';
 						
 						// trigger update event
 						map.triggerEvent('resize', map);
-				  }).delay(16);
-				});
+					}, 16);
+				};
 			});
 			
-			
-
 		</script>
 	</head>
 	<body>
