@@ -990,6 +990,7 @@ networkMap.extend(networkMap.widget.Checkbox, {
 	}
 });;networkMap.widget = networkMap.widget || {};
 
+<<<<<<< HEAD
 networkMap.widget.GridInput = function(label, value, options){
 	this.options = {
 		class: 'nm-input-snap',
@@ -1016,10 +1017,50 @@ networkMap.extend(networkMap.widget.GridInput, {
 		this.check.addEventListener('change', function(e){
 			this.x.input.disabled = !this.check.checked;
 			this.y.input.disabled = !this.check.checked;
+=======
+networkMap.widget.GridInput = new Class ({
+	Implements: [Options, Events],
+	options: {
+		class: 'nm-input-snap',
+		type: 'snap'
+	},
+	wrapper: null,
+	label: null,
+	check: null,
+	
+	initialize: function(label, value, options){
+		this.setOptions(options);
+		this.wrapper = new Element('div', {
+			class: this.options.class
+		});
+		this.label = new Element('span', {
+			text: label
+		});
+		this.check = new Element('input', {
+			type: 'checkbox',
+			checked: value.enabled
+		}).addEvent('change', function(e){
+			this.xinput.disabled = !this.check.checked;
+			this.yinput.disabled = !this.check.checked;
+			e.value = this.value();
+			this.fireEvent('change', [e]);
+		}.bind(this)); 
+
+		this.xlabel = new Element('span', {
+			text: 'x'
+		});
+		this.xinput = new Element('input', {
+			type: 'number',
+			value: (value.grid.x) ? value.grid.x : 1,
+			min: 1,
+			max: 50
+		}).addEvent('change', function(e){
+>>>>>>> Updated dist
 			e.value = this.value();
 			this.fireEvent('change', [e]);
 		}.bind(this));
 
+<<<<<<< HEAD
 		this.x = this.$createInputs('x', value.grid.x, value.enabled);
 		this.y = this.$createInputs('y', value.grid.y, value.enabled);
 
@@ -1049,10 +1090,39 @@ networkMap.extend(networkMap.widget.GridInput, {
 		return els;
 	},
 
+=======
+		this.ylabel = new Element('span', {
+			text: 'y'
+		});
+		this.yinput = new Element('input', {
+			type: 'number',
+			value: (value.grid.y) ? value.grid.y : 1,
+			min: 1,
+			max: 50
+		}).addEvent('change', function(e){
+			e.value = this.value();
+			this.fireEvent('change', [e]);
+		}.bind(this));
+	
+		if (!value.enabled){
+			this.xinput.disabled = true;
+			this.yinput.disabled = true;
+		}
+		
+		this.wrapper
+		.grab(this.label)
+		.grab(this.check)
+		.grab(this.xlabel)
+		.grab(this.xinput)
+		.grab(this.ylabel)
+		.grab(this.yinput);
+	},
+>>>>>>> Updated dist
 	value: function(){
 		return {
 			enabled: this.check.checked,
 			grid: {
+<<<<<<< HEAD
 				x: parseInt(this.x.input.value, 10),
 				y: parseInt(this.y.input.value, 10)
 			}
@@ -1165,6 +1235,17 @@ networkMap.extend(networkMap.Properties, {
 	}
 });
 ;networkMap.datasource = networkMap.datasource || {};
+=======
+				x: this.xinput.value,
+				y: this.yinput.value
+			}
+		};
+	},
+	toElement: function(){
+		return this.wrapper;
+	}
+});;networkMap.datasource = networkMap.datasource || {};
+>>>>>>> Updated dist
 
 /**
  * Register a datasource
@@ -2164,7 +2245,11 @@ networkMap.extend(networkMap.Graph, {
 		}.bind(this);
 	
 		accordionGroup = container.add('Globals');
+<<<<<<< HEAD
 		accordionGroup.appendChild(new networkMap.widget.GridInput('Grid', {
+=======
+		accordionGroup.grab(new networkMap.widget.GridInput('Grid', {
+>>>>>>> Updated dist
 			enabled: this.options.gridEnabled,
 			grid: this.options.grid
 		}).addEvent('change', function(e){
@@ -2240,18 +2325,27 @@ networkMap.extend(networkMap.Graph, {
 			this.options.gridEnabled = false;	
 		}		
 		
+<<<<<<< HEAD
 		if (grid === undefined){
+=======
+		if (!grid){
+>>>>>>> Updated dist
 			if (!this.options.gridEnabled)
 				return false;
 				
 			return this.options.grid;
 		}
 		
+<<<<<<< HEAD
 		if (typeof grid === 'object'){
 			this.options.gridEnabled = true;			
 			this.options.grid = grid;
 		}
 
+=======
+		this.options.gridEnabled = true;			
+		this.options.grid = grid;
+>>>>>>> Updated dist
 		this.disableDraggableNodes();
 		this.enableDraggableNodes();
 		return this;
