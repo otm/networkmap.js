@@ -216,6 +216,7 @@ networkMap.extend(networkMap.Node, {
 	 */
 	_clickhandler: function(e){
 		if (e.target.instance.data('dragged')){
+			e.preventDefault();
 			return;
 		}
 		
