@@ -137,7 +137,8 @@ networkMap.extend(networkMap.Graph, {
 			throw "Illigal element";
 		}
 		
-		this.defaults[element].load(properties);
+		// set the properties will merge with configuration from user
+		this.defaults[element].set(properties);
 		
 		// TODO: rework
 		this.fireEvent('redraw', [{defaultsUpdated: true}]);
