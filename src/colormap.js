@@ -104,7 +104,7 @@ networkMap.colormap.flat5 = {
 /**
  * HSL colormap
  */
-networkMap.colormap.hsl15 = {
+networkMap.colormap.hsl20 = {
 	translate: function(value){
 		var map = networkMap.colormap.hsl15;
 		
