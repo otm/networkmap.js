@@ -224,7 +224,10 @@ networkMap.extend(networkMap.Link, {
 		if (graph){
 			this.graph = graph;
 			this.properties.setDefaults(this.graph.getDefaults('link'));
-			this.options.datasource = this.options.datasource || this.graph.options.datasource;
+			this.datasource = this.properties.get('datasource');
+		
+			// TODO: Remove this hack
+			this.options = this.properties.configuration();
 
 			// TODO: Legacy code
 			this.graph.addEvent('redraw', function(e){
