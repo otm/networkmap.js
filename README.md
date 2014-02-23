@@ -27,6 +27,258 @@ A minimal setup is done by:
 
 An example configuration file is found in spec/weathermap.json
 
+
+## networkmap.Graph class
+This class extends networkMap.Observable and networkMap.Mediator.
+
+### Constructor
+| Constructor 								| Description											|
+|-------------------------------------------|-------------------------------------------------------|
+| Graph(target:Node, options:[GraphOptions](#GraphOptions))	| Creates a new graph inside the given HTML container 	|
+
+### Methods
+| Methods							| Return value		| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+| setRefreshInterval(interval:numer)| self				| Sets the periodic refresh interval in seconds. O to disable.	|
+| getSvg()							| SVG.doc 			| Returns the SVG node where the graph is rendered.				|
+| getPaintArea()					| SVG.G 			| Return the SVG group where the graph is rendered.				|
+| grid(options:[GridOptions](#GridOptions))	| self		| Set drag-grid size											|
+| load(obj:string&#124;[GraphConfiguration](#GraphConfiguration))| self				| Load a map from configuration. If string is given it is assumed to be an URL to do an GET request from			|
+| getGraphConfiguration()			| [GraphConfiguration](#GraphConfiguration) | Get the current GraphConfiguration 	|
+| save([SaveOptions](#SaveOptions))	| self				| Save the current GraphConfiguration 							|
+| setOptions(options:[GraphOptions](#GraphOptions)) | self | 															|
+| registerLinkGenerator(component:string, f:function) | none | Register a function that generates an href string for either [Node](#Node) or [Link](#Link). |
+| getNode(id:string)				| [Node](#Node)		| 																|
+| getLinks(node:string&#124;[Node](#Node), sibling:string&#124;[Node](#Node)) | Array | Returns an array of links that are connected to the nodes. |
+| update()							| self				| This will force the graph to fetch data from the server and update the colors |
+| ~~enableEditor~~					|					|																|
+| ~~disableEditor~~					|					|																|
+| ~~enableDraggableNodes~~			|					|																|
+| ~~disableDraggableNodes~~			|					|																|
+
+### Properties
+| Properties						| Type				| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+| defaults.node 					| [Properties](#Properties) | The default node options for the graph instance. Inherits defaults from [Node.defaults](#Node.defaults) |
+| defaults.link 					| [Properties](#Properties) | The default link options for the graph instance. Inherits defaults from [Link.defaults](#Link.defaults) |
+
+### Events
+| Events							| Arguemnts			| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+| load 								| none				| This event is fired when a graph has loaded configuration 	|
+
+
+### networkMap.GraphOptions object specification
+| Properties						| Type				| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+| datasource						| string			| The name of the datasource to load data with					|
+| colormap							| string			| The name of the colormap (legend) to use in the map.			|
+| editor							| boolean			| The enabled/disabled state of the graph editor. Default value is true. |
+| ~~enableEditor~~					| 					|																|
+| draggableNodes					| boolean			| If true, nodes can be dragged. Default value is false.
+| ~~enableDraggableNodes~~			|					|																|
+| update							| boolean			| The enable/disable state for automatic updates of graph values|
+| updateOptions						| [UpdateOptions](#UpdateOptions) | The graph update options.						|
+| ~~refreshInterval~~
+| grid								| boolean			| The enable/disable of the snap to grid when dragging objects	|
+| gridOptions						| [GridOptions](#GridOptions) | The snap-to-grid options							|
+| nodeOptions						| [NodeOptions](#NodeOptions) | The default node options to use for the graph instance |
+| linkOptions						| [LinkOptions](#LinkOptions) | The default link options to use for the graph instance |
+| save								| boolean			| The enable/disable if it is possible to save the graph		|
+| SaveOptions						| [SaveOptions](#SaveOptions) | The options that controls how the graph configuration is dumped and saved. |
+
+### networkMap.GridOptions object specification
+| Properties						| Type				| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+| x									| number			| The width of the grid in horizontal direction					|
+| y 								| number			| The hight of the grid in vertical direction					|
+
+### networkMap.UpdateOptions object specification
+| Properties						| Type				| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+| interval							| numeric			| The interval, in seconds, to control how often the graph updates (fetch) data from the server. Default value is 300. |
+| batchUpdate						| boolean			| The enable/disable state of batch updates of data from the server. Default value is true. |
+
+
+## networkMap.GraphConfiguration object specification
+| Properties						| Type				| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+
+### networkMap.NodeOptions object specification
+| Properties						| Type				| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+
+### networkMap.LinkOptions object specification
+| Properties						| Type				| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+
+### networkMap.SaveOptions object specification
+| Properties						| Type				| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+
+
+
+
+
+
+
+
+
+
+
+## networkmap.Node class
+This class extends [Observable](#networkMap.Observable)
+
+### Constructor
+| Constructor 								| Description											|
+|-------------------------------------------|-------------------------------------------------------|
+| Node(options:[NodeOptions](#NodeOptions))	| Creates a new node. If a graph is specified the node is added to the graph. Note that the possition must be set for the node to display. |
+
+
+### Methods
+| Methods							| Return value		| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+| getConfiguration()				| [NodeConfiguration](#networkMap.NodeConfiguration) | Get the current node configuration. |
+| setGraph(graph:[Graph](#networkMap.Graph)) | self		| Renders the node on the specified graph. If graph is set to null the node will be removed. |
+
+### Events
+| Events							| Arguemnts			| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+| dragstart
+| drag
+| dragend
+| requestHref
+|
+
+### Node.defaults object specifications
+This object is an instance of [Properties](#networkMap.Properties). Note: the properties must be accessed with get/set methods.
+
+| Properties						| Type				| Default value	|
+|-----------------------------------|-------------------|---------------|
+| id								| string			| undefined		|
+| name								| string			| undefined		|
+| comment							| string			| undefined		|
+| x									| numeric			| 10			|
+| y									| numeric			| 10			|
+| lat								| numeric			| null			|
+| lng								| numeric			| null			|
+| fontFamily						| string			| 'Helvetica'	|
+| fontSize							| numeric			| 16			|
+| bgColor							| string			| '#dddddd'		|
+| strokeColor						| string			| '#000000'		|
+| strokeWidth						| numeric			| 2				|
+| label								| [NodeLabelOptions](#NodeLabelOptions) | - |
+| renderer							| [NodeRedererId](#NodeRedererId) | RECT |
+| padding							| numeric			| 10			|
+| href								| string			| null			|
+| draggable							| boolean			| false			|
+
+
+
+
+
+
+
+
+
+## networkmap.Link class
+This class extends networkMap.Observable.
+
+### Constructor
+| Constructor 								| Description											|
+|-------------------------------------------|-------------------------------------------------------|
+| Link(options:[LinkOptions](#LinkOptions))	| Creates a new graph. Creates a new node. If a graph is specified the node is added to the graph. Note that two nodes must be set for the link to display. |
+
+### Methods
+| Methods							| Return value		| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+| getNode(link:[SubLink](#networkMap.SubLink)) | [Node](#networkMap.Node) | Get the node that the sublink is associated with |
+| connectedTo(node:string&#124;[Node](#Node), sibling:string&#124;[Node](#Node)) | boolean | 							|
+| getConfiguration()				| [NodeConfiguration](#networkMap.NodeConfiguration) | Get the current link configuration. |
+| setGraph(graph:[Graph](#networkMap.Graph)) | self		| Renders the link on the specified graph. If graph is set to null the node will be removed. |
+| showPath()						| self				| Show the link													|
+| hidePath()						| self				| Hide the link													|
+| showShadowPath					| self				| Show the links shaddow path									|
+| hideShadowPath					| self				| Hide the links shaddow path									|
+| update(force:boolean)				| self				| The link will call the datasource to update on the screen.	|
+
+
+### Properties
+| Properties						| Type				| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+
+### Events
+| Events							| Arguemnts			| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+| requestHref
+
+
+### Link.defaults object specification
+This object is an instance of [Properties](#networkMap.Properties). Note: the properties must be accessed with get/set methods.
+
+| Properties						| Type				| Default value	|
+|-----------------------------------|-------------------|---------------|
+| inset								| numeric			| 10			|
+| connectionDistance				| numeric			| 10			|
+| staticConnectionDistance			| numeric			| 30			|
+| arrowHeadLength					| numeric			| 10			|
+| width								| numeric			| 10			|
+| background						| string			| '#777'		|
+| update**							| boolean			| true			|
+| updateOptions						| [Link.UpdateOptions](#Link.UpdateOptions) | 			|
+| datasource						| string 			| 'simulate'	|
+| colormap							| string			| 'flat5'		|
+
+
+
+
+
+
+
+
+
+
+
+
+
+## networkmap.Link class
+This class extends networkMap.Observable and networkMap.Mediator.
+
+### Constructor
+| Constructor 								| Description											|
+|-------------------------------------------|-------------------------------------------------------|
+| Graph(target:Node, options:[GraphOptions](#GraphOptions))	| Creates a new graph inside the given HTML container 	|
+
+### Methods
+| Methods							| Return value		| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+
+### Properties
+| Properties						| Type				| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+
+### Events
+| Events							| Arguemnts			| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+
+### GraphOptions object specification
+| Properties						| Type				| Description													|
+|-----------------------------------|-------------------|---------------------------------------------------------------|
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Integration
 As weathermaps are usually integrated in other tools there is no backend in NetworkMap.js. 
 There is however an example implementation in ```spec/update.php``` that is used in 
@@ -116,7 +368,8 @@ If an error occurred
 }
 ```
 
-
+## GridOptions        
+Test
 
 # Build
 
@@ -175,33 +428,3 @@ Example:
 
 ```javascript
 new networkMap.Graph('paper').load('/weathermap.json')
-```
-
-## networkMap.Node
-
-## networkMap.Link
-### redrawShadowPath()
-### hideShadowPath()
-### showShadowPath()
-### removeShadowPath()
-
-### redrawMainLinks()
-### hideMainLinks()
-### showMainLinks()
-### removeMainLinks()
-### mainLinksVisable()
-### toggleMainLinks()
-
-### redrawSubLinks()
-### hideSubLinks()
-### showSubLinks()
-### removeSubLinks()
-### subLinksVisable()
-### toggleSubLinks()
-
-
-## networkMap.path
-Helperfunction, could be removed. Do not rely on this!
-
-
-
