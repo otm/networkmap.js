@@ -24,7 +24,7 @@ networkMap.Link = function(options){
 	// TODO: Remove this hack
 	this.options = this.properties.configuration();
 
-	this.configurationWidget = new networkMap.Link.Module.Settings();
+	this.configurationWidget = new networkMap.Link.Module.Settings(this.properties);
 
 	this.colormap = networkMap.colormap[this.properties.get('colormap')];
 
@@ -224,7 +224,10 @@ networkMap.extend(networkMap.Link, {
 		if (graph){
 			this.graph = graph;
 			this.properties.setDefaults(this.graph.getDefaults('link'));
+			
+			// TODO: Setting the colormap and datasource like this is error prone
 			this.datasource = this.properties.get('datasource');
+			this.colormap = networkMap.colormap[this.properties.get('colormap')];
 		
 			// TODO: Remove this hack
 			this.options = this.properties.configuration();
@@ -971,7 +974,6 @@ networkMap.extend(networkMap.Link, {
 	},
 	
 	setInterval: function(){
-		console.log('Seting link update interval');
 		this.intervalId = setInterval(function(){
 			this.update();
 		}.bind(this), this.options.refreshInterval);
@@ -979,7 +981,6 @@ networkMap.extend(networkMap.Link, {
 	
 
 	clearInterval: function(){
-		console.log('removing link update interval');
 		if (this.intervalId){
 			clearInterval(this.intervalId);
 			delete this.intervalId;
@@ -1013,16 +1014,16 @@ networkMap.extend(networkMap.Link, {
 	}, 
 
 	update: function(force){
-		if (this.properties.get('globalRefresh') || force !== true)
+		if (this.properties.get('globalRefresh') && force !== true)
 			return this;
 
-		if (!this.graph.options.batchUpdate)
+		if (!this.graph.properties.get('batchUpdate') || force === true)
 		networkMap.each(this.updateQ, function(urls, datasource){
 			if (!networkMap.datasource[datasource]){
 				throw 'Unknown datasource (' + datasource + ')';
 			}
 			networkMap.each(urls, function(requests, url){
-				if (this.options.batchUpdate){
+				if (this.properties.get('batchUpdate')){
 					networkMap.datasource[datasource](url, requests);
 				}
 				else{

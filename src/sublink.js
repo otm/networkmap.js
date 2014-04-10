@@ -8,6 +8,7 @@ networkMap.LinkPath = function(link, svg, options){
 	}.bind(this));
 
 	this.link = link;
+	this.mediator = this.link.graph;
 	this.svg = svg;
 	
 	// Check if we should setup an update event
@@ -194,7 +195,21 @@ networkMap.extend(networkMap.LinkPath, {
 		else if (this.link.mode() === 'edit'){
 			e.preventDefault();
 
-			this.link.graph.publish('edit', [this.link.configurationWidget.toElement(this.link, this.link.properties)]);
+			// TODO: Remove
+			//this.link.graph.publish('edit', [this.link.configurationWidget.toElement(this.link, this.link.properties)]);
+			
+			// TODO: Create an uniform API for the settings widgets.
+			this.mediator.publish('edit', [new networkMap.event.Configuration({
+				deletable: true,
+				destroy: function(){ 
+					this.link.graph.removeLink(this.link); 
+				}.bind(this),
+				editable: true,
+				editWidget: this.link.configurationWidget.toElement(this.link, this.link.properties),
+				target: this,
+				type: 'link',
+				targetName: this.properties.get('name')
+			})]);
 		}
 	},
 	_hoverHandler: function(e){

@@ -1,8 +1,17 @@
 networkMap.Node.Module = networkMap.Node.Module || {};
 
-networkMap.Node.Module.Settings = function(properties){
+networkMap.Node.Module.Settings = function(properties, options){
+	this.options = {
+		onlyGlobals: false,
+		header: 'Globals',
+		container: null
+	};	
+	this.setOptions(options);
+	
 	this.properties = properties;
 };
+
+networkMap.extend(networkMap.Node.Module.Settings, networkMap.Options);
 
 // types: angle, bool, float, int, number, length, list, string, color
 // https://api.tinkercad.com/libraries/1vxKXGNaLtr/0/docs/topic/Shape+Generator+Overview.html
@@ -64,7 +73,9 @@ networkMap.extend(networkMap.Node.Module.Settings, {
 	 * @return {Element} A HTML Element that contains the UI
 	 */
 	toElement: function(properties){
-		var container = new networkMap.widget.Accordion();
+		properties = properties || this.properties;
+		
+		var container = this.options.container || new networkMap.widget.Accordion();
 		var accordionGroup;
 
 		var changeHandler = function(key, properties){
@@ -73,8 +84,11 @@ networkMap.extend(networkMap.Node.Module.Settings, {
 			};
 		};
 	
-		accordionGroup = container.add('Globals');		
+		accordionGroup = container.add(this.options.header);		
 		networkMap.each(this.parameters, function(option, key){
+			if (this.options.onlyGlobals && !option.global)
+				return;
+				
 			if (option.type === 'number'){
 				accordionGroup.appendChild(new networkMap.widget.IntegerInput(option.label, properties.get(key), option).addEvent('change', changeHandler(key, properties)));
 			}

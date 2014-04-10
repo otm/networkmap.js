@@ -44,7 +44,7 @@ networkMap.extend(networkMap.widget.Checkbox, {
 	},
 
 	value: function(){
-		return this.input.value;
+		return this.input.checked;
 	},
 	
 	isChecked: function(){

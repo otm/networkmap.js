@@ -226,7 +226,17 @@ networkMap.extend(networkMap.Node, {
 		else if (this._mode === 'edit'){
 			e.preventDefault();
 
-			this.graph.publish('edit', [this.configurationWidget.toElement(this.properties)]);
+			this.graph.publish('edit', [new networkMap.event.Configuration({
+				deletable: true,
+				destroy: function(){ 
+					this.graph.removeNode(this); 
+				}.bind(this),
+				editable: true,
+				editWidget: this.configurationWidget.toElement(this.properties),
+				target: this,
+				type: 'node',
+				targetName: this.properties.get('name')
+			})]);
 		}
 	},	
 
@@ -331,7 +341,8 @@ networkMap.extend(networkMap.Node, {
 				return this;
 			}
 			
-			this.link = this.svg.linkTo(url);
+			// We take the parent object to get the link
+			this.link = this.svg.linkTo(url).parent;
 			return this;
 		}
 		
@@ -359,7 +370,7 @@ networkMap.extend(networkMap.Node, {
 		
 		if (this.svg){
 			this.svg.remove();
-			if (this.link) link.remove();
+			if (this.link) this.link.remove();
 		
 			if (!this.graph)
 				return false;			
@@ -461,7 +472,6 @@ networkMap.extend(networkMap.Node, {
 			this.fireEvent('drag', [delta, event]);
 		}.bind(this);
 		svg.dragend = function(){
-			console.log('dragend');
 			this.properties.set({
 				x: this.x(),
 				y: this.y()

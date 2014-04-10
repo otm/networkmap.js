@@ -53,9 +53,10 @@ networkMap.widget.ListItem = function(element, options){
 	if (this.options.enableDelete){
 		var del = document.createElement('span');
 		del.textContent = 'x';
-		del.classList.add('nm-list-item-delet', 'pull-right');
+		del.classList.add('nm-list-item-delete', 'pull-right');
 		this.$remove = this.remove.bind(this);
 		del.addEventListener('click', this.$remove);
+		this.listItem.appendChild(del);
 	}
 };
 

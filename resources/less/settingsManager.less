@@ -102,8 +102,18 @@
 }
 
 
-.nm-object-properties {
+.nm-menu .nm-object-properties {
+	padding: 0;
+	color: #777777;
 	border-style: none;
+	
+	input {
+		color: #000000;
+		
+		&:disabled{
+			color: #777777;
+		}
+	}
 }
 
 .nm-menu-buttons {
@@ -312,14 +322,14 @@
 	}
 	
 	input[type="checkbox"] {	
-		margin-left: 3px;
-		width: 24px;
-		height: 24px;
+		margin-left: 6px;
+		width: 20px;
+		height: 20px;
 	}
 
 	input[type="number"] {
 		margin-left: 3px;
 		height: 100%;
-		width: 50px;
+		width: 40px;
 	}
 }

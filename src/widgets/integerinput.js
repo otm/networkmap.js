@@ -21,9 +21,21 @@ networkMap.extend(networkMap.widget.IntegerInput, {
 
 		this.input = document.createElement('input');
 		this.input.setAttribute('type', 'number');
-		this.input.setAttribute('value', (value.value) ? value.value : value);
+
+		// TODO: Clean up code		
+		var tmpValue = (value.inherited) ? value.value : value;
+		if (!tmpValue && value.inherited)
+			this.increment = value.inherited;
+		else
+			this.increment = 0;
+		
+		this.input.value = (value.inherited) ? value.value: value;
 		if (value.inherited) this.input.setAttribute('placeholder', value.inherited);
 		this.input.addEventListener('change', function(e){
+			if (this.increment){
+				this.input.value = parseInt(this.input.value) + parseInt(this.increment);
+				this.increment = 0;
+			}
 			this.fireEvent('change', [e, this]);
 		}.bind(this));
 
@@ -46,6 +58,6 @@ networkMap.extend(networkMap.widget.IntegerInput, {
 	},
 
 	value: function(){
-		return (this.input.value !== '') ? this.input.value : undefined;
+		return (this.input.value !== '') ? parseInt(this.input.value) : undefined;
 	}
 });

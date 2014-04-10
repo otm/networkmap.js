@@ -8,7 +8,7 @@
  */
 networkMap.Graph = function(target, options){
 	/** The default options*/
-	this.options = {
+	var defaults = {
 		/** The with of the graph */
 		width: 10,
 		
@@ -16,7 +16,7 @@ networkMap.Graph = function(target, options){
 		height: 10,
 		
 		/** The name of the datasoruce to use */
-		datasource: undefined,
+		datasource: undefined,		
 		
 		/** The name of the colormap to use */
 		colormap: undefined,
@@ -39,14 +39,16 @@ networkMap.Graph = function(target, options){
 		
 		/** A grid size for objects to snap to */
 		grid: {x:10, y:10},
-		
-		node: {
+	};
+	/*
+	node: {
 			linkGenerator: null
 		},
 		link: {
 			linkGenerator: null
 		}
-	};
+	*/
+	
 	/** The default configuration */
 	this.defaults = {};
 	
@@ -69,52 +71,86 @@ networkMap.Graph = function(target, options){
 	/** An internal reference to check keep track of the mode */
 	this._mode = 'normal';
 
-	this.options = networkMap.defaults(options, this.options);
 
-	if (this.options.node.linkGenerator){
-		this.options.node.linkGenerator = networkMap.Node.createLinkGenerator(this.options.node.linkGenerator);
+	// Setup link generator for node
+	this.node = this.node || {};
+	if (options.node && options.node.linkGenerator){
+		this.node.linkGenerator = networkMap.Node.createLinkGenerator(this.options.node.linkGenerator);
+		delete options.node;
 	} else{
-		this.options.node.linkGenerator = networkMap.Node._linkGenerator;		
+		this.node.linkGenerator = networkMap.Node._linkGenerator;		
 	}
 	
-	if (this.options.link.linkGenerator){
-		this.options.link.linkGenerator = networkMap.Link.createLinkGenerator(this.options.link.linkGenerator);
+	// setup link generator for link
+	this.link = this.link || {};
+	if (options.link && options.link.linkGenerator){
+		this.link.linkGenerator = networkMap.Link.createLinkGenerator(this.options.link.linkGenerator);
+		delete options.link;
 	} else{
-		this.options.link.linkGenerator = networkMap.Link._linkGenerator;		
+		this.link.linkGenerator = networkMap.Link._linkGenerator;		
 	}
-	
+
+	this.properties = new networkMap.Properties(options, new networkMap.Properties(defaults));
+	this.properties.addEvent('change', function(change){
+		var grid;
+		var gridEnabled;		
+		if (change.length >= 2){
+			change.forEach(function(prop){
+				if (prop.key === 'gridEnabled') gridEnabled = prop.value;
+				if (prop.key === 'grid') grid = prop.value;	
+			});
+		
+			if (gridEnabled === false) this.grid(gridEnabled);
+			else if (grid) this.grid(grid);
+		}
+	}.bind(this));
+		
+	// Setup node and link defaults
 	this.defaults.node = new networkMap.Properties({}, networkMap.Node.defaults);
 	this.defaults.link = new networkMap.Properties({}, networkMap.Link.defaults);
-	this.defaults.link.set('colormap', this.options.colormap);
-	this.defaults.link.set('datasource', this.options.datasource);
+	this.defaults.link.set('colormap', this.properties.get('colormap'));
+	this.defaults.link.set('datasource', this.properties.get('datasource'));
 
+	// Create HTML
 	this.element = (typeof target == 'string' || target instanceof String) ? document.getElementById(target) : target;
 	this.container = document.createElement('div');
 	this.container.classList.add('nm-container');
 	this.element.appendChild(this.container);
 
+	// create SVG
 	this.svg = SVG(this.container);
 	this.graph = this.svg.group();
 	
+	// Create legend
 	this.legend = new networkMap.ColorLegend(this.defaults.link.get('colormap'), {graph: this, target: this.container});
 
-	if (this.options.enableEditor){
-		this.settings = new networkMap.SettingsManager(this.container, this);
-		this.settings.addEvent('defaultView', function(){
-			this.settings.edit(this);
-		}.bind(this));
+	// Enable editor, this should be move to a separate function.
+	if (this.properties.get('enableEditor')){
+		this.settings = new networkMap.SettingsManager(this.container, this, new networkMap.event.Configuration({
+			deletable: false,
+			editable: true,
+			editWidget: new networkMap.Graph.Module.Settings(this.defaults.node, this.defaults.link, this.properties).toElement(),
+			target: this,
+			type: 'graph',
+			targetName: 'graph'
+		}));
+		
 		this.settings.addEvent('active', this.enableEditor.bind(this));
 		this.settings.addEvent('deactive', this.disableEditor.bind(this));
 		this.settings.addEvent('save', this.save.bind(this));
 	}
-		
+
+	// This is the way to externaly add a link from a GUI		
+	this.subscribe('addLink', this.addLinkBySubsriber.bind(this));
+
 	this.addEvent('resize', this.rescale.bind(this));
 	
-	this.setRefreshInterval(this.options.refreshInterval);
+	this.setRefreshInterval(this.properties.get('refreshInterval'));
 	
 	this.svg.on('click', this._clickHandler.bind(this));
-	
+
 	this.addEvent('load', this.update.bind(this));
+	
 };
 
 networkMap.extend(networkMap.Graph, networkMap.Observable);
@@ -168,7 +204,7 @@ networkMap.extend(networkMap.Graph, {
 	 * @return {networkMap.Graph} self
 	 */
 	setRefreshInterval: function(interval){
-		this.options.interval = interval;
+		this.properties.set('refreshInterval', interval);
 		
 		if (interval){
 			this.intervalId = setInterval(function(){
@@ -214,18 +250,34 @@ networkMap.extend(networkMap.Graph, {
 		);
 					
 		var bbox = this.graph.bbox();	
-			
-		// scale the svg if the docsize is to small
-		if (docSize.x < (bbox.width + Math.abs(bbox.x)) || docSize.y < (bbox.height + Math.abs(bbox.y))){
-			this.svg.viewbox(bbox.x, bbox.y, bbox.width + Math.abs(bbox.x), bbox.height + Math.abs(bbox.y));
-		}
-		else{
+		
+		if (docSize.x > (Math.abs(bbox.x) + bbox.width) && docSize.y > (Math.abs(bbox.y) + bbox.height)){
+			// the svg is within the docSize (with the exception if we have negative bbox.x and bbox.y
 			this.svg.viewbox(
 				(bbox.x < 0) ? bbox.x : 0,
-				(bbox.y < 0) ? bbox.y : 0, 
+				(bbox.y < 0) ? bbox.y : 0,
 				docSize.x,
-				docSize.y
+				docSize.y		
 			);
+		}
+		else if (docSize.x > bbox.width && docSize.y > bbox.height){
+			// the svg fits without scaling
+			this.svg.viewbox(
+				bbox.x - (docSize.x - bbox.width) / 2, 
+				bbox.y - (docSize.y - bbox.height) / 2, 
+				docSize.x, 
+				docSize.y);
+		}	
+		else {
+			// scale the svg to fit
+			var scaleFactor = ((bbox.width - docSize.x) > (bbox.height - docSize.y)) ? bbox.width / docSize.x : bbox.height / docSize.y;
+			this.svg.viewbox(
+				bbox.x - 5, 
+				bbox.y - 5, 
+				docSize.x * scaleFactor + 10, 
+				docSize.y * scaleFactor + 10
+			);
+			//this.svg.viewbox(bbox.x, bbox.y, bbox.width + Math.abs(bbox.x), bbox.height + Math.abs(bbox.y));
 		}
 		
 		return this;		
@@ -271,8 +323,6 @@ networkMap.extend(networkMap.Graph, {
 		var changeHandler = function(defaults, key){
 			return function(e, widget){
 				defaults.set(key, widget.value());
-				//defaults[key] = e.target.value;
-				//this.fireEvent('redraw', [{defaultsUpdated: true}]);
 			}.bind(this);
 		}.bind(this);
 	
@@ -344,25 +394,25 @@ networkMap.extend(networkMap.Graph, {
 
 	grid: function(grid){
 		if (grid === true){
-			this.options.gridEnabled = true;
+			this.properties.set('gridEnabled', true);
 			
 			return this;
 		}
 		
 		if (grid === false){
-			this.options.gridEnabled = false;	
+			this.properties.set('gridEnabled', false);	
 		}		
 		
 		if (grid === undefined){
-			if (!this.options.gridEnabled)
+			if (!this.properties.get('gridEnabled'))
 				return false;
 				
-			return this.options.grid;
+			return this.properties.get('grid');
 		}
 		
 		if (typeof grid === 'object'){
-			this.options.gridEnabled = true;			
-			this.options.grid = grid;
+			this.properties.set('gridEnabled', true);			
+			this.properties.set('grid', grid);
 		}
 
 		this.disableDraggableNodes();
@@ -428,17 +478,18 @@ networkMap.extend(networkMap.Graph, {
 	 */
 	loadObject: function(mapStruct){
 		this.setOnSave(mapStruct.onSave);
+		mapStruct.nodes = mapStruct.nodes || [];
+		mapStruct.links = mapStruct.links || [];
 		
 		if (mapStruct.defaults){
+			this.properties.set(mapStruct.defaults.graph || {});			
 			this.setDefaults('node', mapStruct.defaults.node || {});
-				//this.defaults.node);
 			this.setDefaults('link', mapStruct.defaults.link || {});
-				//this.defaults.link);
 		}
 		
 		mapStruct.nodes.forEach(function(node){
 			node.graph = this;
-			node.draggable = this.options.allowDraggableNodes;
+			node.draggable = this.properties.get('allowDraggableNodes');
 			
 			this.addNode(new networkMap.Node(node), false);
 		}.bind(this));
@@ -447,6 +498,9 @@ networkMap.extend(networkMap.Graph, {
 			link.graph = this;
 			this.addLink(new networkMap.Link(link), false);
 		}.bind(this));
+
+		// TODO: Clean up!!!		
+		this.settings.setConfigWidget(new networkMap.Graph.Module.Settings(this.defaults.node, this.defaults.link, this.properties).toElement());
 		
 		this.fireEvent('load', [this]);
 		this.triggerEvent('resize', this);
@@ -535,7 +589,7 @@ networkMap.extend(networkMap.Graph, {
 		var html = this.settings.btnSave.innerHTML;
 		this.settings.btnSave.textContent = '.....';
 
-		var params = networkMap.toQueryString(data);		 
+		var params = networkMap.toQueryString(data);
 		var request = new XMLHttpRequest();
 
 		request.open(this.saveData.method, this.saveData.url, true);
@@ -571,6 +625,9 @@ networkMap.extend(networkMap.Graph, {
 		return true;
 	},
 
+	mode: function(){
+		return this._mode;
+	},
 
 	/**
 	 * Set nodes and links in edit mode
@@ -617,8 +674,21 @@ networkMap.extend(networkMap.Graph, {
 		}
 		
 		if (e.target.instance === this.svg || e.target.instance === this.graph){
-			this.settings.edit(this);
+			this.settings.displayDefaultView();
 		}
+		//TODO: REMOVE
+		/* 
+		if (e.target.instance === this.svg || e.target.instance === this.graph){
+			this.publish('edit', new networkMap.event.Configuration({
+				deletable: false,
+				editable: true,
+				editWidget: new networkMap.Graph.Module.Settings(this.defaults.node, this.defaults.link, this.properties).toElement(),
+				target: this,
+				type: 'graph',
+				targetName: 'graph'
+			}));
+		}
+		*/
 	},
 
 	/**
@@ -655,6 +725,7 @@ networkMap.extend(networkMap.Graph, {
 	getConfiguration: function(){
 		var configuration = {
 			defaults: {
+				graph: this.properties.extract(),
 				node: this.defaults.node.extract(),
 				link: this.defaults.link.extract()
 			},
@@ -698,7 +769,7 @@ networkMap.extend(networkMap.Graph, {
 		this.nodes.push(node);
 
 		// listen to the requestHref to provide node href
-		node.addEvent('requestHref', this.options.node.linkGenerator);
+		node.addEvent('requestHref', this.node.linkGenerator);
 		
 		// as the node is already created we need to trigger an update of the link
 		node.updateLink();
@@ -757,7 +828,7 @@ networkMap.extend(networkMap.Graph, {
 		this.links.push(link);
 
 		// listen to the requestHref to provide link href
-		link.addEvent('requestHref', this.options.link.linkGenerator);
+		link.addEvent('requestHref', this.link.linkGenerator);
 		
 		// as the link is already created we need to trigger an update of the link
 		link.updateLink();
@@ -771,6 +842,37 @@ networkMap.extend(networkMap.Graph, {
 		return this;
 	},	
 	
+	addLinkBySubsriber: function(e){
+		var self = this;
+		if (e.nodes){
+			e.nodes.each(function(options){
+				if (self.getNode(options.id))
+					return;
+				
+				options.graph = options.graph || self;
+				var node = new networkMap.Node(options);
+				self.addNode(node);
+				
+				// TODO: The node should now this
+				if (self.mode() === 'edit'){
+					node.draggable().mode('edit');	
+				}
+			});	
+		}
+		
+		
+		if (!this.getLink(e.link.nodeA.id, e.link.nodeB.id)){
+			e.link.graph = e.link.graph || this;
+			var link = new networkMap.Link(e.link);
+			this.addLink(link);
+			link.update(true);
+			
+			if (this.mode() === 'edit'){
+				link.mode('edit')	;
+			}
+		}
+		return this;
+	},
 
 	getLink: function(nodeIdA, nodeIdB){
 		return networkMap.find(this.links, function(link){
@@ -836,7 +938,7 @@ networkMap.extend(networkMap.Graph, {
 	 * at the moment.
 	 */
 	update: function(){
-		if (this.options.batchUpdate)
+		if (this.properties.get('batchUpdate'))
 			return this.batchUpdate();		
 		
 		this.links.forEach(function(link){
@@ -847,6 +949,7 @@ networkMap.extend(networkMap.Graph, {
 	},
 	
 	batchUpdate: function(){
+		this.$updateQ = this.$updateQ || {};
 		networkMap.each(this.$updateQ, function(urls, datasource){
 			if (!networkMap.datasource[datasource]){
 				throw 'Unknown datasource (' + datasource + ')';

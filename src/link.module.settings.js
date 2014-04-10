@@ -1,8 +1,18 @@
 networkMap.Link.Module = networkMap.Link.Module || {};
 
-networkMap.Link.Module.Settings = function(properties){
+networkMap.Link.Module.Settings = function(properties, options){
+	this.options = {
+		onlyGlobals: false,
+		header: 'Globals',
+		container: null
+	};
+	this.setOptions(options);
+
 	this.properties = properties;
 };
+
+
+networkMap.extend(networkMap.Link.Module.Settings, networkMap.Options);
 
 // types: angle, bool, float, int, number, length, list, string, color
 // https://api.tinkercad.com/libraries/1vxKXGNaLtr/0/docs/topic/Shape+Generator+Overview.html
@@ -49,7 +59,8 @@ networkMap.extend(networkMap.Link.Module.Settings, {
 	 * @return {HTMLElement}            A HTMLElement containing the widget
 	 */	
 	toElement: function(link, properties){
-		var container = new networkMap.widget.Accordion();
+		properties = properties || this.properties;
+		var container = this.options.container || new networkMap.widget.Accordion();
 		var accordionGroup;
 
 		var changeHandler = function(key, obj){
@@ -58,14 +69,17 @@ networkMap.extend(networkMap.Link.Module.Settings, {
 			};
 		};
 	
-		accordionGroup = container.add('Globals');		
+		accordionGroup = container.add(this.options.header);		
 		networkMap.each(this.parameters, function(option, key){
 			accordionGroup.appendChild(new networkMap.widget.IntegerInput(option.label, properties.get(key, true), option)
 				.addEvent('change', changeHandler(key, properties))
 			);
 		}.bind(this));		
 		
-		
+		// This is added to prevent non global configuration to be added
+		if (this.options.onlyGlobals){
+			return container;
+		}
 		
 		var linkTemplate = {
 			id: {
@@ -87,7 +101,7 @@ networkMap.extend(networkMap.Link.Module.Settings, {
 				global: false
 			}
 		};		
-
+		
 		
 		var sublinkConf = function(label, node){
 			accordionGroup = container.add(label);

@@ -34,8 +34,8 @@ networkMap.extend(networkMap.widget.Select, {
 		});
 		input.addEventListener('change', inputHandler, false);
 
-		wrapper.apppendChild(lbl);
-		wrapper.apppendChild(input);
+		wrapper.appendChild(lbl);
+		wrapper.appendChild(input);
 	},
 
 	addOptions: function(values){
@@ -48,11 +48,11 @@ networkMap.extend(networkMap.widget.Select, {
 		options = options || {};
 		
 		var el = document.createElement('option');
-		el.settAttribute('value', (options.value) ? options.value : text);
+		el.setAttribute('value', (options.value) ? options.value : text);
 		el.textContent = text;
 		el.selected = options.selected;
 
-		this.input.apppendChild(el);
+		this.input.appendChild(el);
 
 		return el;
 	},

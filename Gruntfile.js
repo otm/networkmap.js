@@ -23,6 +23,7 @@ module.exports = function(grunt) {
 				src: [
 					'lib/classList.js',
 					'src/networkMap.js',
+					'src/event.configuration.js',
 					'src/widgets/integerinput.js',
 					'src/widgets/textinput.js',
 					'src/widgets/colorinput.js',
@@ -37,8 +38,14 @@ module.exports = function(grunt) {
 					'src/events.js', 
 					'src/colormap.js', 
 					'src/colorlegend.js', 
-					'src/settingsmanager.js', 
+					'src/settingsmanager.js',
+					'src/renderer/settingsManager.add.js',
+					'src/renderer/settingsManager.addLink.js',					
+					'src/renderer/settingsManager.delete.js',
+					'src/renderer/settingsManager.modify.js',
+					'src/renderer/settingsManager.configure.js',
 					'src/graph.js', 
+					'src/graph.module.settings.js',
 					'src/node.js',
 					'src/node.module.settings.js',
 					'src/node.events.js',
@@ -56,7 +63,8 @@ module.exports = function(grunt) {
 				// options here to override JSHint defaults
 				globals: {
 					console: true,
-					document: true
+					document: true,
+					undef: true
 				}
 			}
 		},
