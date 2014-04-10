@@ -106,7 +106,7 @@ networkMap.colormap.flat5 = {
  */
 networkMap.colormap.hsl20 = {
 	translate: function(value){
-		var map = networkMap.colormap.hsl15;
+		var map = networkMap.colormap.hsl20;
 		
 		if (!value && value !== 0)
 			return map.nodata;
