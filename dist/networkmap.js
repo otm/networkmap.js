@@ -3492,6 +3492,8 @@ networkMap.extend(networkMap.Node, {
 		if (graph){
 			this.graph = graph;
 			this.properties.setDefaults(graph.getDefaults('node'));
+			// TODO: Rework
+			this.options = this.properties.configuration();
 			this.graph.addEvent('redraw', this._redraw.bind(this));
 			this.draw();
 		}
