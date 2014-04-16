@@ -25,6 +25,7 @@ networkMap.extend(networkMap.widget.Checkbox, {
 		this.input.setAttribute('type', this.options.type);
 		this.input.checked = value;
 		this.input.addEventListener('change', function(e){
+			e.value = this.value();
 			this.fireEvent('change', [e, this]);
 		}.bind(this));
 

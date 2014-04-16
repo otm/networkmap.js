@@ -44,6 +44,27 @@ networkMap.extend(networkMap.Graph.Module.Settings, {
 				graphProperties.set({'grid': e.value.grid, 'gridEnabled': e.value.enabled});	
 		}.bind(this)));
 		
+		accordionGroup = container.add('Utilization Labels');
+		var utilizationLabels = graphProperties.get('utilizationLabels');
+		accordionGroup.appendChild(new networkMap.widget.Checkbox('Enabled', utilizationLabels.enabled)
+			.addEvent('change', function(e){
+				utilizationLabels.enabled = e.value;
+				graphProperties.set('utilizationLabels', utilizationLabels);	
+			}.bind(this)));
+			
+		accordionGroup.appendChild(new networkMap.widget.IntegerInput('Padding', utilizationLabels.padding)
+			.addEvent('change', function(e){
+				utilizationLabels.padding = e.value;
+				graphProperties.set('utilizationLabels', utilizationLabels);	
+			}.bind(this)));
+			
+		accordionGroup.appendChild(new networkMap.widget.IntegerInput('Font size', utilizationLabels.fontSize)
+			.addEvent('change', function(e){
+				utilizationLabels.fontSize = e.value;
+				graphProperties.set('utilizationLabels', utilizationLabels);	
+			}.bind(this)));
+				
+		
 		nodeConfiguration.toElement();
 		linkConfiguration.toElement();
 				

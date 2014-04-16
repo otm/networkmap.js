@@ -1,7 +1,5 @@
 
 networkMap.LinkPath = function(link, svg, options){
-	// this.options = {};
-	// this.setOptions(options);
 	this.properties = new networkMap.Properties(options, link.properties);
 	this.properties.addEvent('change', function(change){
 		this.fireEvent('change', change);
@@ -10,6 +8,7 @@ networkMap.LinkPath = function(link, svg, options){
 	this.link = link;
 	this.mediator = this.link.graph;
 	this.svg = svg;
+	this.value = null;
 	
 	// Check if we should setup an update event
 	if (this.properties.get('requestUrl')) {
@@ -18,7 +17,12 @@ networkMap.LinkPath = function(link, svg, options){
 			this.properties.get('requestUrl'),
 			this,
 			function(response){
+				// Refactor
+				this.value = response.value;
 				this.link.updateBgColor(this, this.link.colormap.translate(response.value));
+				
+				// update utilization label
+				this.link.setUtilizationLabel();
 			}.bind(this)
 		);
 	}
@@ -29,9 +33,11 @@ networkMap.LinkPath = function(link, svg, options){
 networkMap.extend(networkMap.LinkPath, networkMap.Options);
 networkMap.extend(networkMap.LinkPath, networkMap.Observable);
 networkMap.extend(networkMap.LinkPath, {	
+
 	remove: function(){
 		this.svg.remove();
 	},
+	
 	getEditables: function(){
 		var editables = {
 			width: {
@@ -93,6 +99,15 @@ networkMap.extend(networkMap.LinkPath, {
 		return this;						
 	},	
 	
+	getCenter: function(){
+		var bbox = this.svg.bbox();
+			
+		return {
+			cx: bbox.x + bbox.height / 2,
+			cy: bbox.y + bbox.width / 2
+		};	
+	},
+	
 	getLink: function(){
 		return this.link;
 	},
@@ -104,9 +119,11 @@ networkMap.extend(networkMap.LinkPath, {
 	getNode: function(){
 		return this.getLink().getNode(this);
 	},
+	
 	getSettingsWidget: function(){
 		return this.getLink().getSettingsWidget();
 	},
+	
 	getProperty: function(key){
 		return this.properties.get(key);
 		/* TODO: Remove
@@ -127,6 +144,7 @@ networkMap.extend(networkMap.LinkPath, {
 		return this.options[key];
 		*/
 	},
+	
 	setProperty: function(key, value){
 		if (key == 'width'){
 			var link = this.getMainPath();
@@ -141,9 +159,12 @@ networkMap.extend(networkMap.LinkPath, {
 		this.fireEvent('change', [key]);
 		return this;
 	},
+	
 	getConfiguration: function(){
 		return this.properties.extract();
 	},
+		
+	
 	getMainPath: function(){
 		var link;
 		
@@ -174,6 +195,7 @@ networkMap.extend(networkMap.LinkPath, {
 		return this;
 		
 	},
+	
 	setupEvents: function(){
 		this.svg.on('click', this._clickHandler.bind(this));
 		
@@ -188,6 +210,7 @@ networkMap.extend(networkMap.LinkPath, {
 			}
 		}
 	},
+	
 	_clickHandler: function(e){
 		if (this.link.mode() === 'normal' && this.properties.get('events.click')){
 			networkMap.events.click(e, this);
@@ -212,6 +235,7 @@ networkMap.extend(networkMap.LinkPath, {
 			})]);
 		}
 	},
+	
 	_hoverHandler: function(e){
 		if (this.link.mode() === 'edit'){
 			return;
@@ -224,4 +248,5 @@ networkMap.extend(networkMap.LinkPath, {
 			networkMap.events.mouseout(e, this);
 		}
 	}
+	
 });

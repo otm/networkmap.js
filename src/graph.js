@@ -39,8 +39,15 @@ networkMap.Graph = function(target, options){
 		
 		/** A grid size for objects to snap to */
 		grid: {x:10, y:10},
+		
+		/** utilization labels */
+		utilizationLabels: {
+			enabled: false,
+			fontSize: 8,
+			padding: 2
+		}
 	};
-	/*
+	/* TODO: Remove
 	node: {
 			linkGenerator: null
 		},
@@ -92,17 +99,15 @@ networkMap.Graph = function(target, options){
 
 	this.properties = new networkMap.Properties(options, new networkMap.Properties(defaults));
 	this.properties.addEvent('change', function(change){
-		var grid;
-		var gridEnabled;		
-		if (change.length >= 2){
-			change.forEach(function(prop){
-				if (prop.key === 'gridEnabled') gridEnabled = prop.value;
-				if (prop.key === 'grid') grid = prop.value;	
-			});
-		
-			if (gridEnabled === false) this.grid(gridEnabled);
-			else if (grid) this.grid(grid);
-		}
+		var gridChange = false;		
+		var self = this;
+		change.forEach(function(prop){
+			if (prop.key === 'gridEnabled') grid = true;
+			if (prop.key === 'grid') grid = true;
+			if (prop.key === 'utilizationLabels') self.onUtilizationLabelsChange();
+		});
+		if (gridChange) this.onGridChange();
+		self = null;				
 	}.bind(this));
 		
 	// Setup node and link defaults
@@ -415,9 +420,23 @@ networkMap.extend(networkMap.Graph, {
 			this.properties.set('grid', grid);
 		}
 
+		
+		return this.onGridChange();
+	},
+	
+	onGridChange: function(){
 		this.disableDraggableNodes();
 		this.enableDraggableNodes();
+		
 		return this;
+	},
+	
+	onUtilizationLabelsChange: function(){
+		var options = this.properties.get('utilizationLabels');
+		this.links.forEach(function(link){
+			link.setUtilizationLabelOptions(options);
+		});
+		options = null;
 	},
 
 	/**
@@ -482,7 +501,15 @@ networkMap.extend(networkMap.Graph, {
 		mapStruct.links = mapStruct.links || [];
 		
 		if (mapStruct.defaults){
-			this.properties.set(mapStruct.defaults.graph || {});			
+			// TODO: Refactor (this should not be saved as string in the JSON on the server)		
+			if (mapStruct.defaults.graph.utilizationLabels && mapStruct.defaults.graph.utilizationLabels.enabled === 'false')
+				mapStruct.defaults.graph.utilizationLabels.enabled = false;
+			if (mapStruct.defaults.graph.utilizationLabels && mapStruct.defaults.graph.utilizationLabels.enabled === 'true')
+				mapStruct.defaults.graph.utilizationLabels.enabled = true;
+				
+			this.properties.set(mapStruct.defaults.graph || {});
+			this.onUtilizationLabelsChange();
+		
 			this.setDefaults('node', mapStruct.defaults.node || {});
 			this.setDefaults('link', mapStruct.defaults.link || {});
 		}

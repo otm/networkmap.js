@@ -36,6 +36,7 @@ networkMap.extend(networkMap.widget.IntegerInput, {
 				this.input.value = parseInt(this.input.value) + parseInt(this.increment);
 				this.increment = 0;
 			}
+			e.value = this.value();
 			this.fireEvent('change', [e, this]);
 		}.bind(this));
 

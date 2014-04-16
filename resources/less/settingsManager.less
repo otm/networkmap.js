@@ -285,6 +285,37 @@
 
 
 .nm-checkbox {
+	height: 25px;
+	margin-top: 5px;
+	
+	input {
+		margin-left: 1em;
+		position: relative;
+	}
+	
+	input[type="checkbox"] {	
+		margin-left: 6px;
+		width: 20px;
+		height: 20px;
+		top: 2px;
+	}	
+	
+	span {
+		background-color: lighten(#1e90ff, 10%);
+		width: 35%;
+		height: 100%;
+		float: left;
+		text-align: center;
+		line-height: 23px;
+	}
+	
+	&.nm-no-decoration{
+		height: 0.5em;
+		margin-top: 2px;
+	}
+}
+
+.nm-checkbox-undecorated {
 	margin-top: 2px;
 	
 	input {
@@ -292,8 +323,8 @@
 		position: relative;
 		top: -3px;
 	}
+	
 }
-
 .nm-input-snap {
 	height: 25px;
 	margin-top: 5px;

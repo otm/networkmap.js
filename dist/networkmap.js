@@ -464,6 +464,7 @@ networkMap.extend(networkMap.widget.IntegerInput, {
 				this.input.value = parseInt(this.input.value) + parseInt(this.increment);
 				this.increment = 0;
 			}
+			e.value = this.value();
 			this.fireEvent('change', [e, this]);
 		}.bind(this));
 
@@ -996,6 +997,7 @@ networkMap.extend(networkMap.widget.Checkbox, {
 		this.input.setAttribute('type', this.options.type);
 		this.input.checked = value;
 		this.input.addEventListener('change', function(e){
+			e.value = this.value();
 			this.fireEvent('change', [e, this]);
 		}.bind(this));
 
@@ -2302,7 +2304,148 @@ networkMap.extend(networkMap.renderer.settingsManager.Configure, {
 	}
 });
 
-networkMap.SettingsManager.registerAction('configure', new networkMap.renderer.settingsManager.Configure());;/**
+networkMap.SettingsManager.registerAction('configure', new networkMap.renderer.settingsManager.Configure());;networkMap.renderer.link = networkMap.renderer.Link || {};
+networkMap.renderer.link.UtilizationLabel = function(svg, options){
+	this.label = null;
+	this.rect = null;
+	this.svg = svg;
+	
+	this.value = null;
+
+	options = options || {};
+	this.cx = options.cx || null;
+	this.cy = options.cy || null;
+	delete options.cx;
+	delete options.cy;
+		
+	this.options = {
+		enabled: false,
+		padding: 2,
+		fontSize: 8,
+		digits: 0
+	};
+	this.setOptions(options);
+	
+	this.state = this.states.notRendered;
+};
+
+networkMap.extend(networkMap.renderer.link.UtilizationLabel, networkMap.Options);
+networkMap.extend(networkMap.renderer.link.UtilizationLabel, networkMap.Observable);
+
+networkMap.extend(networkMap.renderer.link.UtilizationLabel, {
+	NULL_STRING: '  -  ',
+	
+	setPosition: function(cx, cy){
+		this.cx = cx;
+		this.cy = cy;
+		return this;
+	},
+	render: function(value){ return this.state.render.call(this, value); },
+	hide: function(){ return this.state.hide.call(this); },
+	show: function(){ return this.state.show.call(this); },
+	purge: function(){ return this.state.purge.call(this); },
+	
+	states: {
+		notRendered: {
+			render: function(value){
+				if (!this.svg)
+					return this;
+				
+				if (!this.options.enabled){
+					return this;
+				}
+
+				value = value || this.value;
+				
+				var bgColor = '#ffffff', 
+					strokeColor = '#000000',
+					strokeWidth = 1;				
+				
+				var svg = this.svg;
+	
+				var label = this.label = svg.text(this.NULL_STRING)
+				.font({
+					family:   this.options.fontFamily,
+					size:     this.options.fontSize,
+					anchor:   'start',
+					leading:  this.options.fontSize
+				})
+				.move(parseFloat(this.options.padding), parseFloat(this.options.padding));
+				
+				var bboxLabel = label.bbox();		
+				var rect = this.rect = svg.rect(1,1)
+					.fill({ color: bgColor})
+					.stroke({ color: strokeColor, width: strokeWidth })
+					.attr({ 
+						rx: 2,
+						ry: 2
+					})
+					.size(
+						bboxLabel.width + this.options.padding * 2, 
+						bboxLabel.height + this.options.padding * 2
+					);
+				label.front();
+				
+				this.state = this.states.rendered;
+				this.state.render.call(this, value);
+				return this;
+			},
+			hide: function(){
+				return this;
+			},
+			show: function(){
+				return this;
+			},
+			purge: function(){
+				return this;	
+			}
+		},
+		rendered: {
+			render: function(value){
+				value = this.value = value || this.value;
+				
+				value = (value === null) ? null : value * 100;
+				if (!this.options.enabled || this.cx === null || this.cy === null){
+					this.hide();
+					return this;
+				}
+				
+				this.show();
+				
+				if (value === null)
+					this.label.text(this.NULL_STRING);	
+				else		
+					this.label.text(((value < 10) ? ' ' : '') + value.toFixed(this.options.digits) + '%');
+					
+				this.label.font({
+					family:   this.options.fontFamily,
+					size:     this.options.fontSize,
+					leading:  this.options.fontSize
+				})
+				.move(parseFloat(this.options.padding), parseFloat(this.options.padding));
+				
+				var bboxLabel = this.label.bbox();	
+				this.rect.size(
+					bboxLabel.width + this.options.padding * 2, 
+					bboxLabel.height + this.options.padding * 2
+				);
+				
+				this.svg.center(parseFloat(this.cx), parseFloat(this.cy));	
+				this.svg.front();
+				return this;
+				
+			},
+			hide: function(){
+				this.svg.hide();
+			},
+			show: function(){
+				this.svg.show();
+			},
+			purge: function(node){}
+		}	
+	}
+
+});;/**
  * Creates an instance of networkMap.Graph.
  *
  * @constructor
@@ -2343,8 +2486,15 @@ networkMap.Graph = function(target, options){
 		
 		/** A grid size for objects to snap to */
 		grid: {x:10, y:10},
+		
+		/** utilization labels */
+		utilizationLabels: {
+			enabled: false,
+			fontSize: 8,
+			padding: 2
+		}
 	};
-	/*
+	/* TODO: Remove
 	node: {
 			linkGenerator: null
 		},
@@ -2396,17 +2546,15 @@ networkMap.Graph = function(target, options){
 
 	this.properties = new networkMap.Properties(options, new networkMap.Properties(defaults));
 	this.properties.addEvent('change', function(change){
-		var grid;
-		var gridEnabled;		
-		if (change.length >= 2){
-			change.forEach(function(prop){
-				if (prop.key === 'gridEnabled') gridEnabled = prop.value;
-				if (prop.key === 'grid') grid = prop.value;	
-			});
-		
-			if (gridEnabled === false) this.grid(gridEnabled);
-			else if (grid) this.grid(grid);
-		}
+		var gridChange = false;		
+		var self = this;
+		change.forEach(function(prop){
+			if (prop.key === 'gridEnabled') grid = true;
+			if (prop.key === 'grid') grid = true;
+			if (prop.key === 'utilizationLabels') self.onUtilizationLabelsChange();
+		});
+		if (gridChange) this.onGridChange();
+		self = null;				
 	}.bind(this));
 		
 	// Setup node and link defaults
@@ -2719,9 +2867,23 @@ networkMap.extend(networkMap.Graph, {
 			this.properties.set('grid', grid);
 		}
 
+		
+		return this.onGridChange();
+	},
+	
+	onGridChange: function(){
 		this.disableDraggableNodes();
 		this.enableDraggableNodes();
+		
 		return this;
+	},
+	
+	onUtilizationLabelsChange: function(){
+		var options = this.properties.get('utilizationLabels');
+		this.links.forEach(function(link){
+			link.setUtilizationLabelOptions(options);
+		});
+		options = null;
 	},
 
 	/**
@@ -2786,7 +2948,15 @@ networkMap.extend(networkMap.Graph, {
 		mapStruct.links = mapStruct.links || [];
 		
 		if (mapStruct.defaults){
-			this.properties.set(mapStruct.defaults.graph || {});			
+			// TODO: Refactor (this should not be saved as string in the JSON on the server)		
+			if (mapStruct.defaults.graph.utilizationLabels && mapStruct.defaults.graph.utilizationLabels.enabled === 'false')
+				mapStruct.defaults.graph.utilizationLabels.enabled = false;
+			if (mapStruct.defaults.graph.utilizationLabels && mapStruct.defaults.graph.utilizationLabels.enabled === 'true')
+				mapStruct.defaults.graph.utilizationLabels.enabled = true;
+				
+			this.properties.set(mapStruct.defaults.graph || {});
+			this.onUtilizationLabelsChange();
+		
 			this.setDefaults('node', mapStruct.defaults.node || {});
 			this.setDefaults('link', mapStruct.defaults.link || {});
 		}
@@ -3315,6 +3485,27 @@ networkMap.extend(networkMap.Graph.Module.Settings, {
 		}).addEvent('change', function(e){
 				graphProperties.set({'grid': e.value.grid, 'gridEnabled': e.value.enabled});	
 		}.bind(this)));
+		
+		accordionGroup = container.add('Utilization Labels');
+		var utilizationLabels = graphProperties.get('utilizationLabels');
+		accordionGroup.appendChild(new networkMap.widget.Checkbox('Enabled', utilizationLabels.enabled)
+			.addEvent('change', function(e){
+				utilizationLabels.enabled = e.value;
+				graphProperties.set('utilizationLabels', utilizationLabels);	
+			}.bind(this)));
+			
+		accordionGroup.appendChild(new networkMap.widget.IntegerInput('Padding', utilizationLabels.padding)
+			.addEvent('change', function(e){
+				utilizationLabels.padding = e.value;
+				graphProperties.set('utilizationLabels', utilizationLabels);	
+			}.bind(this)));
+			
+		accordionGroup.appendChild(new networkMap.widget.IntegerInput('Font size', utilizationLabels.fontSize)
+			.addEvent('change', function(e){
+				utilizationLabels.fontSize = e.value;
+				graphProperties.set('utilizationLabels', utilizationLabels);	
+			}.bind(this)));
+				
 		
 		nodeConfiguration.toElement();
 		linkConfiguration.toElement();
@@ -4137,8 +4328,6 @@ networkMap.Node._events = {
 
 ;
 networkMap.LinkPath = function(link, svg, options){
-	// this.options = {};
-	// this.setOptions(options);
 	this.properties = new networkMap.Properties(options, link.properties);
 	this.properties.addEvent('change', function(change){
 		this.fireEvent('change', change);
@@ -4147,6 +4336,7 @@ networkMap.LinkPath = function(link, svg, options){
 	this.link = link;
 	this.mediator = this.link.graph;
 	this.svg = svg;
+	this.value = null;
 	
 	// Check if we should setup an update event
 	if (this.properties.get('requestUrl')) {
@@ -4155,7 +4345,12 @@ networkMap.LinkPath = function(link, svg, options){
 			this.properties.get('requestUrl'),
 			this,
 			function(response){
+				// Refactor
+				this.value = response.value;
 				this.link.updateBgColor(this, this.link.colormap.translate(response.value));
+				
+				// update utilization label
+				this.link.setUtilizationLabel();
 			}.bind(this)
 		);
 	}
@@ -4166,9 +4361,11 @@ networkMap.LinkPath = function(link, svg, options){
 networkMap.extend(networkMap.LinkPath, networkMap.Options);
 networkMap.extend(networkMap.LinkPath, networkMap.Observable);
 networkMap.extend(networkMap.LinkPath, {	
+
 	remove: function(){
 		this.svg.remove();
 	},
+	
 	getEditables: function(){
 		var editables = {
 			width: {
@@ -4230,6 +4427,15 @@ networkMap.extend(networkMap.LinkPath, {
 		return this;						
 	},	
 	
+	getCenter: function(){
+		var bbox = this.svg.bbox();
+			
+		return {
+			cx: bbox.x + bbox.height / 2,
+			cy: bbox.y + bbox.width / 2
+		};	
+	},
+	
 	getLink: function(){
 		return this.link;
 	},
@@ -4241,9 +4447,11 @@ networkMap.extend(networkMap.LinkPath, {
 	getNode: function(){
 		return this.getLink().getNode(this);
 	},
+	
 	getSettingsWidget: function(){
 		return this.getLink().getSettingsWidget();
 	},
+	
 	getProperty: function(key){
 		return this.properties.get(key);
 		/* TODO: Remove
@@ -4264,6 +4472,7 @@ networkMap.extend(networkMap.LinkPath, {
 		return this.options[key];
 		*/
 	},
+	
 	setProperty: function(key, value){
 		if (key == 'width'){
 			var link = this.getMainPath();
@@ -4278,9 +4487,12 @@ networkMap.extend(networkMap.LinkPath, {
 		this.fireEvent('change', [key]);
 		return this;
 	},
+	
 	getConfiguration: function(){
 		return this.properties.extract();
 	},
+		
+	
 	getMainPath: function(){
 		var link;
 		
@@ -4311,6 +4523,7 @@ networkMap.extend(networkMap.LinkPath, {
 		return this;
 		
 	},
+	
 	setupEvents: function(){
 		this.svg.on('click', this._clickHandler.bind(this));
 		
@@ -4325,6 +4538,7 @@ networkMap.extend(networkMap.LinkPath, {
 			}
 		}
 	},
+	
 	_clickHandler: function(e){
 		if (this.link.mode() === 'normal' && this.properties.get('events.click')){
 			networkMap.events.click(e, this);
@@ -4349,6 +4563,7 @@ networkMap.extend(networkMap.LinkPath, {
 			})]);
 		}
 	},
+	
 	_hoverHandler: function(e){
 		if (this.link.mode() === 'edit'){
 			return;
@@ -4361,6 +4576,7 @@ networkMap.extend(networkMap.LinkPath, {
 			networkMap.events.mouseout(e, this);
 		}
 	}
+	
 });
 ;networkMap.Link = function(options){
 	
@@ -4373,7 +4589,21 @@ networkMap.extend(networkMap.LinkPath, {
 	this._mode = 'normal';
 	this.path = {};
 	this.subpath = {};
-
+	
+	
+	/** The current configuration of the utilization label */
+	this.utilizationLabelConfiguration = {
+		enabled: false,
+		fontSize: 8,
+		padding: 2
+	};
+	
+	
+	this.utilizationLabels = {
+		nodeA: null,
+		nodeB: null	
+	};
+	
 	var link, sublink;
 	
 	this.graph = options.graph;
@@ -4497,7 +4727,10 @@ networkMap.extend(networkMap.Link, {
 	 * @param {networkMap.LinkPath} linkPath 
 	 * @retrun {networkMap.Node} The node which the linkPath is associated with.
 	 */
-	getNode: function(linkPath){
+	getNode: function(linkPath, options){
+		options = options || {};
+		var returnRef = options.reference || false;
+		 
 		var any = function(path){
 			if (path === linkPath){
 				return true;	
@@ -4505,27 +4738,40 @@ networkMap.extend(networkMap.Link, {
 		};
 		
 		if (this.path.nodeA === linkPath){
+			if (returnRef)
+				return 'nodeA';
+				
 			return this.nodeA;
 		}
 		
 		if (this.subpath.nodeA){
 			if (this.subpath.nodeA.some(any, this)){
+				if (returnRef)
+					return 'nodeA';
+				
 				return this.nodeA;	
 			}
 		}
 		
 		if (this.path.nodeB === linkPath){
+			if (returnRef)
+				return 'nodeB';
+				
 			return this.nodeB;
 		}
 		
 		if (this.subpath.nodeB){
 			if (this.subpath.nodeB.some(any, this)){
+				if (returnRef)
+					return 'nodeB';
+					
 				return this.nodeB;	
 			}
 		}
 		
 		throw "Link is not found";		
 	},
+	
 	connectedTo: function(node, secondaryNode){
 		if (secondaryNode){
 			return (this.nodeA == node || this.nodeB == node) && (this.nodeA == secondaryNode || this.nodeB == secondaryNode);
@@ -4602,8 +4848,89 @@ networkMap.extend(networkMap.Link, {
 			}.bind(this));
 
 			this._setupSVG(this.properties.configuration());
+			
+			
+			this.utilizationLabelsConfiguration = networkMap.defaults(this.utilizationLabelsConfiguration, this.graph.properties.get('utilizationLabels'));
+			var nodeAPosition = this.path.nodeA.getCenter();
+			var nodeBPosition = this.path.nodeB.getCenter();
+			
+			this.utilizationLabels.nodeA = new networkMap.renderer.link.UtilizationLabel(this.svg.group(), this.utilizationLabelsConfiguration);
+			this.utilizationLabels.nodeB = new networkMap.renderer.link.UtilizationLabel(this.svg.group(), this.utilizationLabelsConfiguration);			
+			
 			this.draw();
 		}
+	},
+
+	setUtilizationLabel: function(){
+		this.utilizationLabels.nodeA.render(this.getUtilization('nodeA'));
+		this.utilizationLabels.nodeB.render(this.getUtilization('nodeB'));
+		
+		return this;
+	},
+	
+	setUtilizationLabelOptions: function(options){
+		options = options || {};
+		this.utilizationLabelConfiguration.enabled = (options.enabled === undefined) ? this.utilizationLabelConfiguration.enabled : options.enabled;
+		this.utilizationLabelConfiguration.fontSize = options.fontSize || this.utilizationLabelConfiguration.fontSize;
+		this.utilizationLabelConfiguration.padding = options.padding || this.utilizationLabelConfiguration.padding;
+				
+		this.utilizationLabels.nodeA.setOptions(this.utilizationLabelConfiguration);
+		this.utilizationLabels.nodeB.setOptions(this.utilizationLabelConfiguration);
+		this.utilizationLabels.nodeA.render(this.getUtilization('nodeA'));
+		this.utilizationLabels.nodeB.render(this.getUtilization('nodeB'));
+		
+		return this;
+	},
+	
+	hideUtilizationLabels: function(){
+		this.utilizationLabels.nodeA.hide();
+		this.utilizationLabels.nodeB.hide();
+	},
+	
+	updateUtilizationLabels: function(){
+		this.setUtilizationLabelPositions();
+		this.utilizationLabels.nodeA.render();
+		this.utilizationLabels.nodeB.render();
+	},
+
+	setUtilizationLabelPositions: function(){
+		var center;
+		var midpoint = new SVG.math.Line(this.pathPoints[2], this.pathPoints[3]).midPoint();
+		
+		center = new SVG.math.Line(this.pathPoints[2], midpoint).midPoint();
+		this.utilizationLabels.nodeA.setPosition(center.x, center.y).render();
+		
+		center = new SVG.math.Line(midpoint, this.pathPoints[3]).midPoint();
+		this.utilizationLabels.nodeB.setPosition(center.x, center.y).render();
+		
+		center = null;
+		midpoint = null;
+	},
+
+	getUtilization: function(node){
+		var max = null;
+		
+		if (node === undefined)
+			throw "Uknown link given to getMaxUtilization";		
+		
+		var checkPath = function(path){
+			// We are utilizing that 0 >= null => true
+			if (path === null)
+				return;
+				
+			if (path.value >= max){
+				max = path.value;
+			}	
+		};	
+		
+		// TODO: This check should change
+		if(this.path[node] && this.path[node].properties.get('requestData') && this.path[node].properties.get('requestUrl'))
+			checkPath(this.path[node]);
+		else
+			this.subpath[node].forEach(checkPath);
+				
+		checkPath = null;
+		return max;
 	},
 
 	_setupSVG: function(options){
@@ -4694,13 +5021,15 @@ networkMap.extend(networkMap.Link, {
 		if (this.options.debug && !this.debug){
 			this.debug = this.graph.getPaintArea().group();
 		}
-	},
+	},	
+	
 	redraw: function(){
 		this.redrawShadowPath();
 		this.drawMainPath();
 		this.drawSublinks();
 		return this;
 	},
+
 	draw: function(){
 		if (this.svg && !this.graph){
 			this.svg.remove();
@@ -4727,6 +5056,9 @@ networkMap.extend(networkMap.Link, {
 		});
 
 		this.redrawShadowPath().hideShadowPath();
+
+		this.setUtilizationLabelPositions();
+		
 		this.drawMainPath();
 		this.drawSublinks();
 		this.update();
@@ -4743,10 +5075,12 @@ networkMap.extend(networkMap.Link, {
 
 		this.nodeA.addEvent('dragstart', function(event){
 			this.shadowPath.show();
+			this.hideUtilizationLabels();
 			this.hidePaths();
 		}.bind(this));
 		this.nodeB.addEvent('dragstart', function(event){
 			this.shadowPath.show();
+			this.hideUtilizationLabels();
 			this.hidePaths();
 		}.bind(this));
 
@@ -4755,6 +5089,7 @@ networkMap.extend(networkMap.Link, {
 			this.drawMainPath();
 			this.drawSublinks();
 			this.showPaths();
+			this.updateUtilizationLabels();
 			
 		}.bind(this));
 		this.nodeB.addEvent('dragend', function(event){
@@ -4762,10 +5097,12 @@ networkMap.extend(networkMap.Link, {
 			this.drawMainPath();
 			this.drawSublinks();
 			this.showPaths();
+			this.updateUtilizationLabels();
 		}.bind(this));
 
 	},
-
+	
+	
 	vec2add: function(a, b, out){
 		out = out || [0, 0];
 

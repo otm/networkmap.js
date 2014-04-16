@@ -44,6 +44,7 @@ module.exports = function(grunt) {
 					'src/renderer/settingsManager.delete.js',
 					'src/renderer/settingsManager.modify.js',
 					'src/renderer/settingsManager.configure.js',
+					'src/renderer/link.utilizationLabel.js',
 					'src/graph.js', 
 					'src/graph.module.settings.js',
 					'src/node.js',
