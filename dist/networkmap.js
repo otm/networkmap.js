@@ -2949,9 +2949,9 @@ networkMap.extend(networkMap.Graph, {
 		
 		if (mapStruct.defaults){
 			// TODO: Refactor (this should not be saved as string in the JSON on the server)		
-			if (mapStruct.defaults.graph.utilizationLabels && mapStruct.defaults.graph.utilizationLabels.enabled === 'false')
+			if (mapStruct.defaults.graph && mapStruct.defaults.graph.utilizationLabels && mapStruct.defaults.graph.utilizationLabels.enabled === 'false')
 				mapStruct.defaults.graph.utilizationLabels.enabled = false;
-			if (mapStruct.defaults.graph.utilizationLabels && mapStruct.defaults.graph.utilizationLabels.enabled === 'true')
+			if (mapStruct.defaults.graph && mapStruct.defaults.graph.utilizationLabels && mapStruct.defaults.graph.utilizationLabels.enabled === 'true')
 				mapStruct.defaults.graph.utilizationLabels.enabled = true;
 				
 			this.properties.set(mapStruct.defaults.graph || {});
