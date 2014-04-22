@@ -102,8 +102,8 @@ networkMap.Graph = function(target, options){
 		var gridChange = false;		
 		var self = this;
 		change.forEach(function(prop){
-			if (prop.key === 'gridEnabled') grid = true;
-			if (prop.key === 'grid') grid = true;
+			if (prop.key === 'gridEnabled') gridChange = true;
+			if (prop.key === 'grid') gridChange = true;
 			if (prop.key === 'utilizationLabels') self.onUtilizationLabelsChange();
 		});
 		if (gridChange) this.onGridChange();
@@ -616,11 +616,13 @@ networkMap.extend(networkMap.Graph, {
 		var html = this.settings.btnSave.innerHTML;
 		this.settings.btnSave.textContent = '.....';
 
-		var params = networkMap.toQueryString(data);
+		//var params = networkMap.toQueryString(data);
 		var request = new XMLHttpRequest();
 
 		request.open(this.saveData.method, this.saveData.url, true);
-		request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+		request.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+		
+		//request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 
 		request.onload = function() {
 			this.settings.btnSave.innerHTML = html;
@@ -647,7 +649,7 @@ networkMap.extend(networkMap.Graph, {
 				.alert('There was an error while saving the weathermap', {title: 'Error'});
 		};
 
-		request.send(params);
+		request.send(JSON.stringify(data));
 	
 		return true;
 	},
