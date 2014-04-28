@@ -374,13 +374,13 @@ networkMap.extend(networkMap.Link, {
 			this.subpath.nodeA = [];
 			sublinks.forEach(function(sublink){
 				this.subpath.nodeA.push(
-					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
+					new networkMap.MemberLink(this, networkMap.path(this.svg), sublink)
 					.addEvent('change', this.redraw.bind(this))
 					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
 				);
 			}.bind(this));
 		}
-		this.path.nodeA = new networkMap.LinkPath(
+		this.path.nodeA = new networkMap.PrimaryLink(
 			this,
 			networkMap.path(this.svg), 
 			link
@@ -410,13 +410,13 @@ networkMap.extend(networkMap.Link, {
 			this.subpath.nodeB = [];
 			sublinks.forEach(function(sublink){
 				this.subpath.nodeB.push(
-					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
+					new networkMap.MemberLink(this, networkMap.path(this.svg), sublink)
 					.addEvent('change', this.redraw.bind(this))
 					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
 				);
 			}.bind(this));
 		}
-		this.path.nodeB = new networkMap.LinkPath(
+		this.path.nodeB = new networkMap.PrimaryLink(
 			this, 
 			networkMap.path(this.svg), 
 			link

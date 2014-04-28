@@ -4450,6 +4450,10 @@ networkMap.extend(networkMap.LinkPath, {
 		return this.getLink().getNode(this);
 	},
 	
+	getSibling: function(){
+		return undefined;
+	},	
+	
 	getSettingsWidget: function(){
 		return this.getLink().getSettingsWidget();
 	},
@@ -4579,6 +4583,56 @@ networkMap.extend(networkMap.LinkPath, {
 		}
 	}
 	
+});
+
+networkMap.PrimaryLink = function(link, svg, options){
+	networkMap.LinkPath.call(this, link, svg, options);
+};
+
+networkMap.PrimaryLink.prototype = Object.create(networkMap.LinkPath.prototype);
+networkMap.PrimaryLink.constructor = networkMap.PrimaryLink;
+
+networkMap.extend(networkMap.PrimaryLink, {
+	getSibling: function(){
+		var link = this.getLink();
+		
+		return (this === link.path.nodeA) ? link.path.nodeB :
+			(this === link.path.nodeB) ? link.path.nodeA :
+			undefined;
+	}
+});
+
+
+networkMap.MemberLink = function(link, svg, options){
+	networkMap.LinkPath.call(this, link, svg, options);
+};
+
+networkMap.MemberLink.prototype = Object.create(networkMap.LinkPath.prototype);
+networkMap.MemberLink.constructor = networkMap.MemberLink;
+
+networkMap.extend(networkMap.MemberLink, {
+	getSibling: function(){
+		var i, len;
+		var link = this.getLink();
+		
+		// the links does not have siblings
+		if (link.subpath.nodeA.length != link.subpath.nodeB.length)
+			return undefined;
+		
+		for (i = 0, len = link.subpath.nodeA.length; i < len; i++){
+			if (this === link.subpath.nodeA[i]){
+				return link.subpath.nodeB[i];
+			}
+		}
+
+		for (i = 0, len = link.subpath.nodeB.length; i < len; i++){
+			if (this === link.subpath.nodeB[i]){
+				return link.subpath.nodeA[i];
+			}
+		}
+		
+		return undefined;
+	}
 });
 ;networkMap.Link = function(options){
 	
@@ -4956,13 +5010,13 @@ networkMap.extend(networkMap.Link, {
 			this.subpath.nodeA = [];
 			sublinks.forEach(function(sublink){
 				this.subpath.nodeA.push(
-					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
+					new networkMap.MemberLink(this, networkMap.path(this.svg), sublink)
 					.addEvent('change', this.redraw.bind(this))
 					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
 				);
 			}.bind(this));
 		}
-		this.path.nodeA = new networkMap.LinkPath(
+		this.path.nodeA = new networkMap.PrimaryLink(
 			this,
 			networkMap.path(this.svg), 
 			link
@@ -4992,13 +5046,13 @@ networkMap.extend(networkMap.Link, {
 			this.subpath.nodeB = [];
 			sublinks.forEach(function(sublink){
 				this.subpath.nodeB.push(
-					new networkMap.LinkPath(this, networkMap.path(this.svg), sublink)
+					new networkMap.MemberLink(this, networkMap.path(this.svg), sublink)
 					.addEvent('change', this.redraw.bind(this))
 					.addEvent('requestHref', function(sublink){this.fireEvent('requestHref', [sublink]);}.bind(this))
 				);
 			}.bind(this));
 		}
-		this.path.nodeB = new networkMap.LinkPath(
+		this.path.nodeB = new networkMap.PrimaryLink(
 			this, 
 			networkMap.path(this.svg), 
 			link
