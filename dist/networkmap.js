@@ -5996,7 +5996,7 @@ networkMap.extend(networkMap.Link.Module.Settings, {
 						accordionGroup.appendChild(
 							new networkMap.widget.IntegerInput(
 								option.label, 
-								link.path.nodeA.properties.get(key, true), 
+								link.path[node].properties.get(key, true), 
 								option
 							)
 							.addEvent('change', changeHandler(key, link.path[node].properties))
@@ -6006,7 +6006,7 @@ networkMap.extend(networkMap.Link.Module.Settings, {
 						accordionGroup.appendChild(
 							new networkMap.widget.TextInput(
 								option.label, 
-								link.path.nodeA.properties.get(key), 
+								link.path[node].properties.get(key), 
 								option
 							)
 							.addEvent('change', changeHandler(key, link.path[node].properties))
@@ -6016,7 +6016,7 @@ networkMap.extend(networkMap.Link.Module.Settings, {
 						accordionGroup.appendChild(
 							new networkMap.widget.ColorInput(
 								option.label, 
-								link.path.nodeA.properties.get(key), 
+								link.path[node].properties.get(key), 
 								option
 							)
 							.addEvent('change', changeHandler(key, link.path[node].properties))
