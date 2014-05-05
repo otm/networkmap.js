@@ -23,6 +23,7 @@ module.exports = function(grunt) {
 				src: [
 					'lib/classList.js',
 					'src/networkMap.js',
+					'src/vec.js',
 					'src/event.configuration.js',
 					'src/widgets/integerinput.js',
 					'src/widgets/textinput.js',
