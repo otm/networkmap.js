@@ -227,7 +227,11 @@ networkMap.extend(networkMap.Node, {
 		}
 		else if (this._mode === 'edit'){
 			e.preventDefault();
-
+			
+			
+			if (this.svg.dragged)
+				return;
+			
 			this.graph.publish('edit', [new networkMap.event.Configuration({
 				deletable: true,
 				destroy: function(){ 
@@ -270,7 +274,23 @@ networkMap.extend(networkMap.Node, {
 	 */
 	draggable: function(){
 		this._draggable = true;
-		this.svg.draggable({grid: this.graph.grid()});
+		//this.svg.draggable({grid: this.graph.grid()});
+		
+		var grid = this.graph.grid();
+		var dragLimit = 5;
+		this.svg.draggable(function(x, y, element, delta){
+			if (!element.dragged && (Math.abs(delta.x) <  dragLimit && Math.abs(delta.y) < dragLimit)){
+				return false;
+			}
+			
+			if (grid)
+				return {
+					x: x - x % grid.x,
+					y: y - y % grid.y
+				};
+			else
+				return true;
+		});
 		this.svg.remember('cursor', this.svg.style('cursor'));
 		this.svg.style('cursor', 'move');
 		

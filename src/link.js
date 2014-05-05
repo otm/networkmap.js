@@ -641,7 +641,6 @@ networkMap.extend(networkMap.Link, {
 		var baseA = this.vec2clone(edgePointA);
 		this.vec2add(a, edgePointA, edgePointA);
 
-		//var edgeNodeA = this.vec2add(a, this.vec2confine(this.vec2scale(dirA, inset), confinmentA));
 		path.push(edgePointA);
 		path.push(this.vec2add(a, this.vec2add(baseA, this.vec2scale(dirA, connectionDistance))));
 		this.vec2add(baseA, this.vec2scale(dirA, connectionDistance), baseA);
@@ -656,7 +655,6 @@ networkMap.extend(networkMap.Link, {
 		var baseB = this.vec2clone(edgePointB);
 		this.vec2add(b, edgePointB, edgePointB);
 
-		//var edgeNodeB = this.vec2add(b, this.vec2confine(this.vec2scale(dirB, inset), confinmentB));
 		baseBB = [0, 0];
 		this.vec2add(baseB, this.vec2scale(dirB, connectionDistance), baseBB);
 		path.push(this.vec2add(b, this.vec2add(baseBB, this.vec2scale(dirB, staticConnectionDistance))));
@@ -725,11 +723,11 @@ networkMap.extend(networkMap.Link, {
 				maxY: bbox.y + bbox.height
 			});
 
-		edgeHandle.dragmove = function(delta, e){
+		edgeHandle.dragmove = function(event){
 			var vec = [0,0];
 			this.vec2scale(edge.direction, 30, vec);
-			handle.center(e.target.instance.cx() + vec[0], e.target.instance.cy() + vec[1]);
-			console.log(e.target.instance.cx() + vec[0], e.target.instance.cy() + vec[1]);
+			handle.center(event.target.cx() + vec[0], event.target.cy() + vec[1]);
+			//console.log(event.target.cx() + vec[0], event.target.cy() + vec[1]);
 		}.bind(this);
 
 		svg.front();
@@ -816,16 +814,6 @@ networkMap.extend(networkMap.Link, {
 
 	drawMainPath: function(){
 		var maxLinkCount = 1;
-
-		/* TODO: debug code */
-		/*
-		this.debug = this.debug || this.graph.getPaintArea().group();
-		this.debug.clear();
-		var edgePoints = this.edgePoints();
-		edgePoints.nodeA.draw(this.debug);
-		edgePoints.nodeB.draw(this.debug);
-		this.debug.front();
-		*/
 		
 		var drawNormalPath = function(sublink, pathPoints, options){
 			var width = sublink.getProperty('width');

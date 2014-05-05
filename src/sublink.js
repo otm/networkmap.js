@@ -221,9 +221,9 @@ networkMap.extend(networkMap.LinkPath, {
 		}
 		else if (this.link.mode() === 'edit'){
 			e.preventDefault();
-
-			// TODO: Remove
-			//this.link.graph.publish('edit', [this.link.configurationWidget.toElement(this.link, this.link.properties)]);
+			
+			// TODO: This is temporary code to test a feature
+			//this.link.drawEdgeHandle(this.link.$edgePoints.nodeA);
 			
 			// TODO: Create an uniform API for the settings widgets.
 			this.mediator.publish('edit', [new networkMap.event.Configuration({

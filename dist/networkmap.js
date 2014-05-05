@@ -406,6 +406,101 @@ networkMap.toQueryString = function(object, base){
 
 	return queryString.join('&');
 };
+;
+networkMap.vec2 = function(x, y){
+	this.x = x;
+	this.y = y;
+};
+
+networkMap.vec2.create = function(x,y){
+	return new vec2(x,y);	
+};
+
+networkMap.extend(networkMap.vec2, {
+	clone: function(){
+		return networkMap.vec2.create(this.x, this,y);
+	},
+	
+	add: function(v){
+		this.x += v.x;
+		this.y += v.y;
+
+		return this;
+	},
+
+	sub: function(v){
+		this.x -= v.x;
+		this.y -= v.y;
+
+		return this;
+	},
+
+	distance: function(v){
+		var x = v.x - this.x,
+		y = v.y - this.y;
+		return Math.sqrt(x*x + y*y);
+	},
+
+	len: function(){
+		var x = v.x,
+			y = v.y;
+		return Math.sqrt(x*x + y*y);
+	},
+
+	normalize: function() {
+		
+		var x = this.x,
+			y = this.y,
+			len = x*x + y*y;
+			
+		if (len > 0) {
+			len = 1 / Math.sqrt(len);
+			this.x = x * len;
+			this.y = y * len;
+		}
+		return this;
+	},
+
+	maxDir: function(){
+		var x = this.x, 
+			y = this.y,
+			al0 = Math.abs(x),
+			al1 = Math.abs(y);
+
+		if (al0 > al1){
+			this.x = x / al0;
+			this.y = 0;
+		}
+		else{
+			this.x = 0;
+			this.y = y / al1;
+		}
+		return this;
+	},
+
+	scale: function(s){
+		this.x *= s;
+		this.y *= s;		
+
+		return this;
+	},
+
+	mul: function(v){
+		this.x *= v.x;
+		this.y *= v.y; 
+		
+		return this;
+	},
+
+	confine: function(v){
+		var x = this.x, y = this.y, x2 = v.x, y2= v.y;
+
+		this.x = (Math.abs(x) < Math.abs(x2)) ? x : x / Math.abs(x)*x2;
+		this.y = (Math.abs(y) < Math.abs(y2)) ? y : y / Math.abs(y)*y2;
+
+		return this;
+	}
+});
 ;networkMap.event = networkMap.event || {};
 
 networkMap.event.Configuration = function(options){
@@ -3745,7 +3840,11 @@ networkMap.extend(networkMap.Node, {
 		}
 		else if (this._mode === 'edit'){
 			e.preventDefault();
-
+			
+			
+			if (this.svg.dragged)
+				return;
+			
 			this.graph.publish('edit', [new networkMap.event.Configuration({
 				deletable: true,
 				destroy: function(){ 
@@ -3788,7 +3887,23 @@ networkMap.extend(networkMap.Node, {
 	 */
 	draggable: function(){
 		this._draggable = true;
-		this.svg.draggable({grid: this.graph.grid()});
+		//this.svg.draggable({grid: this.graph.grid()});
+		
+		var grid = this.graph.grid();
+		var dragLimit = 5;
+		this.svg.draggable(function(x, y, element, delta){
+			if (!element.dragged && (Math.abs(delta.x) <  dragLimit && Math.abs(delta.y) < dragLimit)){
+				return false;
+			}
+			
+			if (grid)
+				return {
+					x: x - x % grid.x,
+					y: y - y % grid.y
+				};
+			else
+				return true;
+		});
 		this.svg.remember('cursor', this.svg.style('cursor'));
 		this.svg.style('cursor', 'move');
 		
@@ -4551,9 +4666,9 @@ networkMap.extend(networkMap.LinkPath, {
 		}
 		else if (this.link.mode() === 'edit'){
 			e.preventDefault();
-
-			// TODO: Remove
-			//this.link.graph.publish('edit', [this.link.configurationWidget.toElement(this.link, this.link.properties)]);
+			
+			// TODO: This is temporary code to test a feature
+			//this.link.drawEdgeHandle(this.link.$edgePoints.nodeA);
 			
 			// TODO: Create an uniform API for the settings widgets.
 			this.mediator.publish('edit', [new networkMap.event.Configuration({
@@ -5277,7 +5392,6 @@ networkMap.extend(networkMap.Link, {
 		var baseA = this.vec2clone(edgePointA);
 		this.vec2add(a, edgePointA, edgePointA);
 
-		//var edgeNodeA = this.vec2add(a, this.vec2confine(this.vec2scale(dirA, inset), confinmentA));
 		path.push(edgePointA);
 		path.push(this.vec2add(a, this.vec2add(baseA, this.vec2scale(dirA, connectionDistance))));
 		this.vec2add(baseA, this.vec2scale(dirA, connectionDistance), baseA);
@@ -5292,7 +5406,6 @@ networkMap.extend(networkMap.Link, {
 		var baseB = this.vec2clone(edgePointB);
 		this.vec2add(b, edgePointB, edgePointB);
 
-		//var edgeNodeB = this.vec2add(b, this.vec2confine(this.vec2scale(dirB, inset), confinmentB));
 		baseBB = [0, 0];
 		this.vec2add(baseB, this.vec2scale(dirB, connectionDistance), baseBB);
 		path.push(this.vec2add(b, this.vec2add(baseBB, this.vec2scale(dirB, staticConnectionDistance))));
@@ -5361,11 +5474,11 @@ networkMap.extend(networkMap.Link, {
 				maxY: bbox.y + bbox.height
 			});
 
-		edgeHandle.dragmove = function(delta, e){
+		edgeHandle.dragmove = function(event){
 			var vec = [0,0];
 			this.vec2scale(edge.direction, 30, vec);
-			handle.center(e.target.instance.cx() + vec[0], e.target.instance.cy() + vec[1]);
-			console.log(e.target.instance.cx() + vec[0], e.target.instance.cy() + vec[1]);
+			handle.center(event.target.cx() + vec[0], event.target.cy() + vec[1]);
+			//console.log(event.target.cx() + vec[0], event.target.cy() + vec[1]);
 		}.bind(this);
 
 		svg.front();
@@ -5452,16 +5565,6 @@ networkMap.extend(networkMap.Link, {
 
 	drawMainPath: function(){
 		var maxLinkCount = 1;
-
-		/* TODO: debug code */
-		/*
-		this.debug = this.debug || this.graph.getPaintArea().group();
-		this.debug.clear();
-		var edgePoints = this.edgePoints();
-		edgePoints.nodeA.draw(this.debug);
-		edgePoints.nodeB.draw(this.debug);
-		this.debug.front();
-		*/
 		
 		var drawNormalPath = function(sublink, pathPoints, options){
 			var width = sublink.getProperty('width');
