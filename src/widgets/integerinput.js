@@ -22,22 +22,44 @@ networkMap.extend(networkMap.widget.IntegerInput, {
 		this.input = document.createElement('input');
 		this.input.setAttribute('type', 'number');
 
+		/*
 		// TODO: Clean up code		
-		var tmpValue = (value.inherited) ? value.value : value;
+		var tmpValue = (value.inherited) ? value.value : 
+			(value) ? value : null;
+			
 		if (!tmpValue && value.inherited)
-			this.increment = value.inherited;
+			this.increment = parseInt(value.inherited, 10);
 		else
 			this.increment = 0;
-		
-		this.input.value = (value.inherited) ? value.value: value;
+		*/
+		this.input.value = (value.inherited && value.value) ? value.value : 
+			(value.inherited) ? '' :
+			(value) ? value : '';
+			
+			
 		if (value.inherited) this.input.setAttribute('placeholder', value.inherited);
 		this.input.addEventListener('change', function(e){
-			if (this.increment){
+			/*
+			if (this.input.value === '' && value.inherited){
+				this.increment = parseInt(value.inherited, 10);
+			}
+			if (this.increment && (this.options.min !== undefined && parseInt(this.input.value, 10) === this.options.min ) || parseInt(this.input.value, 10) === 1) ){
 				this.input.value = parseInt(this.input.value) + parseInt(this.increment);
 				this.increment = 0;
 			}
+			if (this.increment && (parseInt(this.input.value, 10) === this.options.min || parseInt(this.input.value, 10) === 0)){
+				this.input.value = parseInt(this.increment) - 1;
+				this.increment = 0;
+			}
+			*/
 			e.value = this.value();
-			this.fireEvent('change', [e, this]);
+			
+			// this is a hack to prevent the change event to 
+			// fire twice in chrome
+			var self = this;
+			setTimeout(function(){
+				self.fireEvent('change', [e, self]);
+			}, 1);
 		}.bind(this));
 
 		if (this.options.min !== undefined){
