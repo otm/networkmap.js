@@ -1,6 +1,8 @@
 networkMap.events = networkMap.events || {
 	click: function(e, link){
-		if (link.options.events.click.href){
+		var linkEvents = link.properties.get('events');
+		
+		if (linkEvents && linkEvents.click && linkEvents.click.href){
 			window.location.href = link.options.events.click.href;
 		}
 	},

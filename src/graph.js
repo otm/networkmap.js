@@ -47,14 +47,6 @@ networkMap.Graph = function(target, options){
 			padding: 2
 		}
 	};
-	/* TODO: Remove
-	node: {
-			linkGenerator: null
-		},
-		link: {
-			linkGenerator: null
-		}
-	*/
 	
 	/** The default configuration */
 	this.defaults = {};
@@ -501,14 +493,17 @@ networkMap.extend(networkMap.Graph, {
 		mapStruct.links = mapStruct.links || [];
 		
 		if (mapStruct.defaults){
-			// TODO: Refactor (this should not be saved as string in the JSON on the server)		
-			if (mapStruct.defaults.graph && mapStruct.defaults.graph.utilizationLabels && mapStruct.defaults.graph.utilizationLabels.enabled === 'false')
-				mapStruct.defaults.graph.utilizationLabels.enabled = false;
-			if (mapStruct.defaults.graph && mapStruct.defaults.graph.utilizationLabels && mapStruct.defaults.graph.utilizationLabels.enabled === 'true')
-				mapStruct.defaults.graph.utilizationLabels.enabled = true;
+			
+			// TODO: This can be removed as soon as all weathermaps are converted 
+			if (mapStruct.defaults.graph && mapStruct.defaults.graph.utilizationLabels){
+				if (mapStruct.defaults.graph.utilizationLabels.enabled === 'false')
+					mapStruct.defaults.graph.utilizationLabels.enabled = false;
+					
+				if (mapStruct.defaults.graph.utilizationLabels.enabled === 'true')
+					mapStruct.defaults.graph.utilizationLabels.enabled = true;
+			}
 				
 			this.properties.set(mapStruct.defaults.graph || {});
-			this.onUtilizationLabelsChange();
 		
 			this.setDefaults('node', mapStruct.defaults.node || {});
 			this.setDefaults('link', mapStruct.defaults.link || {});
@@ -531,7 +526,9 @@ networkMap.extend(networkMap.Graph, {
 		
 		this.fireEvent('load', [this]);
 		this.triggerEvent('resize', this);
-
+		
+		this.onUtilizationLabelsChange();
+		
 		return this;
 	},
 
@@ -854,19 +851,20 @@ networkMap.extend(networkMap.Graph, {
 	 *	the graph in the link.
 	 */
 	addLink: function(link, refresh){
+		
 		this.links.push(link);
 
 		// listen to the requestHref to provide link href
 		link.addEvent('requestHref', this.link.linkGenerator);
 		
 		// as the link is already created we need to trigger an update of the link
-		link.updateLink();
+		link.updateHyperlinks();
 
-
+		
 		if (refresh !== false){
 			this.triggerEvent('resize', this);	
 		}
-
+		
 
 		return this;
 	},	

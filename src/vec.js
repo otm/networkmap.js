@@ -5,12 +5,12 @@ networkMap.vec2 = function(x, y){
 };
 
 networkMap.vec2.create = function(x,y){
-	return new vec2(x,y);	
+	return new networkMap.vec2(x,y);	
 };
 
 networkMap.extend(networkMap.vec2, {
 	clone: function(){
-		return networkMap.vec2.create(this.x, this,y);
+		return networkMap.vec2.create(this.x, this.y);
 	},
 	
 	add: function(v){
@@ -85,7 +85,7 @@ networkMap.extend(networkMap.vec2, {
 	},
 
 	confine: function(v){
-		var x = this.x, y = this.y, x2 = v.x, y2= v.y;
+		var x = this.x, y = this.y, x2 = v.x, y2 = v.y;
 
 		this.x = (Math.abs(x) < Math.abs(x2)) ? x : x / Math.abs(x)*x2;
 		this.y = (Math.abs(y) < Math.abs(y2)) ? y : y / Math.abs(y)*y2;

@@ -51,6 +51,7 @@ module.exports = function(grunt) {
 					'src/node.js',
 					'src/node.module.settings.js',
 					'src/node.events.js',
+					'src/linkpath.js',
 					'src/sublink.js',
 					'src/link.js',
 					'src/link.module.settings.js'

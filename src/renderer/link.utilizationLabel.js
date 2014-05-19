@@ -34,6 +34,7 @@ networkMap.extend(networkMap.renderer.link.UtilizationLabel, {
 		this.cy = cy;
 		return this;
 	},
+	
 	render: function(value){ return this.state.render.call(this, value); },
 	hide: function(){ return this.state.hide.call(this); },
 	show: function(){ return this.state.show.call(this); },
@@ -81,7 +82,7 @@ networkMap.extend(networkMap.renderer.link.UtilizationLabel, {
 				label.front();
 				
 				this.state = this.states.rendered;
-				this.state.render.call(this, value);
+				this.render(value);
 				return this;
 			},
 			hide: function(){
@@ -131,12 +132,35 @@ networkMap.extend(networkMap.renderer.link.UtilizationLabel, {
 			},
 			hide: function(){
 				this.svg.hide();
+				this.state = this.states.hidden;
+				
+				return this;
+			},
+			show: function(){
+				return this;
+			},
+			purge: function(node){}
+		},
+		hidden: {
+			render: function(value){
+				if (this.options.enabled){
+					return this.show();
+				}
+				
+				this.value = value;
+				return this;
+			},
+			hide: function(){
+				return this;
 			},
 			show: function(){
 				this.svg.show();
+				this.state = this.states.rendered;
+				return this.render();			
 			},
 			purge: function(node){}
-		}	
+		}
+		
 	}
 
 });

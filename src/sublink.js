@@ -1,306 +1,270 @@
-
-networkMap.LinkPath = function(link, svg, options){
-	this.properties = new networkMap.Properties(options, link.properties);
-	this.properties.addEvent('change', function(change){
-		this.fireEvent('change', change);
-	}.bind(this));
-
+networkMap.SubLink = function(link, node, svg, options){
 	this.link = link;
-	this.mediator = this.link.graph;
+	this.node = node;
 	this.svg = svg;
-	this.value = null;
+
+	this.primaryLink = null;
+	this.memberLinks = [];
+	this.utilizationLabelsConfiguration = null;
+	this.utilizationLabel = null;
+	this.pathPoints = null;
 	
-	// Check if we should setup an update event
-	if (this.properties.get('requestUrl')) {
-		this.link.registerUpdateEvent(
-			this.properties.get('datasource'),
-			this.properties.get('requestUrl'),
+	this.initializeUtilizationLabel();
+};
+
+
+networkMap.extend(networkMap.SubLink, networkMap.Options);
+networkMap.extend(networkMap.SubLink, networkMap.Observable);
+
+networkMap.extend(networkMap.SubLink, {
+	purge: function(){
+		this.link = null;
+		this.node = null;
+		this.svg = null;
+		
+		this.primaryLink.purge();
+		
+		for (var i = 0, len = this.memberLinks.length; i < len; i++){
+			this.memberLinks[i].purge();
+		}
+		this.memberLinks.lenght = 0;
+		
+		this.utilizationLabelsConfiguration = null;
+		this.utilizationLabel = null;
+		this.pathPoints = null;
+	},	
+	
+	load: function(options){
+		if (options.sublinks){
+			this.loadMemberLinks(options.sublinks);	
+		}
+		
+		this.loadPrimaryLink(options);
+		
+		return this;
+	},
+	
+	loadPrimaryLink: function(options){
+		this.primaryLink = new networkMap.PrimaryLink(
 			this,
-			function(response){
-				// Refactor
-				this.value = response.value;
-				this.link.updateBgColor(this, this.link.colormap.translate(response.value));
-				
-				// update utilization label
-				this.link.setUtilizationLabel();
-			}.bind(this)
+			networkMap.path(this.svg),
+			options
+		)
+		.addEvent('change', function(){
+			this.fireEvent('redraw');
+		}.bind(this))
+		.addEvent('requestHref', function(sublink){
+			this.fireEvent('requestHref', [sublink]);
+		}.bind(this));
+		
+		return this;
+	},
+	
+	loadMemberLinks: function(memberLinks){
+		for (var i = 0, len = memberLinks.length; i < len; i++){
+			this.loadMemberLink(memberLinks[i]);
+		}
+		
+		return this;		
+	},
+		
+	loadMemberLink: function(memberLink){
+		this.memberLinks.push(
+			new networkMap.MemberLink(
+				this, 
+				networkMap.path(this.svg), 
+				memberLink
+			)
+			.addEvent('change', this.redraw.bind(this))
+			.addEvent('requestHref', function(sublink){
+				this.fireEvent('requestHref', [sublink]);
+			}.bind(this))
 		);
-	}
-	
-	this.setupEvents();
-};
-
-networkMap.extend(networkMap.LinkPath, networkMap.Options);
-networkMap.extend(networkMap.LinkPath, networkMap.Observable);
-networkMap.extend(networkMap.LinkPath, {	
-
-	remove: function(){
-		this.svg.remove();
-	},
-	
-	getEditables: function(){
-		var editables = {
-			width: {
-				label: 'Local width',
-				type: 'int'	
-			}	
-		};
 		
-		return editables;		
-	},
-
-
-	/**
-	 * This will create/update a link tag for the
-	 * link. Order of presence is:
-	 * - options.href
-	 * - emit url event
-	 *
-	 * @this {networkMap.Link}
-	 * @return {networkMap.Link} self
-	 */
-	updateLink: function(){
-		var href = this.properties.get('href');
-		if (href){
-			if (networkMap.isFunction(href))
-				this.setLink(href(this));
-			else
-				this.setLink(href);
-			return this;
-		}
-		
-		this.fireEvent('requestHref', [this]);
 		return this;
 	},
 
-	/**
-	 * This will create/update the link to
-	 * the specified URL.
-	 *
-	 * @param {string} The URL
-	 * @this {networkMap.Link}
-	 * @return {networkMap.Link} self
-	 * @TODO: Add functionality to remove the link
-	 */
-	setLink: function(url){
-		if (url){
-			if (this.a){
-				this.a.to(url);
-				return this;
-			}
-
-			if (this.svg.parent){
-				this.a = this.svg.linkTo(url);
-			}
-			
-			return this;
-		}
-		
-		return this;						
-	},	
-	
-	getCenter: function(){
-		var bbox = this.svg.bbox();
-			
-		return {
-			cx: bbox.x + bbox.height / 2,
-			cy: bbox.y + bbox.width / 2
-		};	
-	},
-	
-	getLink: function(){
-		return this.link;
-	},
-	/**
-	 * Get the node which is assosiated to the linkPath
-	 *
-	 * @retrun {networkMap.Node} The node which this is assosiated with.
-	 */
-	getNode: function(){
-		return this.getLink().getNode(this);
-	},
-	
-	getSibling: function(){
-		return undefined;
-	},	
-	
-	getSettingsWidget: function(){
-		return this.getLink().getSettingsWidget();
-	},
-	
-	getProperty: function(key){
-		return this.properties.get(key);
-		/* TODO: Remove
-		if (key == 'width'){
-			var link = this.getMainPath();
-			if (link != this){
-				return link.getProperty(key);
-			}
-			else if (!this.options[key]){
-				return this.link.options[key];
-			}
-		}
-		
-		if (!this.options[key]){
-			return null;
-		}
-		
-		return this.options[key];
-		*/
-	},
-	
-	setProperty: function(key, value){
-		if (key == 'width'){
-			var link = this.getMainPath();
-			if (link != this){
-				return link.setProperty(key, value);
-			}
-		}
-				
-		this.properties.set(key, value);
-		//TODO: Remove
-		//this.options[key] = value;
-		this.fireEvent('change', [key]);
-		return this;
-	},
-	
 	getConfiguration: function(){
-		return this.properties.extract();
-	},
+		var configuration = this.primaryLink.getConfiguration();
+		configuration.sublinks = [];		
 		
+		for (var i = 0, len = this.memberLinks.length; i < len; i++){
+			configuration.sublinks.push(this.memberLinks[i].getConfiguration());
+		}
+
+		if (configuration.sublinks.length === 0)
+			delete configuration.sublinks;		
+		
+		return configuration;
+	},	
 	
-	getMainPath: function(){
-		var link;
+	draw: function(pathPoints, properties){
+		// TODO: Remove hack
+		this.pathPoints = pathPoints;
 		
-		if (this.link.subpath.nodeA){
-			this.link.subpath.nodeA.forEach(function(sublink){
-				if (this == sublink){
-					link = this.link.path.nodeA;
-				}
-			}.bind(this));
-			
-			if (link){
-				return link;
-			}		
+		this.primaryLink.draw(pathPoints, properties.get('width'), properties.get('arrowHeadLength'), this.memberLinks.length);
+		
+		for (var i = 0, len = this.memberLinks.length; i < len; i++){
+			this.memberLinks[i].draw(pathPoints, properties.get('width'), properties.get('arrowHeadLength'), this.memberLinks.length, i);
 		}
 		
-		if (this.link.subpath.nodeB){
-			this.link.subpath.nodeB.forEach(function(sublink){
-				if (this == sublink){
-					link = this.link.path.nodeB;
-				}
-			}.bind(this));
-			
-			if (link){
-				return link;
-			}		
-		}
+		this.setUtilizationLabelPosition();		
 		
 		return this;
-		
+	},	
+	
+	redraw: function(){
+		return this;
 	},
 	
-	setupEvents: function(){
-		this.svg.on('click', this._clickHandler.bind(this));
+	setPath: function(pathPoints){
+		this.pathPoints = pathPoints;
 		
-		if (this.properties.get('events')){
-			if (this.properties.get('events.click')){
-				this.svg.attr('cursor', 'pointer');
-			}
+		return this;
+	},
+	
+	hide: function(){
+		this.primaryLink.hide();
+		
+		for (var i = 0, len = this.memberLinks.length; i < len; i++){
+			this.memberLinks[i].hide();
+		}
 
-			if (this.properties.get('events.hover')){
-				this.svg.on('mouseover', this._hoverHandler.bind(this));
-				this.svg.on('mouseout', this._hoverHandler.bind(this));
-			}
-		}
+		this.utilizationLabel.hide();		
+		
+		return this;
 	},
 	
-	_clickHandler: function(e){
-		if (this.link.mode() === 'normal' && this.properties.get('events.click')){
-			networkMap.events.click(e, this);
+	show: function(){
+		this.primaryLink.show();
+		
+		for (var i = 0, len = this.memberLinks.length; i < len; i++){
+			this.memberLinks[i].show();
 		}
-		else if (this.link.mode() === 'edit'){
-			e.preventDefault();
+		
+		this.utilizationLabel.show();		
+
+		return this;
+	},
+	
+	initializeUtilizationLabel: function(){
+		this.utilizationLabelConfiguration = networkMap.defaults(this.utilizationLabelsConfiguration, this.link.graph.properties.get('utilizationLabels'));
+		
+		this.utilizationLabel = new networkMap.renderer.link.UtilizationLabel(this.svg.group(), this.utilizationLabelsConfiguration);
+		
+		return this;
+	},
+	
+	setUtilizationLabelPosition: function(){
+		var center;
+		var midpoint = new SVG.math.Line(this.pathPoints[2], this.pathPoints[3]).midPoint();
+		
+		center = new SVG.math.Line(this.pathPoints[2], midpoint).midPoint();
+		this.utilizationLabel.setPosition(center.x, center.y).render();
+
+		center = null;
+		midpoint = null;
+	
+		return this;
+	},
+	
+	setUtilizationLabelOptions: function(options){
+		options = options || {};
+		this.utilizationLabelConfiguration.enabled = (options.enabled === undefined) ? this.utilizationLabelConfiguration.enabled : options.enabled;
+		this.utilizationLabelConfiguration.fontSize = options.fontSize || this.utilizationLabelConfiguration.fontSize;
+		this.utilizationLabelConfiguration.padding = options.padding || this.utilizationLabelConfiguration.padding;
+				
+		this.utilizationLabel.setOptions(this.utilizationLabelConfiguration);
+		this.setUtilizationLabel();
+		
+		return this;
+	},
+	
+	setUtilizationLabel: function(value){
+		if (value === undefined)
+			value = this.getUtilization();
 			
-			// TODO: This is temporary code to test a feature
-			//this.link.drawEdgeHandle(this.link.$edgePoints.nodeA);
-			
-			// TODO: Create an uniform API for the settings widgets.
-			this.mediator.publish('edit', [new networkMap.event.Configuration({
-				deletable: true,
-				destroy: function(){ 
-					this.link.graph.removeLink(this.link); 
-				}.bind(this),
-				editable: true,
-				editWidget: this.link.configurationWidget.toElement(this.link, this.link.properties),
-				target: this,
-				type: 'link',
-				targetName: this.properties.get('name')
-			})]);
-		}
+		this.utilizationLabel.render(value);
+		
+		return this;
 	},
 	
-	_hoverHandler: function(e){
-		if (this.link.mode() === 'edit'){
-			return;
-		}
+	hideUtilizationLabel: function(){
+		this.utilizationLabel.hide();
 		
-		if (e.type === 'mouseover'){
-			networkMap.events.mouseover(e, this);
-		}
-		if (e.type === 'mouseout'){
-			networkMap.events.mouseout(e, this);
-		}
-	}
+		return this;
+	},
 	
-});
-
-networkMap.PrimaryLink = function(link, svg, options){
-	networkMap.LinkPath.call(this, link, svg, options);
-};
-
-networkMap.PrimaryLink.prototype = Object.create(networkMap.LinkPath.prototype);
-networkMap.PrimaryLink.constructor = networkMap.PrimaryLink;
-
-networkMap.extend(networkMap.PrimaryLink, {
-	getSibling: function(){
-		var link = this.getLink();
+	showUtilizationLabel: function(){
+		this.utilizationLabel.show();
 		
-		return (this === link.path.nodeA) ? link.path.nodeB :
-			(this === link.path.nodeB) ? link.path.nodeA :
-			undefined;
-	}
-});
+		return this;
+	},
 
-
-networkMap.MemberLink = function(link, svg, options){
-	networkMap.LinkPath.call(this, link, svg, options);
-};
-
-networkMap.MemberLink.prototype = Object.create(networkMap.LinkPath.prototype);
-networkMap.MemberLink.constructor = networkMap.MemberLink;
-
-networkMap.extend(networkMap.MemberLink, {
-	getSibling: function(){
-		var i, len;
-		var link = this.getLink();
-		
-		// the links does not have siblings
-		if (link.subpath.nodeA.length != link.subpath.nodeB.length)
-			return undefined;
-		
-		for (i = 0, len = link.subpath.nodeA.length; i < len; i++){
-			if (this === link.subpath.nodeA[i]){
-				return link.subpath.nodeB[i];
-			}
-		}
-
-		for (i = 0, len = link.subpath.nodeB.length; i < len; i++){
-			if (this === link.subpath.nodeB[i]){
-				return link.subpath.nodeA[i];
-			}
+	updateHyperlinks: function(){		
+		for (var i = 0, len = this.memberLinks.length; i < len; i++){
+			this.memberLinks[i].updateHyperlink();
 		}
 		
-		return undefined;
+		this.primaryLink.updateHyperlink();
+		
+		return this;
+	},
+
+	getLink: function(){
+		return this.link;		
+	},
+	
+	getNode: function(){
+		return this.node;
+	},
+	
+	getSibling: function(linkPath){
+		if (linkPath instanceof networkMap.MemberLink){
+			var mySibling = this.getLink().getSibling(this);
+			
+			if (this.memberLinks.length !== mySibling.memberLinks.length){
+				return undefined;
+			}
+		
+			var index = this.memberLinks.indexOf(linkPath);
+			return mySibling.memberLinks[index];
+		}
+		
+		if (linkPath instanceof networkMap.PrimaryLink){
+			return this.getLink().getSibling(this).primaryLink;
+		}
+		
+		return undefind;
+	},	
+	
+	/**
+	 *	Returns the primaryLink utilization. In case the primaryLink
+	 * utilization is undefined the maximum utilization if the memberLinks
+	 * is returned.
+	 */
+	getUtilization: function(){
+		var max = null;
+		
+		var checkPath = function(value){
+			// We are using the fact that 0 >= null => true
+			if (value === null)
+				return;
+				
+			if (value >= max){
+				max = value;
+			}	
+		};	
+		
+		max = this.primaryLink.getUtilization();
+		if (max === undefined || max === null){
+			for (var i = 0, len = this.memberLinks.length; i < len; i++){
+				checkPath(this.memberLinks[i].getUtilization());
+			}	
+		}
+			
+		checkPath = null;
+		
+		return max;
 	}
 });

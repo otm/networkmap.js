@@ -93,51 +93,55 @@ networkMap.extend(networkMap.Link.Module.Settings, {
 				type: 'text',
 				disabled: true,
 				global: false
-			}, 
+			}
+			/* TODO: Descide if this is needed
+			, 
 			width: {
 				label: 'Width',
 				type: 'number',
 				min: 0,
 				global: false
 			}
+			*/
 		};		
-		
 		
 		var sublinkConf = function(label, node){
 			accordionGroup = container.add(label);
 			networkMap.each(linkTemplate, function(option, key){
 				if (['id'].some(function(item){ return item == key;})){
-					accordionGroup.appendChild(new networkMap.widget.TextInput(option.label, properties.get(node + '.' + key), option).addEvent('change', changeHandler(key, link.properties)));
+					accordionGroup.appendChild(new networkMap.widget.TextInput(option.label, properties.get(node + '.' + key), option)
+						.addEvent('change', changeHandler(key, link.properties))
+					);
 				}
 				else{
 					if (option.type === 'number'){
 						accordionGroup.appendChild(
 							new networkMap.widget.IntegerInput(
 								option.label, 
-								link.path[node].properties.get(key, true), 
+								link.subLinks[node].primaryLink.properties.get(key, true), 
 								option
 							)
-							.addEvent('change', changeHandler(key, link.path[node].properties))
+							.addEvent('change', changeHandler(key, link.subLinks[node].primaryLink.properties))
 						);
 					}
 					else if(option.type === 'text'){
 						accordionGroup.appendChild(
 							new networkMap.widget.TextInput(
 								option.label, 
-								link.path[node].properties.get(key), 
+								link.subLinks[node].primaryLink.properties.get(key), 
 								option
 							)
-							.addEvent('change', changeHandler(key, link.path[node].properties))
+							.addEvent('change', changeHandler(key, link.subLinks[node].primaryLink.properties))
 						);
 					}
 					else if(option.type === 'color'){
 						accordionGroup.appendChild(
 							new networkMap.widget.ColorInput(
 								option.label, 
-								link.path[node].properties.get(key), 
+								link.subLinks[node].primaryLink.properties.get(key), 
 								option
 							)
-							.addEvent('change', changeHandler(key, link.path[node].properties))
+							.addEvent('change', changeHandler(key, link.subLinks[node].primaryLink.properties))
 						);
 					}
 				}
@@ -151,11 +155,11 @@ networkMap.extend(networkMap.Link.Module.Settings, {
 		
 		// Add sublinks
 		var sublinkList;
-		if (link.subpath.nodeA && link.subpath.nodeB && link.subpath.nodeA.length === link.subpath.nodeB.length) {
+		if (link.subLinks.nodeA && link.subLinks.nodeB && link.subLinks.nodeA.memberLinks.length === link.subLinks.nodeB.memberLinks.length) {
 			accordionGroup = container.add('Sublinks');
 			sublinkList = new networkMap.widget.List();
-			link.subpath.nodeA.forEach(function(subpath, index){
-				sublinkList.add(subpath.properties.get('name') + ' - ' + link.subpath.nodeB[index].properties.get('name'), {enableDelete: false});
+			link.subLinks.nodeA.memberLinks.forEach(function(subpath, index){
+				sublinkList.add(subpath.properties.get('name') + ' - ' + link.subLinks.nodeB.memberLinks[index].properties.get('name'), {enableDelete: false});
 			});
 			accordionGroup.appendChild(sublinkList);
 		}
