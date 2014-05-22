@@ -4501,6 +4501,9 @@ networkMap.LinkPath = function(subLink, svg, options){
 	this.svg = svg;
 	this.value = null;
 	
+	// Hide the SVG node in case we will not use it
+	// otherwise it will affect the BBOX calculation
+	svg.hide();
 	this.setupEvents();
 };
 
@@ -4813,6 +4816,7 @@ networkMap.extend(networkMap.PrimaryLink, {
 	},	
 	
 	drawFullPath: function(pathPoints, width, arrowHeadLength, memberLinkCount){
+		this.svg.show();
 		memberLinkCount = memberLinkCount || 1;
 
 		var firstSegment = new SVG.math.Line(pathPoints[0], pathPoints[2]);
@@ -4860,6 +4864,7 @@ networkMap.extend(networkMap.PrimaryLink, {
 	},
 
 	drawShortPath: function(pathPoints, width, arrowHeadLength, memberLinkCount){		
+		this.svg.show();
 		var midSegment = new SVG.math.Line(pathPoints[2], pathPoints[3]);
 		
 		var midPoint = midSegment.midPoint();
@@ -4912,6 +4917,8 @@ networkMap.extend(networkMap.MemberLink, {
 	},
 	
 	drawSublink: function(pathPoints, width, arrowHeadLength, memberLinkCount, position){
+		this.svg.show();
+		
 		// This is needed to draw one side of the links in reverse order
 		var sign = (SVG.math.angle(pathPoints[0], pathPoints[1]) < Math.PI) ? 1 : -1;
 		
