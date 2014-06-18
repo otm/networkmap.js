@@ -54,7 +54,8 @@ module.exports = function(grunt) {
 					'src/linkpath.js',
 					'src/sublink.js',
 					'src/link.js',
-					'src/link.module.settings.js'
+					'src/link.module.settings.js',
+					'src/link.module.edge.js'
 				],
 				// the location of the resulting JS file
 				dest: 'dist/<%= pkg.name %>.js'

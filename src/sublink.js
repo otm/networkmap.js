@@ -1,6 +1,7 @@
-networkMap.SubLink = function(link, node, svg, options){
+networkMap.SubLink = function(link, node, edge, svg, options){
 	this.link = link;
 	this.node = node;
+	this.edge = edge;
 	this.svg = svg;
 
 	this.primaryLink = null;
@@ -94,6 +95,8 @@ networkMap.extend(networkMap.SubLink, {
 
 		if (configuration.sublinks.length === 0)
 			delete configuration.sublinks;		
+		
+		configuration.edge = this.edge.getConfiguration();
 		
 		return configuration;
 	},	

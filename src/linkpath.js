@@ -256,7 +256,10 @@ networkMap.extend(networkMap.LinkPath, {
 		}
 	},
 	
+	
+	
 	_clickHandler: function(e){
+		// TODO: Move this logic to the link by sending an event 
 		if (this.getLink().mode() === 'normal' && this.properties.get('events.click')){
 			networkMap.events.click(e, this);
 		}
@@ -264,14 +267,16 @@ networkMap.extend(networkMap.LinkPath, {
 			e.preventDefault();
 			
 			// TODO: This is temporary code to test a feature
-			//this.link.drawEdgeHandle(this.link.$edgePoints.nodeA);
+			this.getLink().drawEdgeHandles();
 			
-			// TODO: Create an uniform API for the settings widgets.
 			this.mediator.publish('edit', [new networkMap.event.Configuration({
 				deletable: true,
 				destroy: function(){
 					// TODO: Refacor with an event
 					this.getLink().graph.removeLink(this.getLink()); 
+				}.bind(this),
+				cancel: function(){
+					this.getLink().hideEdgeHandles();
 				}.bind(this),
 				editable: true,
 				editWidget: this.getLink().configurationWidget.toElement(this.getLink(), this.getLink().properties),

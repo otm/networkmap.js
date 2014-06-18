@@ -150,6 +150,8 @@ networkMap.extend(networkMap.Link, {
 	
 	_setupSVG: function(options){
 		var svg = this.svg = this.graph.getPaintArea().group().back();
+		var edge;
+		
 		this.shadowPath = this.createShadowPath(svg);
 
 		if (!options.nodeA || !options.nodeB){
@@ -162,12 +164,28 @@ networkMap.extend(networkMap.Link, {
 			throw "Link(create, nodeA does not exist (" + options.nodeA.id + ")";
 		}
 		
-		this.subLinks.nodeA = new networkMap.SubLink(this, this.nodeA, svg)
+		edge = new networkMap.Link.Module.Edge(
+			this.graph.getPaintArea().group(),
+			this.nodeA.bbox(),
+			SVG.math.Point.create(0, 0),
+			SVG.math.Point.create(0, 0),
+			options.nodeA.edge
+		)
+		.addEvent('updated', this.redrawShadowPath.bind(this))
+		.addEvent('dragstart', function(){
+			this.hidePaths();
+			this.showShadowPath();
+		}.bind(this))
+		.addEvent('dragend', this.redraw.bind(this));	
+	
+		
+		this.subLinks.nodeA = new networkMap.SubLink(this, this.nodeA, edge, svg)
 			.load(options.nodeA)
 			.addEvent('redraw', this.redraw.bind(this))
 			.addEvent('requestHref', function(sublink){
 				this.fireEvent('requestHref', [sublink]);
 			}.bind(this));
+
 
 
 		/* NODE B */
@@ -176,7 +194,21 @@ networkMap.extend(networkMap.Link, {
 			throw "Link(create, nodeA does not exist (" + options.nodeB.id + ")";
 		}
 		
-		this.subLinks.nodeB = new networkMap.SubLink(this, this.nodeB, svg)
+		edge = new networkMap.Link.Module.Edge(
+			this.graph.getPaintArea().group(),
+			this.nodeB.bbox(),
+			SVG.math.Point.create(0, 0),
+			SVG.math.Point.create(0, 0),
+			options.nodeB.edge
+		)
+		.addEvent('updated', this.redrawShadowPath.bind(this))
+		.addEvent('dragstart', function(){
+			this.hidePaths();
+			this.showShadowPath();
+		}.bind(this))
+		.addEvent('dragend', this.redraw.bind(this));	
+
+		this.subLinks.nodeB = new networkMap.SubLink(this, this.nodeB, edge, svg)
 			.load(options.nodeB)
 			.addEvent('redraw', this.redraw.bind(this))
 			.addEvent('requestHref', function(sublink){
@@ -236,6 +268,9 @@ networkMap.extend(networkMap.Link, {
 	},	
 	
 	onNodeDrag: function(){
+		this.subLinks.nodeA.edge.setBbox(this.nodeA.bbox());
+		this.subLinks.nodeB.edge.setBbox(this.nodeB.bbox());
+			
 		this.redrawShadowPath();
 	},
 	
@@ -251,166 +286,126 @@ networkMap.extend(networkMap.Link, {
 		
 		var bboxA = this.subLinks.nodeA.node.bbox();
 		var bboxB = this.subLinks.nodeB.node.bbox();
+		
 		var confinmentA = vec2.create(bboxA.width/2, bboxA.height/2);
 		var confinmentB = vec2.create(bboxB.width/2, bboxB.height/2);
 
 		var path = [];
-		var inset = this.properties.get('inset') || 1;
-		var connectionDistance = this.properties.get('connectionDistance') || 1;
-		var staticConnectionDistance = this.properties.get('staticConnectionDistance') || 1;
+		
+		var inset = parseInt(this.properties.get('inset')) || 1;
+		var connectionDistance = parseInt(this.properties.get('connectionDistance')) || 1;
+		var staticConnectionDistance = parseInt(this.properties.get('staticConnectionDistance')) || 1;
 		
 		var a = vec2.create(bboxA.cx, bboxA.cy);
 		var b = vec2.create(bboxB.cx, bboxB.cy);
 		
 		var ab = b.clone().sub(a);
-		
 		var dirA = ab.clone().maxDir();	
-		
 		var edgePointA = dirA.clone().mul(confinmentA);
 		edgePointA.sub(dirA.clone().scale(inset));
-		var baseA = edgePointA.clone();
+		var edgePointerA = edgePointA.clone();
 		edgePointA.add(a);
 		
-		path.push(edgePointA);
-		path.push(a.clone().add(
-			baseA.clone().add(
-				dirA.clone().scale(connectionDistance)
-			)
-		));
 		
-		baseA.add(dirA.clone().scale(connectionDistance));
-		
-		path.push(a.clone().add(
-			baseA.clone().add(
-				dirA.clone().scale(staticConnectionDistance)
-			)
-		));
-
+	
 		/* AND NOW FROM THE OTHER SIDE */
-		
 		var ba = ab.clone().scale(-1);
-
 		var dirB = ba.clone().maxDir();
-		
 		var edgePointB = dirB.clone().mul(confinmentB);
-		
 		edgePointB.sub(dirB.clone().scale(inset));
-
-		var baseB = edgePointB.clone();
+		var edgePointerB = edgePointB.clone();
 		edgePointB.add(b);
 
-		var baseBB = baseB.clone().add(dirB.clone().scale(connectionDistance));
-
-		path.push(
-			b.clone().add(
-				baseBB.clone().add(
-					dirB.clone().scale(staticConnectionDistance)
-				)
-			)
-		);
-	
-		path.push(
-			b.clone().add(
-				baseB.clone().add(
-					dirB.clone().scale(connectionDistance)				
-				)		
-			)	
-		);		
-		
-		
-		path.push(edgePointB);
-		
+		this.$edgePoints = this.$edgePoints || {};
 		this.$edgePoints = {
 			nodeA: {
-				point: new SVG.math.Point(edgePointA.x, edgePointA.x),
+				point: new SVG.math.Point(edgePointA.x, edgePointA.y),
+				pointer: edgePointerA,
 				direction: dirA
 			},
 			nodeB: {
 				point: new SVG.math.Point(edgePointB.x, edgePointB.y),
+				pointer: edgePointerB,
 				direction: dirB
-			},
-			path: path
+			}
 		};
+		
+		/*
+		if (!this.edgeHandle){
+			var edgeHandle = this.edgeHandle = new networkMap.Link.Module.Edge(
+				this.graph.getPaintArea().group(),
+				this.nodeA.bbox(),
+				this.$edgePoints.calculated.nodeA.point,
+				this.$edgePoints.calculated.nodeA.direction
+			);
+			
+			edgeHandle.addEvent('updated', this.redrawShadowPath.bind(this));
+			edgeHandle.addEvent('dragstart', function(){
+				this.hidePaths();
+				this.showShadowPath();
+			}.bind(this));
+			edgeHandle.addEvent('dragend', this.redraw.bind(this));
+			
+			
+		} else {
+			this.subLinks.nodeB
+			this.edgeHandle.setDefaults(edgePointA, dirA);
+		}
+		
+		var edge = this.edgeHandle.getEdge();		
+		*/
+
+		
+
+		
+		//this.$edgePoints.path = path;
+		
+		
+		
 		
 		return this.$edgePoints;
 	},
 
-	drawEdgeHandle: function(edge){
-		var svg = edge.svg = edge.svg || this.graph.getPaintArea().group();
-		var vec = [0,0];
-		this.vec2scale(edge.direction, 30, vec);
-		this.vec2add([edge.point.x, edge.point.y], vec, vec);
-		var path = svg.path()
-			.M(edge.point)
-			.L(vec[0], vec[1])
-			.stroke({
-				fill: 'none',
-				color: '#000',
-				dasharray: '3 3',
-				width: 1,
-
-			});
-
-		var handle = svg.circle(10)
-			.center(vec[0], vec[1])
-			.fill('#fff')
-			.stroke({
-				color: '#000',
-			})
-			.draggable({fn: function(p){
-				var vec2 = [p.x, p.y];
-				var edge2 = [edge.point.x, edge.point.y];
-				var res = this.vec2add(
-					this.vec2scale(
-						this.vec2normalize(this.vec2sub(vec2, edge2)),
-						30
-					),
-					edge2
-				);
-				return {x: res[0], y: res[1]};
-			}.bind(this)});
-
-		var bbox = this.nodeA.bbox();
-		var edgeHandle = handle
-			.clone()
-			.addTo(svg)
-			.center(edge.point.x, edge.point.y)
-			.draggable({
-				minX: bbox.x, 
-				maxX: bbox.x + bbox.width,
-				minY: bbox.y,
-				maxY: bbox.y + bbox.height
-			});
-
-		edgeHandle.dragmove = function(event){
-			var vec = [0,0];
-			this.vec2scale(edge.direction, 30, vec);
-			handle.center(event.target.cx() + vec[0], event.target.cy() + vec[1]);
-			//console.log(event.target.cx() + vec[0], event.target.cy() + vec[1]);
-		}.bind(this);
-
-		svg.front();
-
-		return this;
-	},
+	
 
 	redrawShadowPath: function(){
+		var edge;
+		var path = [];
+		var connectionDistance = parseInt(this.properties.get('connectionDistance')) || 1;
+		var staticConnectionDistance = parseInt(this.properties.get('staticConnectionDistance')) || 1;
 
 		var edgePoints = this.edgePoints();
 
 		this.pathPoints.length = 0;
 		
+		this.subLinks.nodeA.edge.setDefaults(edgePoints.nodeA.point, edgePoints.nodeA.direction);		
+		this.subLinks.nodeB.edge.setDefaults(edgePoints.nodeB.point, edgePoints.nodeB.direction);		
+		
+		edge = this.subLinks.nodeA.edge.getEdge();
+		path.push(edge.point.clone());
+		path.push(edge.point.clone().add(edge.direction.clone().scale(connectionDistance)));
+		path.push(edge.point.clone().add(edge.direction.clone().scale(connectionDistance + staticConnectionDistance)));
+
+		edge = this.subLinks.nodeB.edge.getEdge();
+		path.push(edge.point.clone().add(edge.direction.clone().scale(connectionDistance + staticConnectionDistance)));
+		path.push(edge.point.clone().add(edge.direction.clone().scale(connectionDistance)));
+		path.push(edge.point.clone());
+		
+		
 		// TODO: Rewrite, add vec2 functionality to SVG.math.Point
+		/*
 		edgePoints.path.forEach(function(point){
 			this.pathPoints.push(new SVG.math.Point(point.x, point.y));
 		}.bind(this));
-
+		*/
+		this.pathPoints = path;		
+		
 		this.shadowPath
 			.clear()
-			.M(edgePoints.path[0])  //.apply(this.shadowPath, edgePoints.path[0])
-			.L(edgePoints.path[2])  //.apply(this.shadowPath, edgePoints.path[2])
-			.L(edgePoints.path[3])  //.apply(this.shadowPath, edgePoints.path[3])
-			.L(edgePoints.path[5]); //.apply(this.shadowPath, edgePoints.path[5]);
+			.M(path[0])  //.apply(this.shadowPath, edgePoints.path[0])
+			.L(path[2])  //.apply(this.shadowPath, edgePoints.path[2])
+			.L(path[3])  //.apply(this.shadowPath, edgePoints.path[3])
+			.L(path[5]); //.apply(this.shadowPath, edgePoints.path[5]);
 
 		return this;
 	},
@@ -442,6 +437,22 @@ networkMap.extend(networkMap.Link, {
 	
 	hideShadowPath: function(){
 		this.shadowPath.hide();
+		return this;
+	},
+
+
+	drawEdgeHandles: function(){
+		
+		this.subLinks.nodeA.edge.show(this.nodeA.bbox());
+		this.subLinks.nodeB.edge.show(this.nodeB.bbox());
+		
+		return this;
+	},
+	
+	hideEdgeHandles: function(){
+		this.subLinks.nodeA.edge.hide();
+		this.subLinks.nodeB.edge.hide();
+		
 		return this;
 	},
 

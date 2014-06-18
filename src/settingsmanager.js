@@ -109,38 +109,7 @@ networkMap.extend(networkMap.SettingsManager, {
 			return;
 		
 		this.purgeEditing();
-		return this.configure(e);		
-		
-		/*
-		this.editing.length = 0;
-		this.editing.push(e.configWidget);
-		var editables;
-		var link = {};		
-		
-		var content = this.getContentContainer();
-		this.clear();
-		this.displayButtons();
-		
-		if (e.deletable){
-			this.btnDelete.classList.remove('nm-hidden');
-		}
-		else {
-			this.btnDelete.classList.add('nm-hidden');	
-		}
-		
-		// This is for other types of nodes.
-		// TODO: Clean up when all is using the mediator
-		if (e.configWidget.toElement){
-			content.appendChild(e.configWidget.toElement());
-		}
-		else
-			content.appendChild(e.configWidget.getSettingsWidget().toElement());
-
-		// TODO: Remove when all are using the mediator
-		this.fireEvent('edit', [e]);
-		
-		return this;
-		*/
+		return this.configure(e);
 	},
 
 	/**
@@ -200,7 +169,8 @@ networkMap.extend(networkMap.SettingsManager, {
 		
 		// make sure they get GCed
 		editing.forEach(function(view){
-			view.purge();	
+			view.configurationEvent().cancel();
+			view.purge();
 		});
 		
 		// drop/truncate references
