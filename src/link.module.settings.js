@@ -164,24 +164,24 @@ networkMap.extend(networkMap.Link.Module.Settings, {
 			accordionGroup.appendChild(sublinkList);
 		}
 		else{ // Asymetric link
-			if (link.subpath.nodeA || link.subpath.nodeB){
+			if (link.subLinks.nodeA || link.subLinks.nodeB){
 				accordionGroup = container.add('Sublinks');
 				sublinkList = new networkMap.widget.List();
 			}
 
-			if (link.subpath.nodeA){
-				link.subpath.nodeA.forEach(function(subpath, index){
-					sublinkList.add(subpath.properties.get('name') + ' - ' + 'N/A', {enableDelete: false});
+			if (link.subLinks.nodeA){
+				link.subLinks.nodeA.memberLinks.forEach(function(sublink, index){
+					sublinkList.add(sublink.properties.get('name') + ' - ' + 'N/A', {enableDelete: false});
 				});
 			}
 
-			if (link.subpath.nodeB){
-				link.subpath.nodeB.forEach(function(subpath, index){
-					sublinkList.add('N/A' + ' - ' + subpath.properties.get('name'), {enableDelete: false});
+			if (link.subLinks.nodeB){
+				link.subLinks.nodeB.memberLinks.forEach(function(sublink, index){
+					sublinkList.add('N/A' + ' - ' + sublink.properties.get('name'), {enableDelete: false});
 				});
 			}
 
-			if (link.subpath.nodeA || link.subpath.nodeB){
+			if (link.subLinks.nodeA || link.subLinks.nodeB){
 				accordionGroup.appendChild(sublinkList);
 			}
 		}
