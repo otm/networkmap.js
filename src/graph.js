@@ -73,6 +73,8 @@ networkMap.Graph = function(target, options){
 
 	// Setup link generator for node
 	this.node = this.node || {};
+	
+	options = options || {};
 	if (options.node && options.node.linkGenerator){
 		this.node.linkGenerator = networkMap.Node.createLinkGenerator(this.options.node.linkGenerator);
 		delete options.node;
