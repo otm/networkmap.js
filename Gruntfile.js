@@ -21,6 +21,10 @@ module.exports = function(grunt) {
 			dist: {
 				// the files to concatenate
 				src: [
+					'lib/svg.js',
+					'lib/svg.draggable.js',
+					'lib/svg.math.js',
+					'lib/svg.path.js',
 					'lib/classList.js',
 					'src/networkMap.js',
 					'src/vec.js',
