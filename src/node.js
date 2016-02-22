@@ -378,7 +378,7 @@ networkMap.extend(networkMap.Node, {
 	 * @return {SVG.BBox} The nodes bounding box
 	 */
 	bbox: function(){
-		return this.svg.bbox();
+		return this.svg.tbox();
 	},
 
 	/**
@@ -605,5 +605,3 @@ networkMap.Node.defaults = new networkMap.Properties({
 	debug: false,
 	draggable: false
 });
-
-
