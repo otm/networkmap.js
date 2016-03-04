@@ -142,7 +142,7 @@ networkMap.extend(networkMap.Link.Module.Edge, {
 					})
 					.center(edge.point.x, edge.point.y)
 					.draggable(function(x, y){
-						x = x < this.bbox.x - radius  ? this.bbox.x - radius : x - x % this.pointSnap;
+						x = x < this.bbox.x - radius ? this.bbox.x - radius : x - x % this.pointSnap;
 						x = x > (this.bbox.x + this.bbox.width - radius) ? this.bbox.x + this.bbox.width - radius : x - x % this.pointSnap;
 						y = y < this.bbox.y - radius ? this.bbox.y - radius : y - y % this.pointSnap;
 						y = y > (this.bbox.y + this.bbox.height - radius) ? this.bbox.y + this.bbox.height - radius : y - y % this.pointSnap;
@@ -156,13 +156,13 @@ networkMap.extend(networkMap.Link.Module.Edge, {
 		
 				svg.on('dblclick', this.onDoubleClick.bind(this));				
 				
-				directionHandle.dragstart = this.onDragStart.bind(this);
-				directionHandle.dragmove = this.onDirectionHandleMove.bind(this);
-				directionHandle.dragend = this.onDragEnd.bind(this);
+				directionHandle.on('dragstart', this.onDragStart.bind(this));
+				directionHandle.on('dragmove', this.onDirectionHandleMove.bind(this));
+				directionHandle.on('dragend', this.onDragEnd.bind(this));
 				
-				edgeHandle.dragstart = this.onDragStart.bind(this);
-				edgeHandle.dragmove = this.onEdgeHandleMove.bind(this);
-				edgeHandle.dragend = this.onDragEnd.bind(this);
+				edgeHandle.on('dragstart', this.onDragStart.bind(this));
+				edgeHandle.on('dragmove', this.onEdgeHandleMove.bind(this));
+				edgeHandle.on('dragend', this.onDragEnd.bind(this));
 				
 				svg.front();
 		
@@ -240,7 +240,9 @@ networkMap.extend(networkMap.Link.Module.Edge, {
 		this.setUserDefined(
 			edge.point,
 			edge.point.clone().sub(SVG.math.Point.create(this.bbox.cx, this.bbox.cy)),
-			SVG.math.Point.create(event.target.cx(), event.target.cy()).sub(edge.point).normalize()
+			SVG.math.Point.create(event.target.cx.baseVal.value, event.target.cy.baseVal.value)
+				.sub(edge.point)
+				.normalize()
 		);
 		
 		this.redraw();
@@ -249,7 +251,7 @@ networkMap.extend(networkMap.Link.Module.Edge, {
 	
 	onEdgeHandleMove: function(event){
 		var edge = this.getEdge();
-		var edgePoint = SVG.math.Point.create(event.target.cx(), event.target.cy());
+		var edgePoint = SVG.math.Point.create(event.target.cx.baseVal.value, event.target.cy.baseVal.value);
 		
 		this.setUserDefined(
 			edgePoint,
