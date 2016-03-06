@@ -278,11 +278,7 @@ networkMap.extend(networkMap.Node, {
 		
 		var grid = this.graph.grid();
 		var dragLimit = 5;
-		this.svg.draggable(function(x, y, element, delta){
-			if (!element.dragged && (Math.abs(delta.x) <  dragLimit && Math.abs(delta.y) < dragLimit)){
-				return false;
-			}
-			
+		this.svg.draggable(function(x, y, element){
 			if (grid)
 				return {
 					x: x - x % grid.x,
@@ -305,7 +301,7 @@ networkMap.extend(networkMap.Node, {
 	 */
 	fixed: function(){
 		this._draggable = false;
-		this.svg.fixed();
+		this.svg.draggable(false);
 		var cursor = this.svg.remember('cursor');
 		this.svg.forget('cursor');
 		this.svg.style('cursor', cursor || 'default');
@@ -486,19 +482,19 @@ networkMap.extend(networkMap.Node, {
 			this.draggable();
 		}
 		
-		svg.dragstart = function(){
+		svg.on('dragstart', function(event){
 			this.fireEvent('dragstart');
-		}.bind(this);
-		svg.dragmove = function(delta, event){
-			this.fireEvent('drag', [delta, event]);
-		}.bind(this);
-		svg.dragend = function(){
+		}.bind(this));
+		svg.on('dragmove', function(event){
+			this.fireEvent('drag', event);
+		}.bind(this));
+		svg.on('dragend', function(event){
 			this.properties.set({
 				x: this.x(),
 				y: this.y()
 			});
 			this.fireEvent('dragend');
-		}.bind(this);
+		}.bind(this));
 		
 		// need to make sure the draggable state persists
 		if (this.isDraggable()){
