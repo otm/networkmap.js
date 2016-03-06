@@ -219,7 +219,7 @@ networkMap.extend(networkMap.SettingsManager, {
 		if (this.defaultView.deletable){
 			this.btnDelete.classList.remove('nm-hidden');
 		}
-		else {
+		else {
 			this.btnDelete.classList.add('nm-hidden');	
 		}
 		
