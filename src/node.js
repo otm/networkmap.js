@@ -59,7 +59,8 @@ networkMap.extend(networkMap.Node, {
 		'fontSize',
 		'bgColor',
 		'strokeColor',
-		'strokeWidth' 
+		'strokeWidth',
+		'drawingCallback'
 	],
 	
 
@@ -414,48 +415,58 @@ networkMap.extend(networkMap.Node, {
 				
 		this.updateLink();
 
-		// create the label first to get size
-		var label = svg.text(this.options.name)
-			.font({
-				family:   this.options.fontFamily,
-				size:     this.options.fontSize,
-				anchor:   'start'
-			})
-			.move(parseFloat(this.options.padding), parseFloat(this.options.padding));
+		if ( this.options.drawingCallback && this.options.drawingCallback in networkMap.drawingCallbacks) {
+			networkMap.drawingCallbacks[this.options.drawingCallback](this, svg);
+		} else {
+			// create the label first to get size
+			var label = svg.text(this.options.name)
+				.font({
+					family:   this.options.fontFamily,
+					size:     this.options.fontSize,
+					anchor:   'start'
+				})
+				.move(parseFloat(this.options.padding), parseFloat(this.options.padding));
 
-		
-		// This is needed to center an scale the comment text
-		// as it is not possible to get a bbox on a tspan
-		var bboxLabel = label.bbox();
-		var comment;
-		if (this.options.comment && this.options.comment !== ''){
-			label.text(function(add){
-				add.tspan(this.options.name).newLine();
-				comment = add.tspan(this.options.comment).newLine().attr('font-size', this.options.fontSize - 2);
-			}.bind(this));
-			comment.attr('text-anchor', 'middle');
-			comment.dx(bboxLabel.width / 2);
-		}	
-		while (bboxLabel.width < label.bbox().width){
-			comment.attr('font-size', comment.attr('font-size') - 1);
-		}
+			
+			// This is needed to center an scale the comment text
+			// as it is not possible to get a bbox on a tspan
+			var bboxLabel = label.bbox();
+			var comment;
+			if (this.options.comment && this.options.comment !== ''){
+				label.text(function(add){
+					add.tspan(this.options.name).newLine();
+					comment = add.tspan(this.options.comment).newLine().attr('font-size', this.options.fontSize - 2);
+				}.bind(this));
+				comment.attr('text-anchor', 'middle');
+				comment.dx(bboxLabel.width / 2);
+			}	
+			while (bboxLabel.width < label.bbox().width){
+				comment.attr('font-size', comment.attr('font-size') - 1);
+			}
 
-		// create the rect
-		bboxLabel = label.bbox();		
-		var rect = svg.rect(1,1)
-			.fill({ color: this.options.bgColor})
-			.stroke({ color: this.options.strokeColor, width: this.options.strokeWidth })
-			.attr({ 
-				rx: 4,
-				ry: 4
-			})
-			.size(
-				bboxLabel.width + this.options.padding * 2, 
-				bboxLabel.height + this.options.padding * 2
-			);
-							
-		label.front();
-		
+			// create the rect
+			bboxLabel = label.bbox();		
+			var rect = svg.rect(1,1)
+				.fill({ color: this.options.bgColor})
+				.stroke({ color: this.options.strokeColor, width: this.options.strokeWidth })
+				.attr({ 
+					rx: 4,
+					ry: 4
+				})
+				.size(
+					bboxLabel.width + this.options.padding * 2, 
+					bboxLabel.height + this.options.padding * 2
+				);
+								
+			label.front();
+
+			// this cover is here there to prevent user from selecting 
+			// text in the label
+			var cover = rect.clone().fill({opacity: 0}).front();
+
+			// move it in place
+			svg.move(parseFloat(this.options.x), parseFloat(this.options.y));
+		}		
 
 		
 		svg.on('click', this._clickhandler.bind(this));
@@ -467,16 +478,7 @@ networkMap.extend(networkMap.Node, {
 				svg.attr('cursor', 'pointer');
 			}	
 			
-		}
-
-		// this cover is here there to prevent user from selecting 
-		// text in the label
-		var cover = rect.clone().fill({opacity: 0}).front();
-
-		// move it in place
-		svg.move(parseFloat(this.options.x), parseFloat(this.options.y));
-		
-	
+		}	
 		
 		if (this.options.draggable){
 			this.draggable();
@@ -599,5 +601,6 @@ networkMap.Node.defaults = new networkMap.Properties({
 	href: null,
 	style: null,
 	debug: false,
-	draggable: false
+	draggable: false,
+	drawingCallback: null
 });

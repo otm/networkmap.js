@@ -13,6 +13,7 @@
                 "position": "internal",
                 "visable": "true"
             },
+            "drawingCallback": "router",
             "padding": "10",
             "events": {
                 "click": {
