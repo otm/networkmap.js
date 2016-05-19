@@ -415,8 +415,8 @@ networkMap.extend(networkMap.Node, {
 				
 		this.updateLink();
 
-		if ( this.options.drawingCallback ) {
-
+		if ( this.options.drawingCallback && this.options.drawingCallback in networkMap.drawingCallbacks) {
+			networkMap.drawingCallbacks[this.options.drawingCallback](this, svg);
 		} else {
 			// create the label first to get size
 			var label = svg.text(this.options.name)

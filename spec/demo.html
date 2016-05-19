@@ -8,6 +8,7 @@
 		<script type="text/javascript" src="../lib/svg.path.js"></script>
 		<script type="text/javascript" src="../lib/svg.math.js"></script>
 		<script type="text/javascript" src="../dist/networkmap.js"></script>
+		<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/mootools/1.6.0/mootools-core-compat.min.js"></script>
 		<script type="text/javascript" >
 
 			var map;
@@ -17,6 +18,28 @@
 			
 				// Set size of target div
 				paper.style.height = document.documentElement.clientHeight-16 + 'px';
+
+
+				var mySVG;
+				
+				var myRequest = new Request({url: 'router_symbol2.svg', method: 'get',
+					onSuccess: function(responseText, responseXML){ 
+							mySVG = responseText;
+						}
+					});	
+
+				myRequest.send();
+
+				networkMap.registerDrawingCallback("router", function(node, svg) {
+					svg.svg(mySVG);
+					svg.text(node.options.name).font({
+  						family:   node.options.fontFamily,
+  						size:     node.options.fontSize,
+  						anchor:   'start'
+  					}).move(40,55)
+					//svg.viewbox(0,0,0,0);
+					svg.move(parseFloat(node.options.x), parseFloat(node.options.y));
+				});
 
 				// Initialize map
 				map = new networkMap.Graph('paper').load('weathermap.json');
