@@ -30,14 +30,13 @@
 
 				myRequest.send();
 
-				networkMap.registerDrawingCallback("router", function(node, svg) {
-					svg.svg(mySVG);
+				networkMap.Node.registerRenderer("circle", function(node, svg) {
+					svg.circle(50).fill({opacity: 0}).stroke({ color: '#000', opacity: 1, width: 2 });
 					svg.text(node.options.name).font({
   						family:   node.options.fontFamily,
   						size:     node.options.fontSize,
   						anchor:   'start'
-  					}).move(40,55)
-					//svg.viewbox(0,0,0,0);
+  					}).move(0,55)
 					svg.move(parseFloat(node.options.x), parseFloat(node.options.y));
 				});
 
