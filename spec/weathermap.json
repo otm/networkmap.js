@@ -5,7 +5,7 @@
             "name": "node1",
             "x": "36",
             "y": "94",
-            "renderer": "rect",
+            "renderer": "circle",
             "information": {
                 "test": "some value"
             },
@@ -13,6 +13,7 @@
                 "position": "internal",
                 "visable": "true"
             },
+            "drawingCallback": "router",
             "padding": "10",
             "events": {
                 "click": {

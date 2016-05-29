@@ -59,7 +59,8 @@ networkMap.extend(networkMap.Node, {
 		'fontSize',
 		'bgColor',
 		'strokeColor',
-		'strokeWidth' 
+		'strokeWidth',
+		'drawingCallback'
 	],
 	
 
@@ -413,50 +414,11 @@ networkMap.extend(networkMap.Node, {
 		
 				
 		this.updateLink();
-
-		// create the label first to get size
-		var label = svg.text(this.options.name)
-			.font({
-				family:   this.options.fontFamily,
-				size:     this.options.fontSize,
-				anchor:   'start'
-			})
-			.move(parseFloat(this.options.padding), parseFloat(this.options.padding));
-
-		
-		// This is needed to center an scale the comment text
-		// as it is not possible to get a bbox on a tspan
-		var bboxLabel = label.bbox();
-		var comment;
-		if (this.options.comment && this.options.comment !== ''){
-			label.text(function(add){
-				add.tspan(this.options.name).newLine();
-				comment = add.tspan(this.options.comment).newLine().attr('font-size', this.options.fontSize - 2);
-			}.bind(this));
-			comment.attr('text-anchor', 'middle');
-			comment.dx(bboxLabel.width / 2);
-		}	
-		while (bboxLabel.width < label.bbox().width){
-			comment.attr('font-size', comment.attr('font-size') - 1);
-		}
-
-		// create the rect
-		bboxLabel = label.bbox();		
-		var rect = svg.rect(1,1)
-			.fill({ color: this.options.bgColor})
-			.stroke({ color: this.options.strokeColor, width: this.options.strokeWidth })
-			.attr({ 
-				rx: 4,
-				ry: 4
-			})
-			.size(
-				bboxLabel.width + this.options.padding * 2, 
-				bboxLabel.height + this.options.padding * 2
-			);
-							
-		label.front();
-		
-
+        if ( !(this.options.renderer in networkMap.Node.renderers) ) {
+            alert('Invalid renderer: '+ this.options.renderer +' supplied on node '+ this.options.id);
+        }
+        
+        networkMap.Node.renderers[this.options.renderer](this,svg);
 		
 		svg.on('click', this._clickhandler.bind(this));
 		
@@ -467,16 +429,7 @@ networkMap.extend(networkMap.Node, {
 				svg.attr('cursor', 'pointer');
 			}	
 			
-		}
-
-		// this cover is here there to prevent user from selecting 
-		// text in the label
-		var cover = rect.clone().fill({opacity: 0}).front();
-
-		// move it in place
-		svg.move(parseFloat(this.options.x), parseFloat(this.options.y));
-		
-	
+		}	
 		
 		if (this.options.draggable){
 			this.draggable();
@@ -599,5 +552,73 @@ networkMap.Node.defaults = new networkMap.Properties({
 	href: null,
 	style: null,
 	debug: false,
-	draggable: false
+	draggable: false,
+	drawingCallback: null
+});
+
+networkMap.Node.renderers = networkMap.Node.renderers || {};
+
+/**
+ * Register a renderer
+ *
+ * @param {string} name The name of the renderer used in node options.
+ * @param {function} f The callback to do svg drawing.
+ */
+networkMap.Node.registerRenderer = function(name, f){
+	networkMap.Node.renderers[name] = f;
+};
+
+/**
+ * Default renderer for 'rect'
+ *
+*/
+networkMap.Node.registerRenderer('rect', function(node, svg) {
+	// create the label first to get size
+	var label = svg.text(node.options.name)
+		.font({
+			family:   node.options.fontFamily,
+			size:     node.options.fontSize,
+			anchor:   'start'
+		})
+		.move(parseFloat(node.options.padding), parseFloat(node.options.padding));
+
+	
+	// This is needed to center an scale the comment text
+	// as it is not possible to get a bbox on a tspan
+	var bboxLabel = label.bbox();
+	var comment;
+	if (node.options.comment && node.options.comment !== ''){
+		label.text(function(add){
+			add.tspan(node.options.name).newLine();
+			comment = add.tspan(node.options.comment).newLine().attr('font-size', node.options.fontSize - 2);
+		}.bind(node));
+		comment.attr('text-anchor', 'middle');
+		comment.dx(bboxLabel.width / 2);
+	}	
+	while (bboxLabel.width < label.bbox().width){
+		comment.attr('font-size', comment.attr('font-size') - 1);
+	}
+
+	// create the rect
+	bboxLabel = label.bbox();		
+	var rect = svg.rect(1,1)
+		.fill({ color: node.options.bgColor})
+		.stroke({ color: node.options.strokeColor, width: node.options.strokeWidth })
+		.attr({ 
+			rx: 4,
+			ry: 4
+		})
+		.size(
+			bboxLabel.width + node.options.padding * 2, 
+			bboxLabel.height + node.options.padding * 2
+		);
+						
+	label.front();
+
+	// this cover is here there to prevent user from selecting 
+	// text in the label
+	var cover = rect.clone().fill({opacity: 0}).front();
+
+	// move it in place
+	svg.move(parseFloat(node.options.x), parseFloat(node.options.y));
 });

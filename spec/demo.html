@@ -8,19 +8,42 @@
 		<script type="text/javascript" src="../lib/svg.path.js"></script>
 		<script type="text/javascript" src="../lib/svg.math.js"></script>
 		<script type="text/javascript" src="../dist/networkmap.js"></script>
+		<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/mootools/1.6.0/mootools-core-compat.min.js"></script>
 		<script type="text/javascript" >
 
 			var map;
 
 			document.addEventListener('DOMContentLoaded', function(){
 				var paper = document.getElementById('paper');
-			
+
 				// Set size of target div
 				paper.style.height = document.documentElement.clientHeight-16 + 'px';
 
+
+				var mySVG;
+
+				var myRequest = new Request({url: 'router_symbol2.svg', method: 'get',
+					onSuccess: function(responseText, responseXML){
+							mySVG = responseText;
+						}
+					});
+
+				myRequest.send();
+
+				networkMap.Node.registerRenderer("circle", function(node, svg) {
+					var radius = 25;
+					svg.circle(radius * 2).fill({opacity: 1, color: '#ddd'}).stroke({ color: '#000', opacity: 1, width: 2 }).move(radius, radius);
+					svg.text(node.options.name).font({
+  						family:   node.options.fontFamily,
+  						size:     node.options.fontSize,
+  						anchor:   'start'
+  					}).center(radius * 2,radius * 2);
+					svg.move(parseFloat(node.options.x), parseFloat(node.options.y));
+				});
+
 				// Initialize map
 				map = new networkMap.Graph('paper').load('weathermap.json');
-				
+
 				// Resize div and update networkmap
 				var resizeTimer;
 				window.onresize = function(){
@@ -29,13 +52,13 @@
 					resizeTimer = setTimeout(function(){
 						// resize target div
 						paper.style.height = document.documentElement.clientHeight-16 + 'px';
-						
+
 						// trigger update event
 						map.triggerEvent('resize', map);
 					}, 16);
 				};
 			});
-			
+
 		</script>
 	</head>
 	<body>
