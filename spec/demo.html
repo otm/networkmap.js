@@ -19,17 +19,9 @@
 				// Set size of target div
 				paper.style.height = document.documentElement.clientHeight-16 + 'px';
 
-
 				var mySVG;
 
-				var myRequest = new Request({url: 'router_symbol2.svg', method: 'get',
-					onSuccess: function(responseText, responseXML){
-							mySVG = responseText;
-						}
-					});
-
-				myRequest.send();
-
+				// Define a custom node renderer
 				networkMap.Node.registerRenderer("circle", function(node, svg) {
 					var radius = 25;
 					svg.circle(radius * 2).fill({opacity: 1, color: '#ddd'}).stroke({ color: '#000', opacity: 1, width: 2 }).move(radius, radius);
